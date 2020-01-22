@@ -18,10 +18,20 @@ use std::{
     marker::PhantomData,
 };
 
+#[macro_export]
+macro_rules! wrapper {
+    ($name:ident, $phantom:ident, $from:ty, $docs:meta) => {
+        #[$docs]
+        #[derive(Copy, Clone, PartialEq, Eq, Default, PartialOrd, Ord, Hash, Debug)]
+        pub struct $phantom;
 
-// TODO: Do a macro for simple wrapper type creations (automate phantom data generation)
+        #[$docs]
+        pub type $name = Wrapper<$from, ::std::marker::PhantomData::<$phantom>>;
+    };
+}
 
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Default)]
+
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug, Default)]
 pub struct Wrapper<T, Z>(T, PhantomData<Z>);
 
 impl<T, Z> Wrapper<T, Z> {
