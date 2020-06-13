@@ -7,19 +7,19 @@ keywords = ["generics", "core", "no_std", "wrap", "patterns"]
 categories = ["data-structures", "no-std", "rust-patterns"]
 repository = "https://github.com/LNP-BP/rust-amplify"
 homepage = "https://github.com/LNP-BP"
-license-file = "LICENSE"
 license = "MIT"
 readme = "README.md"
 edition = "2018"
 
 [dependencies]
-serde_derive = { version = "~1.0.111", optional = true }
+serde = { version = "~1.0.111", features = ["derive"], optional = true }
 
 [lib]
 name = "amplify"
 path = "src/lib.rs"
 
 [features]
+all = ["serde", "std"]
 default = ["std"]
 std = []
 

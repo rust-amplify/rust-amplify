@@ -43,7 +43,7 @@ macro_rules! wrapper {
         $( #[derive($derive)] )+
         pub struct $name($from);
 
-        impl crate::common::Wrapper for $name {
+        impl $crate::Wrapper for $name {
             type Inner = $from;
 
             #[inline]

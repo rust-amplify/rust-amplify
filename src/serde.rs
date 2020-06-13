@@ -16,9 +16,10 @@
 
 //! This module contains primitives used to implement serde support.
 
-use ::core::borrow::Cow;
+#[cfg(feature = "std")]
+use ::std::borrow::Cow;
 use ::core::ops::Deref;
-use serde::Deserialize;
+use ::serde::Deserialize;
 
 /// This is a helper for deserializing using `FromStr` more efficiently.
 ///
@@ -29,8 +30,7 @@ use serde::Deserialize;
 /// allocation.
 #[cfg(feature = "serde")]
 #[derive(Deserialize)]
-#[serde(crate = "serde_crate")]
-pub(crate) struct CowHelper<'a>(#[serde(borrow)] Cow<'a, str>);
+pub struct CowHelper<'a>(#[serde(borrow)] Cow<'a, str>);
 
 impl<'a> Deref for CowHelper<'a> {
     type Target = str;

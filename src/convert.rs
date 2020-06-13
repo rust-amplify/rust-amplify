@@ -52,7 +52,8 @@ macro_rules! impl_try_from_stringly {
 #[macro_export]
 macro_rules! impl_try_from_stringly_standard {
     ($type:ty) => {
-        use ::core::borrow::Cow;
+        #[cfg(feature = "std")]
+        use ::std::borrow::Cow;
         #[cfg(feature = "std")]
         use ::std::rc::Rc;
         #[cfg(feature = "std")]
@@ -61,11 +62,11 @@ macro_rules! impl_try_from_stringly_standard {
         impl_try_from_stringly! { $type,
             &str,
             String,
-            Cow<'_, str>
         }
 
         #[cfg(feature = "std")]
         impl_try_from_stringly! { @std $type,
+            Cow<'_, str>
             Box<str>,
             Box<Cow<'_, str>>,
             Rc<str>,
@@ -77,7 +78,7 @@ macro_rules! impl_try_from_stringly_standard {
         }
 
         #[cfg(feature = "serde")]
-        impl_try_from_stringly!($type, crate::common::serde::CowHelper<'_>);
+        impl_try_from_stringly!($type, $crate::CowHelper<'_>);
     };
 }
 
@@ -98,7 +99,8 @@ macro_rules! impl_into_stringly {
 #[macro_export]
 macro_rules! impl_into_stringly_standard {
     ($type:ty) => {
-        use ::core::borrow::Cow;
+        #[cfg(feature = "std")]
+        use ::std::borrow::Cow;
         #[cfg(feature = "std")]
         use ::core::rc::Rc;
         #[cfg(feature = "std")]
@@ -106,11 +108,11 @@ macro_rules! impl_into_stringly_standard {
 
         impl_into_stringly! { $type,
             String,
-            Cow<'_, str>
         }
 
         #[cfg(feature = "std")]
         impl_into_stringly! { @std, $type,
+            Cow<'_, str>
             Box<str>,
             Rc<str>,
             Rc<String>,

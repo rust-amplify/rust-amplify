@@ -15,10 +15,12 @@
 // If not, see <https://opensource.org/licenses/MIT>.
 
 mod as_any;
+#[macro_use]
 mod convert;
 #[cfg(feature = "serde")]
 mod serde;
 mod strategy;
+#[macro_use]
 mod wrapper;
 
 pub use crate::as_any::AsAny;
