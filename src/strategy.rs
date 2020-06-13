@@ -1,6 +1,9 @@
-// LNP/BP Core Library implementing LNPBP specifications & standards
-// Written in 2020 by
+// Rust language extension library providing multiple generic trait
+// implementations, type wrappers, derive macros and other "language warps"
+//
+// Written in 2019-2020 by
 //     Dr. Maxim Orlovsky <orlovsky@pandoracore.com>
+//     Martin Habovstiak <martin.habovstiak@gmail.com>
 //
 // To the extent possible under law, the author(s) have dedicated all
 // copyright and related and neighboring rights to this software to

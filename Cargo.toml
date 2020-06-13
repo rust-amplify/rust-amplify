@@ -1,0 +1,20 @@
+[package]
+name = "warp"
+version = "0.1.0"
+description = "Warping Rust language capabilities: multiple generic trait implementations, type wrappers, derive macros"
+authors = ["Dr. Maxim Orlovsky <orlovsky@pandoracore.com>", "Martin Habovstiak <martin.habovstiak@gmail.com>"]
+keywords = ["generics", "core", "no_std", "wrapper", "patterns"]
+categories = ["data-structures", "no-std", "rust-patterns"]
+repository = "https://github.com/LNP-BP/rust-warp"
+homepage = "https://github.com/LNP-BP"
+license-file = "LICENSE"
+license = "MIT"
+readme = "README.md"
+edition = "2018"
+
+[dependencies]
+serde_derive = { version = "~1.0.111", optional = true }
+
+[lib]
+name = "warp"
+path = "src/lib.rs"
