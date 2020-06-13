@@ -15,6 +15,7 @@
 // If not, see <https://opensource.org/licenses/MIT>.
 
 mod as_any;
+#[macro_use]
 mod convert;
 #[cfg(feature = "serde")]
 mod serde;
