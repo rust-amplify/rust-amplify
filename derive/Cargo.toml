@@ -1,0 +1,27 @@
+[package]
+name = "amplify_derive"
+version = "0.1.0"
+description = "Amplifying Rust language capabilities: derive macros for the 'amplify' library"
+authors = ["Elichai Turkel <elichai.turkel@gmail.com>", "Dr. Maxim Orlovsky <orlovsky@pandoracore.com>"]
+keywords = ["generics", "derivc", "no_std", "wrap", "patterns"]
+categories = ["data-structures", "no-std", "rust-patterns"]
+repository = "https://github.com/LP-BP/rust-amplify"
+homepage = "https://github.com/LNP-BP"
+license = "MIT"
+readme = "README.md"
+edition = "2018"
+
+[lib]
+proc-macro = true
+name = "amplify"
+path = "src/lib.rs"
+
+[dependencies]
+quote = "~1.0.7"
+syn = "~1.0.31"
+
+[dev-dependencies]
+amplify = { path = ".." }
+
+[badges]
+travis-ci = { repository = "LNP-BP/rust-amplify" }
