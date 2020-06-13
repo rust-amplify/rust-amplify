@@ -1,11 +1,11 @@
 [package]
-name = "warp"
+name = "amplify"
 version = "0.1.0"
-description = "Warping Rust language capabilities: multiple generic trait implementations, type wrappers, derive macros"
+description = "Amplifying Rust language capabilities: multiple generic trait implementations, type wrappers, derive macros"
 authors = ["Dr. Maxim Orlovsky <orlovsky@pandoracore.com>", "Martin Habovstiak <martin.habovstiak@gmail.com>"]
 keywords = ["generics", "core", "no_std", "wrap", "patterns"]
 categories = ["data-structures", "no-std", "rust-patterns"]
-repository = "https://github.com/LNP-BP/rust-warp"
+repository = "https://github.com/LNP-BP/rust-amplify"
 homepage = "https://github.com/LNP-BP"
 license-file = "LICENSE"
 license = "MIT"
@@ -16,7 +16,7 @@ edition = "2018"
 serde_derive = { version = "~1.0.111", optional = true }
 
 [lib]
-name = "warp"
+name = "amplify"
 path = "src/lib.rs"
 
 [features]
@@ -24,4 +24,4 @@ default = ["std"]
 std = []
 
 [badges]
-travis-ci = { repository = "LNP-BP/rust-warp" }
+travis-ci = { repository = "LNP-BP/rust-amplify" }

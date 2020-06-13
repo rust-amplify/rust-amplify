@@ -1,5 +1,5 @@
-// Rust language extension library providing multiple generic trait
-// implementations, type wrappers, derive macros and other "language warps"
+// Rust language amplification library providing multiple generic trait
+// implementations, type wrappers, derive macros and other language enhancements
 //
 // Written in 2019-2020 by
 //     Dr. Maxim Orlovsky <orlovsky@pandoracore.com>

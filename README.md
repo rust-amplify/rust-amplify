@@ -1,5 +1,5 @@
 # Rust Warp Library
-[![Build Status](https://travis-ci.org/LNP-BP/rust-warp.svg?branch=master)](https://travis-ci.org/LNP-BP/rust-warp)
+[![Build Status](https://travis-ci.org/LNP-BP/rust-amplify.svg?branch=master)](https://travis-ci.org/LNP-BP/rust-amplify)
 
-Warping Rust language capabilities: multiple generic trait implementations, 
+Amplifying Rust language capabilities: multiple generic trait implementations, 
 type wrappers, derive macros.
