@@ -14,7 +14,7 @@
 // along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
-use std::any::Any;
+use ::core::any::Any;
 
 // TODO: We can't do a default implementation with current rust compiler
 //       limitations, but we can do a derive macro for an automatic

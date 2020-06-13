@@ -18,7 +18,7 @@
 //! mutually-exclusive traits (required until negative trait impls will be there)
 //! Implemented after concept by Martin Habovštiak <martin.habovstiak@gmail.com>
 
-use core::marker::PhantomData;
+use ::core::marker::PhantomData;
 
 pub struct Holder<T, S>(T, PhantomData<S>);
 impl<T, S> Holder<T, S> {

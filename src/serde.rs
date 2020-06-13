@@ -17,8 +17,8 @@
 //! This module contains primitives used to implement serde support.
 
 use serde::Deserialize;
-use std::borrow::Cow;
-use std::ops::Deref;
+use ::core::borrow::Cow;
+use ::core::ops::Deref;
 
 /// This is a helper for deserializing using `FromStr` more efficiently.
 ///

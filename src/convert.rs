@@ -24,8 +24,21 @@
 macro_rules! impl_try_from_stringly {
     ($to:ty $(, $from:ty)+ $(,)?) => {
         $(
+            impl ::core::convert::TryFrom<$from> for $to {
+                type Error = <$to as ::core::str::FromStr>::Err;
+                #[inline]
+                fn try_from(value: $from) -> Result<Self, Self::Error> {
+                    <$to>::from_str(&value)
+                }
+            }
+        )*
+    };
+
+    (@std, $to:ty $(, $from:ty)+ $(,)?) => {
+        $(
+            #[cfg(not(feature = "no_std"))]
             impl std::convert::TryFrom<$from> for $to {
-                type Error = <$to as FromStr>::Err;
+                type Error = <$to as ::core::str::FromStr>::Err;
                 #[inline]
                 fn try_from(value: $from) -> Result<Self, Self::Error> {
                     <$to>::from_str(&value)
@@ -39,15 +52,20 @@ macro_rules! impl_try_from_stringly {
 #[macro_export]
 macro_rules! impl_try_from_stringly_standard {
     ($type:ty) => {
-        use std::borrow::Cow;
-        use std::rc::Rc;
-        use std::sync::Arc;
+        use ::core::borrow::Cow;
+        #[cfg(not(feature = "no_std"))]
+        use ::std::rc::Rc;
+        #[cfg(not(feature = "no_std"))]
+        use ::std::sync::Arc;
 
         impl_try_from_stringly! { $type,
             &str,
             String,
+            Cow<'_, str>
+        }
+
+        impl_try_from_stringly! { @std $type,
             Box<str>,
-            Cow<'_, str>,
             Box<Cow<'_, str>>,
             Rc<str>,
             Rc<String>,
@@ -55,7 +73,6 @@ macro_rules! impl_try_from_stringly_standard {
             Arc<str>,
             Arc<String>,
             Arc<Cow<'_, str>>,
-
         }
 
         #[cfg(feature = "serde")]
@@ -80,10 +97,19 @@ macro_rules! impl_into_stringly {
 #[macro_export]
 macro_rules! impl_into_stringly_standard {
     ($type:ty) => {
+        use ::core::borrow::Cow;
+        #[cfg(not(feature = "no_std"))]
+        use ::core::rc::Rc;
+        #[cfg(not(feature = "no_std"))]
+        use ::core::sync::Arc;
+
         impl_into_stringly! { $type,
             String,
+            Cow<'_, str>
+        }
+
+        impl_into_stringly! { @std, $type,
             Box<str>,
-            Cow<'_, str>,
             Rc<str>,
             Rc<String>,
             Arc<str>,

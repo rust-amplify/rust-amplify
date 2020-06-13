@@ -18,3 +18,6 @@ serde_derive = { version = "~1.0.111", optional = true }
 [lib]
 name = "warp"
 path = "src/lib.rs"
+
+[features]
+no_std = []

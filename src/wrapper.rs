@@ -105,7 +105,7 @@ macro_rules! wrapper {
             }
         }
 
-        impl ::std::convert::From<$from> for $name
+        impl ::core::convert::From<$from> for $name
         where
             Self: ::core::clone::Clone,
         {
@@ -115,7 +115,7 @@ macro_rules! wrapper {
             }
         }
 
-        impl ::std::convert::From<&$from> for $name
+        impl ::core::convert::From<&$from> for $name
         where
             Self: ::core::clone::Clone,
         {
