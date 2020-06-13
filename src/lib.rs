@@ -22,6 +22,8 @@ mod serde;
 mod strategy;
 #[macro_use]
 mod wrapper;
+#[macro_use]
+mod macros;
 
 pub use crate::as_any::AsAny;
 #[cfg(feature = "serde")]
