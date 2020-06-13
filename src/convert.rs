@@ -36,7 +36,7 @@ macro_rules! impl_try_from_stringly {
 
     (@std, $to:ty $(, $from:ty)+ $(,)?) => {
         $(
-            #[cfg(not(feature = "no_std"))]
+            #[cfg(feature = "std")]
             impl std::convert::TryFrom<$from> for $to {
                 type Error = <$to as ::core::str::FromStr>::Err;
                 #[inline]
@@ -53,9 +53,9 @@ macro_rules! impl_try_from_stringly {
 macro_rules! impl_try_from_stringly_standard {
     ($type:ty) => {
         use ::core::borrow::Cow;
-        #[cfg(not(feature = "no_std"))]
+        #[cfg(feature = "std")]
         use ::std::rc::Rc;
-        #[cfg(not(feature = "no_std"))]
+        #[cfg(feature = "std")]
         use ::std::sync::Arc;
 
         impl_try_from_stringly! { $type,
@@ -64,6 +64,7 @@ macro_rules! impl_try_from_stringly_standard {
             Cow<'_, str>
         }
 
+        #[cfg(feature = "std")]
         impl_try_from_stringly! { @std $type,
             Box<str>,
             Box<Cow<'_, str>>,
@@ -98,9 +99,9 @@ macro_rules! impl_into_stringly {
 macro_rules! impl_into_stringly_standard {
     ($type:ty) => {
         use ::core::borrow::Cow;
-        #[cfg(not(feature = "no_std"))]
+        #[cfg(feature = "std")]
         use ::core::rc::Rc;
-        #[cfg(not(feature = "no_std"))]
+        #[cfg(feature = "std")]
         use ::core::sync::Arc;
 
         impl_into_stringly! { $type,
@@ -108,6 +109,7 @@ macro_rules! impl_into_stringly_standard {
             Cow<'_, str>
         }
 
+        #[cfg(feature = "std")]
         impl_into_stringly! { @std, $type,
             Box<str>,
             Rc<str>,

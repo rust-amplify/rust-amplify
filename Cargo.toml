@@ -3,7 +3,7 @@ name = "warp"
 version = "0.1.0"
 description = "Warping Rust language capabilities: multiple generic trait implementations, type wrappers, derive macros"
 authors = ["Dr. Maxim Orlovsky <orlovsky@pandoracore.com>", "Martin Habovstiak <martin.habovstiak@gmail.com>"]
-keywords = ["generics", "core", "no_std", "wrapper", "patterns"]
+keywords = ["generics", "core", "no_std", "wrap", "patterns"]
 categories = ["data-structures", "no-std", "rust-patterns"]
 repository = "https://github.com/LNP-BP/rust-warp"
 homepage = "https://github.com/LNP-BP"
@@ -20,4 +20,8 @@ name = "warp"
 path = "src/lib.rs"
 
 [features]
-no_std = []
+default = ["std"]
+std = []
+
+[badges]
+travis-ci = { repository = "LNP-BP/rust-warp" }
