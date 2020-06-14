@@ -15,8 +15,9 @@
 // If not, see <https://opensource.org/licenses/MIT>.
 
 #![recursion_limit = "256"]
-#![cfg_attr(test, deny(warnings))]
+#![feature(try_find)]
 #![allow(unused)]
+#![cfg_attr(test, deny(warnings))]
 
 #[macro_use]
 extern crate quote;
@@ -27,7 +28,7 @@ use syn::export::{Span, ToTokens, TokenStream, TokenStream2};
 use syn::spanned::Spanned;
 use syn::{
     Attribute, Data, DataStruct, DeriveInput, Error, Field, Fields, Ident, Index, Lit, Member,
-    Meta, NestedMeta, Path, Result, Type, TypeSlice,
+    Meta, MetaList, NestedMeta, Path, Result, Type, TypeSlice,
 };
 
 #[proc_macro_derive(Getters)]
@@ -72,7 +73,7 @@ fn getters_inner(input: DeriveInput) -> Result<TokenStream2> {
         ))?,
         Fields::Unit => Err(Error::new_spanned(
             &input,
-            "Deriving getters is meanless for unit structs",
+            "Deriving getters is meaningless for unit structs",
         ))?,
     };
 
