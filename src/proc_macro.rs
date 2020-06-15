@@ -16,10 +16,11 @@
 
 use core::iter::ExactSizeIterator;
 use syn::spanned::Spanned;
-use syn::{DeriveInput, Error, Ident, Lit, Meta, NestedMeta, Result};
+use syn::{Attribute, DeriveInput, Error, Ident, Lit, Meta, NestedMeta, Result};
 
-macro_rules! err {
-    ($attr:tt, $msg:tt, $example:tt) => {
+#[macro_export]
+macro_rules! proc_macro_err {
+    ($attr:ident, $msg:tt, $example:tt) => {
         Err(Error::new(
             $attr.span(),
             format!(
@@ -35,9 +36,11 @@ pub fn attr_named_value(input: &DeriveInput, ident: &str, example: &str) -> Resu
         if attr.path.is_ident(ident) {
             match attr.parse_meta() {
                 Ok(meta) => match meta {
-                    Meta::Path(_) => return err!(attr, "unexpected path argument", example),
+                    Meta::Path(_) => {
+                        return proc_macro_err!(attr, "unexpected path argument", example)
+                    }
                     Meta::List(_) => {
-                        return err!(
+                        return proc_macro_err!(
                             attr,
                             "must have form `name=value`, not `name(value)`",
                             example
@@ -45,7 +48,7 @@ pub fn attr_named_value(input: &DeriveInput, ident: &str, example: &str) -> Resu
                     }
                     Meta::NameValue(name_val) => return Ok(Some(name_val.lit)),
                 },
-                Err(_) => return err!(attr, "wrong format", example),
+                Err(_) => return proc_macro_err!(attr, "wrong format", example),
             }
         }
     }
@@ -53,22 +56,24 @@ pub fn attr_named_value(input: &DeriveInput, ident: &str, example: &str) -> Resu
     Ok(None)
 }
 
-pub fn attr_list(
-    input: &DeriveInput,
+pub fn attr_list<'a>(
+    attrs: impl IntoIterator<Item = &'a Attribute>,
     ident: &str,
     example: &str,
 ) -> Result<Option<Vec<NestedMeta>>> {
-    for attr in &input.attrs {
+    for attr in attrs {
         if attr.path.is_ident(ident) {
             match attr.parse_meta() {
                 Ok(meta) => match meta {
-                    Meta::Path(_) => return err!(attr, "unexpected path argument", example),
+                    Meta::Path(_) => {
+                        return proc_macro_err!(attr, "unexpected path argument", example)
+                    }
                     Meta::List(list) => return Ok(Some(list.nested.into_iter().collect())),
                     Meta::NameValue(_) => {
-                        return err!(attr, "unexpected name=value argument", example)
+                        return proc_macro_err!(attr, "unexpected name=value argument", example)
                     }
                 },
-                Err(_) => return err!(attr, "wrong format", example),
+                Err(_) => return proc_macro_err!(attr, "wrong format", example),
             }
         }
     }
@@ -82,18 +87,18 @@ pub fn attr_nested_one_arg(
     example: &str,
 ) -> Result<Option<Ident>> {
     match list.len() {
-        0 => err!(attr_name, "unexpected absence of argument", example),
+        0 => proc_macro_err!(attr_name, "unexpected absence of argument", example),
         1 => match list.next().expect("Core library iterator is broken") {
             NestedMeta::Meta(meta) => match meta {
                 Meta::Path(path) => Ok(path.get_ident().cloned()),
-                _ => err!(attr_name, "unexpected multiple type identifiers", example),
+                _ => proc_macro_err!(attr_name, "unexpected multiple type identifiers", example),
             },
-            NestedMeta::Lit(_) => err!(
+            NestedMeta::Lit(_) => proc_macro_err!(
                 attr_name,
                 "unexpected literal for type identifier is met",
                 example
             ),
         },
-        _ => err!(attr_name, "unexpected multiple type identifiers", example),
+        _ => proc_macro_err!(attr_name, "unexpected multiple type identifiers", example),
     }
 }

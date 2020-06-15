@@ -24,6 +24,7 @@ mod strategy;
 mod wrapper;
 #[macro_use]
 mod macros;
+#[macro_use]
 pub mod proc_macro;
 
 pub use crate::as_any::AsAny;
