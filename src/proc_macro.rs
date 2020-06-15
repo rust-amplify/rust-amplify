@@ -16,7 +16,7 @@
 
 use core::iter::ExactSizeIterator;
 use syn::spanned::Spanned;
-use syn::{Attribute, DeriveInput, Error, Ident, Lit, Meta, NestedMeta, Result};
+use syn::{Attribute, DeriveInput, Error, Ident, Lit, Meta, MetaNameValue, NestedMeta, Result};
 
 #[macro_export]
 macro_rules! proc_macro_err {
@@ -91,7 +91,29 @@ pub fn attr_nested_one_arg(
         1 => match list.next().expect("Core library iterator is broken") {
             NestedMeta::Meta(meta) => match meta {
                 Meta::Path(path) => Ok(path.get_ident().cloned()),
-                _ => proc_macro_err!(attr_name, "unexpected multiple type identifiers", example),
+                _ => proc_macro_err!(attr_name, "unexpected attribute type", example),
+            },
+            NestedMeta::Lit(_) => proc_macro_err!(
+                attr_name,
+                "unexpected literal for type identifier is met",
+                example
+            ),
+        },
+        _ => proc_macro_err!(attr_name, "unexpected multiple type identifiers", example),
+    }
+}
+
+pub fn attr_nested_one_named_value(
+    mut list: impl ExactSizeIterator<Item = NestedMeta>,
+    attr_name: &str,
+    example: &str,
+) -> Result<MetaNameValue> {
+    match list.len() {
+        0 => proc_macro_err!(attr_name, "unexpected absence of argument", example),
+        1 => match list.next().expect("Core library iterator is broken") {
+            NestedMeta::Meta(meta) => match meta {
+                Meta::NameValue(path) => Ok(path),
+                _ => proc_macro_err!(attr_name, "unexpected attribute type", example),
             },
             NestedMeta::Lit(_) => proc_macro_err!(
                 attr_name,
