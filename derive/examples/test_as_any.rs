@@ -3,7 +3,7 @@
 #[macro_use]
 extern crate amplify_derive;
 
-#[derive(Getters)]
+#[derive(AsAny)]
 struct One {
     a: Vec<u8>,
     b: bool,

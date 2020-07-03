@@ -39,6 +39,14 @@ pub fn derive_getters(input: TokenStream) -> TokenStream {
         .into()
 }
 
+#[proc_macro_derive(AsAny)]
+pub fn derive_as_any(input: TokenStream) -> TokenStream {
+    let derive_input = parse_macro_input!(input as DeriveInput);
+    as_any_inner(derive_input)
+        .unwrap_or_else(|e| e.to_compile_error())
+        .into()
+}
+
 fn getters_inner(input: DeriveInput) -> Result<TokenStream2> {
     let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
     let ident_name = &input.ident;
@@ -80,6 +88,19 @@ fn getters_inner(input: DeriveInput) -> Result<TokenStream2> {
     Ok(quote! {
         impl #impl_generics #ident_name #ty_generics #where_clause {
             #( #recurse )*
+        }
+    })
+}
+
+fn as_any_inner(input: DeriveInput) -> Result<TokenStream2> {
+    let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
+    let ident_name = &input.ident;
+
+    Ok(quote! {
+        impl #impl_generics ::amplify::AsAny for #ident_name #ty_generics #where_clause {
+           fn as_any(&self) -> &dyn ::core::any::Any {
+                self as &dyn ::core::any::Any
+            }
         }
     })
 }
