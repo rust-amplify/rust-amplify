@@ -53,11 +53,11 @@ macro_rules! set {
         }
     };
 
-    { $($key:expr => $value:expr),+ } => {
+    { $($value:expr),+ } => {
         {
             let mut m = ::std::collections::HashSet::new();
             $(
-                m.insert($key, $value);
+                m.insert($value);
             )+
             m
         }
