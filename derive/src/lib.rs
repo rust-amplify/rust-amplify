@@ -25,10 +25,19 @@ extern crate quote;
 extern crate syn;
 
 mod as_any;
+mod display;
 mod getters;
 
 use syn::export::TokenStream;
 use syn::DeriveInput;
+
+#[proc_macro_derive(DisplayEnum)]
+pub fn derive_display(input: TokenStream) -> TokenStream {
+    let derive_input = parse_macro_input!(input as DeriveInput);
+    display::inner(derive_input)
+        .unwrap_or_else(|e| e.to_compile_error())
+        .into()
+}
 
 #[proc_macro_derive(AsAny)]
 pub fn derive_as_any(input: TokenStream) -> TokenStream {
