@@ -123,9 +123,11 @@ macro_rules! list {
 
 #[cfg(test)]
 mod test {
+    #[test]
     fn test_guard() {
         let opt: Option<u8> = Some(5);
 
-        guard! { let unwrapped = opt else { assert!(false) } }
+        guard! { let some = opt else { assert!(false) } }
+        let _ = some;
     }
 }
