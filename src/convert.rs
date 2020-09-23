@@ -100,11 +100,11 @@ macro_rules! impl_into_stringly {
 macro_rules! impl_into_stringly_standard {
     ($type:ty) => {
         #[cfg(feature = "std")]
-        use ::std::borrow::Cow;
-        #[cfg(feature = "std")]
         use ::core::rc::Rc;
         #[cfg(feature = "std")]
         use ::core::sync::Arc;
+        #[cfg(feature = "std")]
+        use ::std::borrow::Cow;
 
         impl_into_stringly! { $type,
             String,

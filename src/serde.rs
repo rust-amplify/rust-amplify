@@ -16,10 +16,10 @@
 
 //! This module contains primitives used to implement serde support.
 
-#[cfg(feature = "std")]
-use ::std::borrow::Cow;
 use ::core::ops::Deref;
 use ::serde::Deserialize;
+#[cfg(feature = "std")]
+use ::std::borrow::Cow;
 
 /// This is a helper for deserializing using `FromStr` more efficiently.
 ///
