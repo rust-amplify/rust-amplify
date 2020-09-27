@@ -26,15 +26,51 @@ extern crate syn;
 #[macro_use]
 extern crate amplify;
 
+#[macro_use]
+mod util;
 mod as_any;
 mod display;
 mod getters;
+mod traits;
 
 use syn::export::TokenStream;
 use syn::DeriveInput;
 
+/// # Usage
+///
+/// 1. Generate [`Display`] descriptions using other formatting trait:
+///    ```
+///     # #[macro_use] extern crate amplify_derive;
+///     #[derive(Display, Debug)]
+///     #[display(Debug)]
+///     struct Some { /* ... */ }
+///    ```
+/// 2. Use existing function for displaying descriptions:
+///    ```
+///     # #[macro_use] extern crate amplify_derive;
+///     #[derive(Display)]
+///     #[display(Some::print)]
+///     struct Some { /* ... */ }
+///     impl Some {
+///         pub fn print(&self) -> String {
+///             "Some struct".to_string()
+///         }
+///     }
+///    ```
+///    Formatting function must return [`String`] and take a single `self`
+///    argument (if you need formatting with streamed output, use one of
+///    existing formatting traits as shown in pt. 1).
+/// 3. Custom format string:
+///    ```
+///     # #[macro_use] extern crate amplify_derive;
+///     #[derive(Display)]
+///     #[display("({x}, {y})")]
+///     struct Point { x: u32, y: u32 }
+///    ```
+///
 /// # Example
 ///
+/// Advanced use with enums:
 /// ```
 /// # #[macro_use] extern crate amplify_derive;
 /// #[derive(Display)]
@@ -54,6 +90,7 @@ use syn::DeriveInput;
 ///     },
 ///     Unnamed(u16),
 ///
+///     // NB: Use `_`-prefixed indexes for tuple values
 ///     #[display = "Custom{_0}"]
 ///     UnnamedCustom(String),
 /// }
@@ -71,7 +108,13 @@ use syn::DeriveInput;
 #[proc_macro_derive(Display, attributes(display))]
 pub fn derive_display(input: TokenStream) -> TokenStream {
     let derive_input = parse_macro_input!(input as DeriveInput);
-    display::inner(derive_input)
+    let s = display::inner(derive_input)
+        .unwrap_or_else(|e| e.to_compile_error())
+        .into();
+    print!("{}", s);
+    s
+}
+
         .unwrap_or_else(|e| e.to_compile_error())
         .into()
 }
