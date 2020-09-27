@@ -15,18 +15,6 @@
 // If not, see <https://opensource.org/licenses/MIT>.
 
 #[macro_export]
-macro_rules! guard {
-    { let $var:ident = $option:ident else { $alt:expr } } => {
-        let $var = if let Some($var) = $option {
-            $var
-        } else {
-            $alt;
-            unreachable!()
-        };
-    }
-}
-
-#[macro_export]
 macro_rules! map {
     { } =>  {
         {
@@ -118,16 +106,5 @@ macro_rules! list {
             )+
             m
         }
-    }
-}
-
-#[cfg(test)]
-mod test {
-    #[test]
-    fn test_guard() {
-        let opt: Option<u8> = Some(5);
-
-        guard! { let some = opt else { assert!(false) } }
-        let _ = some;
     }
 }
