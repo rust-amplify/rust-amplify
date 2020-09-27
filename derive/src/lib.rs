@@ -2,8 +2,8 @@
 // implementations, type wrappers, derive macros and other language enhancements
 //
 // Written in 2019-2020 by
-//     Elichai Turkel <elichai.turkel@gmail.com>
 //     Dr. Maxim Orlovsky <orlovsky@pandoracore.com>
+//     Elichai Turkel <elichai.turkel@gmail.com>
 //
 // To the extent possible under law, the author(s) have dedicated all
 // copyright and related and neighboring rights to this software to
