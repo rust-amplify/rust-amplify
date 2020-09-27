@@ -15,6 +15,13 @@
 // If not, see <https://opensource.org/licenses/MIT>.
 
 #[macro_export]
+macro_rules! s {
+    ( $str:literal ) => {
+        String::from($str)
+    };
+}
+
+#[macro_export]
 macro_rules! map {
     { } =>  {
         {

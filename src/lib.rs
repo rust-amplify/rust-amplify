@@ -14,8 +14,6 @@
 // along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
-#![feature(proc_macro_span)]
-
 mod as_any;
 #[macro_use]
 mod convert;
@@ -26,8 +24,6 @@ mod strategy;
 mod wrapper;
 #[macro_use]
 mod macros;
-#[macro_use]
-pub mod proc_macro;
 
 pub use crate::as_any::AsAny;
 #[cfg(feature = "serde")]

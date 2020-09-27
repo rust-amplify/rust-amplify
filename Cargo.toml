@@ -13,7 +13,6 @@ edition = "2018"
 
 [dependencies]
 serde = { version = "~1.0.111", features = ["derive"], optional = true }
-syn = "~1.0.31"
 
 [lib]
 name = "amplify"
