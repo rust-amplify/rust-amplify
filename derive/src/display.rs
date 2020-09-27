@@ -14,6 +14,7 @@
 // along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
+use amplify::proc_macro::attr_named_value;
 use syn::export::{Span, ToTokens, TokenStream, TokenStream2};
 use syn::spanned::Spanned;
 use syn::{
@@ -25,13 +26,13 @@ pub(crate) fn inner(input: DeriveInput) -> Result<TokenStream2> {
     match input.data {
         Data::Struct(ref data) => Err(Error::new_spanned(
             &input,
-            "Deriving `Display` can be done only with enums, not with structs",
+            "Deriving `DisplayEnum` can be done only with enums, not with structs",
         )),
         Data::Enum(ref data) => inner_enum(&input, data),
         //strict_encode_inner_enum(&input, &data),
         Data::Union(_) => Err(Error::new_spanned(
             &input,
-            "Deriving `Display` can be done only with enums, not with unions",
+            "Deriving `DisplayEnum` can be done only with enums, not with unions",
         )),
     }
 }
@@ -43,27 +44,60 @@ fn inner_enum(input: &DeriveInput, data: &DataEnum) -> Result<TokenStream2> {
     let name = "display";
 
     let mut display = vec![];
+    let example = r#"#[display="String for display"]"#;
 
     for v in &data.variants {
         let type_name = &v.ident;
-        let type_str = format!("\"{}\"", type_name);
+        let type_str = format!("{}", type_name);
 
-        match &v.fields {
-            Fields::Named(_) => {
-                return Err(Error::new(
-                    v.span(),
-                    "`DeriveEnum` does not support enums with named variants",
-                ))
+        let display_str = attr_named_value(&v.attrs, name, example)?
+            .map(|lit| match lit {
+                Lit::Str(display) => Ok(display),
+                _ => proc_macro_err!(
+                    ident_name,
+                    "non-string literal for display parameter",
+                    example
+                ),
+            })
+            .map_or(Ok(None), |r| r.map(Some))?;
+
+        match (&v.fields, &display_str) {
+            (Fields::Named(_), None) => {
+                display.push(quote_spanned! { v.span() =>
+                    Self::#type_name { .. } => f.write_str(concat!(#type_str, " { .. }")),
+                });
             }
-            Fields::Unnamed(args) => {
-                return Err(Error::new(
-                    v.span(),
-                    "`DeriveEnum` does not support enums with unnamed variants",
-                ))
+            (Fields::Unnamed(_), None) => {
+                display.push(quote_spanned! { v.span() =>
+                    Self::#type_name(..) => f.write_str(concat!(#type_str, "(..)")),
+                });
             }
-            Fields::Unit => {
+            (Fields::Unit, None) => {
                 display.push(quote_spanned! { v.span() =>
                     Self::#type_name => f.write_str(#type_str),
+                });
+            }
+            (Fields::Named(fields), Some(display_str)) => {
+                let idents = fields
+                    .named
+                    .iter()
+                    .map(|f| f.ident.as_ref().unwrap())
+                    .collect::<Vec<_>>();
+                display.push(quote_spanned! { v.span() =>
+                    Self::#type_name { #( #idents, )* } => write!(f, #display_str, #( #idents = #idents, )*),
+                });
+            }
+            (Fields::Unnamed(fields), Some(display_str)) => {
+                let idents = (0..fields.unnamed.len())
+                    .map(|i| Ident::new(&format!("_{}", i), v.span()))
+                    .collect::<Vec<_>>();
+                display.push(quote_spanned! { v.span() =>
+                    Self::#type_name ( #( #idents, )* ) => write!(f, #display_str, #( #idents = #idents, )*),
+                });
+            }
+            (Fields::Unit, Some(display_str)) => {
+                display.push(quote_spanned! { v.span() =>
+                    Self::#type_name => f.write_str(#display_str),
                 });
             }
         }

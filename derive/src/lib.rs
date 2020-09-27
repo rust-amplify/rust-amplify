@@ -23,6 +23,8 @@
 extern crate quote;
 #[macro_use]
 extern crate syn;
+#[macro_use]
+extern crate amplify;
 
 mod as_any;
 mod display;
@@ -31,7 +33,42 @@ mod getters;
 use syn::export::TokenStream;
 use syn::DeriveInput;
 
-#[proc_macro_derive(DisplayEnum)]
+/// # Example
+///
+/// ```
+/// # #[macro_use] extern crate amplify_derive;
+/// #[derive(Display)]
+/// enum Test {
+///     Some,
+///
+///     #[display = "OtherName"]
+///     Other,
+///
+///     Named {
+///         x: u8,
+///     },
+///
+///     #[display = "Custom{x}"]
+///     NamedCustom {
+///         x: u8,
+///     },
+///     Unnamed(u16),
+///
+///     #[display = "Custom{_0}"]
+///     UnnamedCustom(String),
+/// }
+///
+/// assert_eq!(format!("{}", Test::Some), "Some");
+/// assert_eq!(format!("{}", Test::Other), "OtherName");
+/// assert_eq!(format!("{}", Test::Named { x: 1 }), "Named { .. }");
+/// assert_eq!(format!("{}", Test::Unnamed(5)), "Unnamed(..)");
+/// assert_eq!(format!("{}", Test::NamedCustom { x: 8 }), "Custom8");
+/// assert_eq!(
+///     format!("{}", Test::UnnamedCustom("Test".to_string())),
+///     "CustomTest"
+/// );
+/// ```
+#[proc_macro_derive(Display, attributes(display))]
 pub fn derive_display(input: TokenStream) -> TokenStream {
     let derive_input = parse_macro_input!(input as DeriveInput);
     display::inner(derive_input)
