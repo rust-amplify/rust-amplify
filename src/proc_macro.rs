@@ -14,10 +14,17 @@
 // along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
+//! Helper functions for composing proc macros using syn library
+
 use core::iter::ExactSizeIterator;
 use syn::spanned::Spanned;
 use syn::{Attribute, DeriveInput, Error, Ident, Lit, Meta, MetaNameValue, NestedMeta, Result};
 
+/// Macro producing [`Result::Err`] with [`syn::Error`] containing span
+/// information from `$attr` (first) argument and formatted string describing
+/// concrete error (description is taken from `$msg` second macro argument) and
+/// providing an example `$example` (third macro argument) of how the macro
+/// should be used.
 #[macro_export]
 macro_rules! proc_macro_err {
     ($attr:ident, $msg:tt, $example:tt) => {
@@ -31,25 +38,41 @@ macro_rules! proc_macro_err {
     };
 }
 
+/// Parses attributes from derive input looking for an attribute with identifier
+/// `ident`, returning `Ok(None)` if it is not found. If the attribute is found,
+/// function parses attribute metadata in the following way:
+/// * If metadata can't be parsed with [`syn::Attribute::parse_meta()`] it
+///   returns [`Result::Err`]
+/// * If metadata are not in `key=value` form [`syn::Meta::NameValue`], returns
+///   error [`Result::Err`] with detailed information
+/// * If metadata are in `key=value` form, it returns `value` in form of
+///   [`Option::Some()`] [`syn::Lit`] literal
 pub fn attr_named_value(input: &DeriveInput, ident: &str, example: &str) -> Result<Option<Lit>> {
     for attr in &input.attrs {
         if attr.path.is_ident(ident) {
-            match attr.parse_meta() {
+            return match attr.parse_meta() {
                 Ok(meta) => match meta {
-                    Meta::Path(_) => {
-                        return proc_macro_err!(attr, "unexpected path argument", example)
+                    Meta::Path(path) => {
+                        let msg = format!(
+                            r#"must have form `{0}="..."`, not just declarative `{0}`"#,
+                            path.get_ident()
+                                .unwrap_or(&path.segments.last().unwrap().ident)
+                        );
+                        proc_macro_err!(attr, msg, example)
                     }
-                    Meta::List(_) => {
-                        return proc_macro_err!(
-                            attr,
-                            "must have form `name=value`, not `name(value)`",
-                            example
-                        )
+                    Meta::List(list) => {
+                        let msg = format!(
+                            r#"must have form `{0}="..."`, not `{0}(...)`"#,
+                            list.path
+                                .get_ident()
+                                .unwrap_or(&list.path.segments.last().unwrap().ident)
+                        );
+                        proc_macro_err!(attr, msg, example)
                     }
-                    Meta::NameValue(name_val) => return Ok(Some(name_val.lit)),
+                    Meta::NameValue(name_val) => Ok(Some(name_val.lit)),
                 },
-                Err(_) => return proc_macro_err!(attr, "wrong format", example),
-            }
+                Err(_) => proc_macro_err!(attr, "wrong format", example),
+            };
         }
     }
 
@@ -63,18 +86,16 @@ pub fn attr_list<'a>(
 ) -> Result<Option<Vec<NestedMeta>>> {
     for attr in attrs {
         if attr.path.is_ident(ident) {
-            match attr.parse_meta() {
+            return match attr.parse_meta() {
                 Ok(meta) => match meta {
-                    Meta::Path(_) => {
-                        return proc_macro_err!(attr, "unexpected path argument", example)
-                    }
-                    Meta::List(list) => return Ok(Some(list.nested.into_iter().collect())),
+                    Meta::Path(_) => proc_macro_err!(attr, "unexpected path argument", example),
+                    Meta::List(list) => Ok(Some(list.nested.into_iter().collect())),
                     Meta::NameValue(_) => {
-                        return proc_macro_err!(attr, "unexpected name=value argument", example)
+                        proc_macro_err!(attr, "unexpected name=value argument", example)
                     }
                 },
-                Err(_) => return proc_macro_err!(attr, "wrong format", example),
-            }
+                Err(_) => proc_macro_err!(attr, "wrong format", example),
+            };
         }
     }
 

@@ -14,6 +14,8 @@
 // along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
+#![feature(proc_macro_span)]
+
 mod as_any;
 #[macro_use]
 mod convert;
