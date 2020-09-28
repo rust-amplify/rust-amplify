@@ -13,20 +13,18 @@
 // along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
-use syn::export::{Span, ToTokens, TokenStream, TokenStream2};
+use syn::export::TokenStream2;
 use syn::spanned::Spanned;
-use syn::{
-    Attribute, Data, DataStruct, DeriveInput, Error, Field, Fields, Ident, Index, Lit, Member,
-    Meta, MetaList, NestedMeta, Path, Result, Type, TypeSlice,
-};
+use syn::{Data, DeriveInput, Error, Fields, Result};
 
 pub(crate) fn inner(input: DeriveInput) -> Result<TokenStream2> {
-    let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
+    let (impl_generics, ty_generics, where_clause) =
+        input.generics.split_for_impl();
     let ident_name = &input.ident;
 
     let data = match input.data {
         Data::Struct(ref data) => data,
-        Data::Enum(ref data) => Err(Error::new_spanned(
+        Data::Enum(_) => Err(Error::new_spanned(
             &input,
             "Deriving getters is not supported in enums",
         ))?,
@@ -48,7 +46,7 @@ pub(crate) fn inner(input: DeriveInput) -> Result<TokenStream2> {
                 }
             }
         }),
-        Fields::Unnamed(ref fields) => Err(Error::new_spanned(
+        Fields::Unnamed(_) => Err(Error::new_spanned(
             &input,
             "Deriving getters is not supported for tuple-bases structs",
         ))?,

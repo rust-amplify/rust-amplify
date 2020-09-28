@@ -13,15 +13,12 @@
 // along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
-use syn::export::{Span, ToTokens, TokenStream, TokenStream2};
-use syn::spanned::Spanned;
-use syn::{
-    Attribute, Data, DataStruct, DeriveInput, Error, Field, Fields, Ident, Index, Lit, Member,
-    Meta, MetaList, NestedMeta, Path, Result, Type, TypeSlice,
-};
+use syn::export::TokenStream2;
+use syn::{DeriveInput, Result};
 
 pub(crate) fn inner(input: DeriveInput) -> Result<TokenStream2> {
-    let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
+    let (impl_generics, ty_generics, where_clause) =
+        input.generics.split_for_impl();
     let ident_name = &input.ident;
 
     Ok(quote! {

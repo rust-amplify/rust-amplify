@@ -15,23 +15,34 @@
 // If not, see <https://opensource.org/licenses/MIT>.
 
 #![recursion_limit = "256"]
-#![feature(try_find)]
-#![allow(unused)]
 #![cfg_attr(test, deny(warnings))]
 
 #[macro_use]
 extern crate quote;
 #[macro_use]
 extern crate syn;
-#[macro_use]
 extern crate amplify;
 
-#[macro_use]
-mod util;
+/// Macro producing [`Result::Err`] with [`syn::Error`] containing span
+/// information from `$attr` (first) argument and formatted string describing
+/// concrete error (description is taken from `$msg` second macro argument) and
+/// providing an example `$example` (third macro argument) of how the macro
+/// should be used.
+macro_rules! attr_err {
+    ($name:expr, $msg:tt, $example:tt) => {
+        attr_err!(::syn::export::Span::call_site(), $name, $msg, $example);
+    };
+    ($attr:expr, $name:expr, $msg:tt, $example:tt) => {
+        ::syn::Error::new(
+            $attr.span(),
+            format!("Attribute {}: {}\nExample use: {}", $name, $msg, $example),
+        );
+    };
+}
+
 mod as_any;
 mod display;
 mod getters;
-mod traits;
 
 use syn::export::TokenStream;
 use syn::DeriveInput;
@@ -48,12 +59,14 @@ use syn::DeriveInput;
 /// 2. Use existing function for displaying descriptions:
 ///    ```
 ///     # #[macro_use] extern crate amplify_derive;
+///     #[macro_use] extern crate amplify;
+///
 ///     #[derive(Display)]
-///     #[display(Some::print)]
-///     struct Some { /* ... */ }
-///     impl Some {
+///     #[display(Variants::print)]
+///     enum Variants { A, B, C };
+///     impl Variants {
 ///         pub fn print(&self) -> String {
-///             "Some struct".to_string()
+///             s!("Variants")
 ///         }
 ///     }
 ///    ```
@@ -108,11 +121,9 @@ use syn::DeriveInput;
 #[proc_macro_derive(Display, attributes(display))]
 pub fn derive_display(input: TokenStream) -> TokenStream {
     let derive_input = parse_macro_input!(input as DeriveInput);
-    let s = display::inner(derive_input)
+    display::inner(derive_input)
         .unwrap_or_else(|e| e.to_compile_error())
-        .into();
-    print!("{}", s);
-    s
+        .into()
 }
 
         .unwrap_or_else(|e| e.to_compile_error())
