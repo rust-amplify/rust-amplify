@@ -253,6 +253,14 @@ pub fn derive_from(input: TokenStream) -> TokenStream {
         .into()
 }
 
+/// ```
+/// # #[macro_use] extern crate amplify_derive;
+/// #[derive(AsAny)]
+/// struct One {
+///     a: Vec<u8>,
+///     b: bool,
+/// }
+/// ```
 #[proc_macro_derive(AsAny)]
 pub fn derive_as_any(input: TokenStream) -> TokenStream {
     let derive_input = parse_macro_input!(input as DeriveInput);
@@ -261,6 +269,14 @@ pub fn derive_as_any(input: TokenStream) -> TokenStream {
         .into()
 }
 
+/// ```
+/// # #[macro_use] extern crate amplify_derive;
+/// #[derive(Getters)]
+/// struct One {
+///     a: Vec<u8>,
+///     b: bool,
+/// }
+/// ```
 #[proc_macro_derive(Getters)]
 pub fn derive_getters(input: TokenStream) -> TokenStream {
     let derive_input = parse_macro_input!(input as DeriveInput);

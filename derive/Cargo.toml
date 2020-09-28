@@ -1,8 +1,8 @@
 [package]
 name = "amplify_derive"
-version = "0.2.0"
+version = "1.0.0-beta.1"
 description = "Amplifying Rust language capabilities: derive macros for the 'amplify' library"
-authors = ["Elichai Turkel <elichai.turkel@gmail.com>", "Dr. Maxim Orlovsky <orlovsky@pandoracore.com>"]
+authors = ["Dr. Maxim Orlovsky <orlovsky@pandoracore.com>", "Elichai Turkel <elichai.turkel@gmail.com>"]
 keywords = ["generics", "derivc", "no_std", "wrap", "patterns"]
 categories = ["data-structures", "no-std", "rust-patterns"]
 repository = "https://github.com/LNP-BP/rust-amplify"
