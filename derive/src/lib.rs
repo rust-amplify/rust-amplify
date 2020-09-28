@@ -29,13 +29,19 @@ extern crate amplify;
 /// providing an example `$example` (third macro argument) of how the macro
 /// should be used.
 macro_rules! attr_err {
+    ($attr:expr, $msg:tt) => {
+        attr_err!($attr.span(), NAME, $msg, EXAMPLE);
+    };
     ($name:expr, $msg:tt, $example:tt) => {
         attr_err!(::syn::export::Span::call_site(), $name, $msg, $example);
     };
     ($attr:expr, $name:expr, $msg:tt, $example:tt) => {
         ::syn::Error::new(
             $attr.span(),
-            format!("Attribute {}: {}\nExample use: {}", $name, $msg, $example),
+            format!(
+                "Attribute `#[{}]`: {}\nExample use: {}",
+                $name, $msg, $example
+            ),
         );
     };
 }
@@ -43,6 +49,7 @@ macro_rules! attr_err {
 mod as_any;
 mod display;
 mod error;
+mod from;
 mod getters;
 
 use syn::export::TokenStream;
@@ -183,6 +190,69 @@ pub fn derive_display(input: TokenStream) -> TokenStream {
 pub fn derive_error(input: TokenStream) -> TokenStream {
     let derive_input = parse_macro_input!(input as DeriveInput);
     error::inner(derive_input)
+        .unwrap_or_else(|e| e.to_compile_error())
+        .into()
+}
+
+/// Implements [`From`] trait for the whole entity and/or its separate fields.
+/// Works well with `#[derive(Error)]` and, in many cases may require
+/// [`Default`] implementation (for details, pls see Examples below)
+///
+/// # Examples
+///
+/// ```
+/// # #[macro_use] extern crate amplify_derive;
+/// #
+/// #[derive(From, Error, Debug, Display, Default)]
+/// #[display(Debug)]
+/// #[from(::std::io::Error)]
+/// // When no explicit binding is given, structure must implement `Default`
+/// pub struct IoError {
+///     details: String,
+///
+///     // From with empty paretheis is the same as `#[from]`
+///     #[from()]
+///     kind: ::std::io::ErrorKind,
+/// }
+///
+/// #[derive(From, Error, Debug, Display)]
+/// #[display(Debug)]
+/// #[from(::std::io::Error)]
+/// // Alternatively, structure may contain no parameters
+/// pub struct IoErrorUnit;
+///
+/// #[derive(From, Error, Debug, Display)]
+/// #[display(doc_comments)]
+/// pub enum Error {
+///     /// I/O error
+///     #[from(::std::io::Error, IoError)]
+///     Io,
+///
+///     /// Formatting error
+///     #[from]
+///     Format(::std::fmt::Error),
+///
+///     /// Complex format error
+///     #[from]
+///     Complex { details: ::std::fmt::Error },
+///
+///     /// One error with multiple arguments
+///     Multiple {
+///         // ...and you can also covert error type
+///         #[from(::std::string::ParseError)]
+///         // rest of parameters must implement `Default`
+///         io: ::std::str::Utf8Error,
+///         details: String,
+///     },
+/// }
+///
+/// #[derive(From)]
+/// pub struct Wrapper(u32, i16);
+/// ```
+#[proc_macro_derive(From, attributes(from))]
+pub fn derive_from(input: TokenStream) -> TokenStream {
+    let derive_input = parse_macro_input!(input as DeriveInput);
+    from::inner(derive_input)
         .unwrap_or_else(|e| e.to_compile_error())
         .into()
 }

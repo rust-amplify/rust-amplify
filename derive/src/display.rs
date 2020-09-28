@@ -32,7 +32,7 @@ macro_rules! err {
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
-pub enum FormattingTrait {
+enum FormattingTrait {
     Debug,
     Octal,
     Binary,
@@ -99,7 +99,7 @@ impl FormattingTrait {
 }
 
 #[derive(Clone)]
-pub enum Technique {
+enum Technique {
     FromTrait(FormattingTrait),
     FromMethod(Path),
     WithFormat(LitStr),
