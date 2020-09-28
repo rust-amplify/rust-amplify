@@ -103,14 +103,16 @@ pub enum Technique {
     FromTrait(FormattingTrait),
     FromMethod(Path),
     WithFormat(LitStr),
+    DocComments,
 }
 
 impl Technique {
     pub fn from_attrs<'a>(
-        attrs: impl IntoIterator<Item = &'a Attribute>,
+        attrs: impl IntoIterator<Item = &'a Attribute> + Clone,
         span: Span,
     ) -> Result<Option<Self>> {
         let res = match attrs
+            .clone()
             .into_iter()
             .find(|attr| attr.path.is_ident(NAME))
             .map(|attr| attr.parse_meta())
@@ -123,6 +125,11 @@ impl Technique {
                 match list.nested.first() {
                     Some(NestedMeta::Lit(Lit::Str(format))) => {
                         Some(Self::WithFormat(format.clone()))
+                    }
+                    Some(NestedMeta::Meta(Meta::Path(path)))
+                        if path.is_ident("doc_comments") =>
+                    {
+                        Some(Self::DocComments)
                     }
                     Some(NestedMeta::Meta(Meta::Path(path))) => Some(
                         FormattingTrait::from_path(path, list.span())?
@@ -144,14 +151,13 @@ impl Technique {
         Ok(res)
     }
 
-    pub fn into_format(self, span: Span) -> Result<LitStr> {
-        Ok(match self {
-            Self::WithFormat(format) => format,
-            _ => err!(
-                span,
-                "enum variants may be formatted with string literal only"
-            ),
-        })
+    pub fn to_fmt(&self, span: Span) -> Option<TokenStream2> {
+        match self {
+            Self::FromTrait(fmt) => Some(fmt.into_token_stream2(span)),
+            Self::FromMethod(path) => Some(quote! {#path}),
+            Self::WithFormat(fmt) => Some(quote! {#fmt}),
+            Self::DocComments => None,
+        }
     }
 
     pub fn into_token_stream2(
@@ -165,14 +171,18 @@ impl Technique {
                 f.write_str(& #path (&self))
             },
             Technique::WithFormat(format) => {
+                let format = quote! { #format };
                 Self::impl_format(fields, &format, span)
+            }
+            Technique::DocComments => {
+                quote! {}
             }
         }
     }
 
     fn impl_format(
         fields: &Fields,
-        format: &LitStr,
+        format: &TokenStream2,
         span: Span,
     ) -> TokenStream2 {
         match fields {
@@ -204,6 +214,26 @@ impl Technique {
                 }
             }
         }
+    }
+
+    fn doc_attr(attrs: &Vec<Attribute>) -> Result<TokenStream2> {
+        attrs
+            .iter()
+            .filter(|attr| attr.path.is_ident("doc"))
+            .try_fold(TokenStream2::new(), |mut stream, attr| {
+                match attr.parse_meta() {
+                    Ok(Meta::NameValue(MetaNameValue { lit, .. })) => {
+                        stream.extend(quote! { #lit });
+                        Ok(stream)
+                    }
+                    _ => Err(attr_err!(
+                        attr.span(),
+                        NAME,
+                        "malformed doc attribute",
+                        EXAMPLE
+                    )),
+                }
+            })
     }
 }
 
@@ -248,9 +278,10 @@ fn inner_enum(input: &DeriveInput, data: &DataEnum) -> Result<TokenStream2> {
     let (impl_generics, ty_generics, where_clause) =
         input.generics.split_for_impl();
     let ident_name = &input.ident;
-    let mut display = vec![];
+    let mut display = TokenStream2::new();
 
     let global = Technique::from_attrs(&input.attrs, input.span())?;
+    let mut use_global = true;
 
     for v in &data.variants {
         let type_name = &v.ident;
@@ -258,73 +289,76 @@ fn inner_enum(input: &DeriveInput, data: &DataEnum) -> Result<TokenStream2> {
 
         let local = Technique::from_attrs(&v.attrs, v.span())?;
 
-        if global.is_some() {
-            if local.is_some() {
-                err!(v.span(), "attribute can't be used for enum and enum variant at the same time")
-            } else {
-                continue;
+        let doc = match global {
+            Some(Technique::DocComments) => {
+                use_global = false;
+                Some(Technique::doc_attr(&v.attrs)?)
             }
-        }
+            _ => None,
+        };
 
-        let format = local
-            .map(|t| t.into_format(v.span()))
-            .map_or(Ok(None), |r| r.map(Some))?;
+        let format = local.and_then(|t| t.to_fmt(v.span())).or(doc);
 
         match (&v.fields, &format) {
             (Fields::Named(_), None) => {
-                display.push(quote_spanned! { v.span() =>
+                display.extend(quote_spanned! { v.span() =>
                     Self::#type_name { .. } => f.write_str(concat!(#type_str, " { .. }")),
                 });
             }
             (Fields::Unnamed(_), None) => {
-                display.push(quote_spanned! { v.span() =>
+                display.extend(quote_spanned! { v.span() =>
                     Self::#type_name(..) => f.write_str(concat!(#type_str, "(..)")),
                 });
             }
             (Fields::Unit, None) => {
-                display.push(quote_spanned! { v.span() =>
+                display.extend(quote_spanned! { v.span() =>
                     Self::#type_name => f.write_str(#type_str),
                 });
             }
             (Fields::Named(fields), Some(format_str)) => {
+                use_global = false;
                 let idents = fields
                     .named
                     .iter()
                     .map(|f| f.ident.as_ref().unwrap())
                     .collect::<Vec<_>>();
-                display.push(quote_spanned! { v.span() =>
+                display.extend(quote_spanned! { v.span() =>
                     Self::#type_name { #( #idents, )* } => write!(f, #format_str, #( #idents = #idents, )*),
                 });
             }
             (Fields::Unnamed(fields), Some(format_str)) => {
+                use_global = false;
                 let idents = (0..fields.unnamed.len())
                     .map(|i| Ident::new(&format!("_{}", i), v.span()))
                     .collect::<Vec<_>>();
-                display.push(quote_spanned! { v.span() =>
+                display.extend(quote_spanned! { v.span() =>
                     Self::#type_name ( #( #idents, )* ) => write!(f, #format_str, #( #idents = #idents, )*),
                 });
             }
             (Fields::Unit, Some(format_str)) => {
-                display.push(quote_spanned! { v.span() =>
+                use_global = false;
+                display.extend(quote_spanned! { v.span() =>
                     Self::#type_name => f.write_str(#format_str),
                 });
             }
         }
     }
 
-    let content = match global {
-        Some(tenchique) => {
-            tenchique.into_token_stream2(&Fields::Unit, input.span())
-        }
-        None => quote! {
+    let content = match (use_global, global) {
+        (false, _) => quote! {
             match self {
-                #( #display )*
+                #display
             }
         },
+        (true, Some(tenchique)) => {
+            tenchique.into_token_stream2(&Fields::Unit, input.span())
+        }
+        _ => unreachable!(),
     };
+
     Ok(quote! {
         impl #impl_generics ::std::fmt::Display for #ident_name #ty_generics #where_clause {
-            fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+            fn fmt(&self, mut f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
                 #content
             }
         }
@@ -348,8 +382,7 @@ fn inner_union(input: &DeriveInput, data: &DataUnion) -> Result<TokenStream2> {
 
         let format = Technique::from_attrs(&field.attrs, field.span())?
             .or(global.clone())
-            .map(|t| t.into_format(field.span()))
-            .map_or(Ok(None), |r| r.map(Some))?;
+            .and_then(|t| t.to_fmt(field.span()));
 
         match format {
             None => {
@@ -377,7 +410,7 @@ fn inner_union(input: &DeriveInput, data: &DataUnion) -> Result<TokenStream2> {
     };
     Ok(quote! {
         impl #impl_generics ::std::fmt::Display for #ident_name #ty_generics #where_clause {
-            fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+            fn fmt(&self, mut f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
                 #content
             }
         }
