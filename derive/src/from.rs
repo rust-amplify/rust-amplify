@@ -35,12 +35,17 @@ macro_rules! err {
 #[derive(Clone, PartialEq, Eq, Debug)]
 enum InstructionEntity {
     Default,
+    DefaultEnumFields {
+        variant: Ident,
+        fields: Vec<Ident>,
+    },
     Unit {
         variant: Option<Ident>,
     },
     Named {
         variant: Option<Ident>,
         field: Ident,
+        other: Vec<Ident>,
     },
     Unnamed {
         variant: Option<Ident>,
@@ -54,31 +59,47 @@ impl InstructionEntity {
         fields: &Fields,
         variant: Option<Ident>,
     ) -> Result<Self> {
-        let res = match (
-            fields.len(),
-            variant.is_some(),
-            fields,
-            fields.iter().next(),
-        ) {
-            (0, true, ..) => InstructionEntity::Unit { variant },
-            (1, _, Fields::Named(_), Some(Field { ident: Some(i), .. })) => {
-                InstructionEntity::Named {
+        let res = match (fields.len(), variant, fields, fields.iter().next()) {
+            (0, Some(v), ..) => InstructionEntity::Unit { variant: Some(v) },
+            (_, variant, Fields::Unit, ..) => {
+                InstructionEntity::Unit { variant }
+            }
+            (
+                1,
+                variant,
+                Fields::Named(f),
+                Some(Field { ident: Some(i), .. }),
+            ) => InstructionEntity::Named {
+                variant,
+                field: i.clone(),
+                other: f
+                    .named
+                    .iter()
+                    .filter_map(|f| f.ident.clone())
+                    .filter(|ident| ident != i)
+                    .collect(),
+            },
+            (1, _, Fields::Named(_), ..) => unreachable!(
+                "If we have named field, it will match previous option"
+            ),
+            (_, Some(variant), Fields::Named(f), ..) => {
+                InstructionEntity::DefaultEnumFields {
                     variant,
-                    field: i.clone(),
+                    fields: f
+                        .named
+                        .iter()
+                        .filter_map(|f| f.ident.clone())
+                        .collect(),
                 }
             }
-            (1, _, Fields::Named(_), ..) => unreachable!(),
-            (1, _, Fields::Unnamed(_), ..) => InstructionEntity::Unnamed {
-                variant,
-                index: 0,
-                total: 1,
-            },
-            (_, false, ..) => InstructionEntity::Default,
-            (_, true, ..) => err!(
-                fields.span(),
-                "allowed only for enum variants with no or \
-                 a single field"
-            ),
+            (len, variant, Fields::Unnamed(_), ..) => {
+                InstructionEntity::Unnamed {
+                    variant,
+                    index: 0,
+                    total: len,
+                }
+            }
+            (_, None, ..) => InstructionEntity::Default,
         };
         Ok(res)
     }
@@ -87,12 +108,18 @@ impl InstructionEntity {
         index: usize,
         total: usize,
         field: &Field,
+        fields: &Fields,
         variant: Option<Ident>,
     ) -> Self {
         if let Some(ref ident) = field.ident {
             InstructionEntity::Named {
                 variant,
                 field: ident.clone(),
+                other: fields
+                    .iter()
+                    .filter_map(|f| f.ident.clone())
+                    .filter(|i| ident != i)
+                    .collect(),
             }
         } else {
             InstructionEntity::Unnamed {
@@ -115,6 +142,7 @@ impl InstructionEntity {
             InstructionEntity::Named {
                 variant: None,
                 field,
+                ..
             } => {
                 quote! {
                     Self { #field: v.into(), ..Default::default() }
@@ -123,9 +151,10 @@ impl InstructionEntity {
             InstructionEntity::Named {
                 variant: Some(var),
                 field,
+                other,
             } => {
                 quote! {
-                    Self :: #var { #field: v.into() }
+                    Self :: #var { #field: v.into(), #( #other: Default::default(), )* }
                 }
             }
             InstructionEntity::Unnamed {
@@ -148,6 +177,11 @@ impl InstructionEntity {
                 );
                 quote! {
                     Self #var ( #prefix v.into(), #suffix )
+                }
+            }
+            InstructionEntity::DefaultEnumFields { variant, fields } => {
+                quote! {
+                    Self #variant { #( #fields: Default::default() )* }
                 }
             }
         }
@@ -253,6 +287,7 @@ impl InstructionTable {
                     index,
                     fields.len(),
                     field,
+                    &fields,
                     variant.clone(),
                 ),
             )?)?;
@@ -307,10 +342,6 @@ pub(crate) fn inner(input: DeriveInput) -> Result<TokenStream2> {
         Data::Enum(ref data) => inner_enum(&input, data),
         Data::Union(ref data) => inner_union(&input, data),
     }
-    .map(|stream| {
-        println!("{}", stream);
-        stream
-    })
 }
 
 fn inner_struct(

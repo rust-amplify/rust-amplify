@@ -17,6 +17,8 @@
 #![recursion_limit = "256"]
 #![cfg_attr(test, deny(warnings))]
 #![allow(dead_code)]
+#![feature(bool_to_option)]
+#![feature(move_ref_pattern)]
 
 #[macro_use]
 extern crate quote;
@@ -230,15 +232,14 @@ pub fn derive_error(input: TokenStream) -> TokenStream {
 ///
 ///     #[from]
 ///     WithFields { details: ::std::str::Utf8Error },
-///     /*
+///
 ///     MultipleFields {
 ///         // ...and you can also covert error type
-///         #[from(::std::string::ParseError)]
+///         #[from(IoErrorUnit)]
 ///         // rest of parameters must implement `Default`
-///         io: ::std::str::Utf8Error,
+///         io: IoError,
 ///         details: String,
 ///     },
-///     */
 /// }
 ///
 /// #[derive(From)]
