@@ -54,6 +54,7 @@ mod display;
 mod error;
 mod from;
 mod getters;
+mod wrapper;
 
 use syn::export::TokenStream;
 use syn::DeriveInput;
@@ -281,6 +282,25 @@ pub fn derive_as_any(input: TokenStream) -> TokenStream {
 pub fn derive_getters(input: TokenStream) -> TokenStream {
     let derive_input = parse_macro_input!(input as DeriveInput);
     getters::inner(derive_input)
+        .unwrap_or_else(|e| e.to_compile_error())
+        .into()
+}
+
+/// ```ignore
+/// # #[macro_use] extern crate amplify_derive;
+/// # use std::collections::HashMap;
+/// use std::marker::PhantomData;
+///
+/// #[derive(Clone, Wrapper)]
+/// #[wrap(Debug, Default, Hash, PartialEq, Eq)]
+/// struct Wrapped<T, U>(HashMap<usize, Vec<U>>, PhantomData<T>)
+/// where
+///     U: Sized + Eq;
+/// ```
+#[proc_macro_derive(Wrapper)]
+pub fn derive_wrapper(input: TokenStream) -> TokenStream {
+    let derive_input = parse_macro_input!(input as DeriveInput);
+    wrapper::inner(derive_input)
         .unwrap_or_else(|e| e.to_compile_error())
         .into()
 }
