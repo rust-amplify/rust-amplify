@@ -16,6 +16,7 @@
 
 #![recursion_limit = "256"]
 #![cfg_attr(test, deny(warnings))]
+#![allow(dead_code)]
 
 #[macro_use]
 extern crate quote;
@@ -203,47 +204,41 @@ pub fn derive_error(input: TokenStream) -> TokenStream {
 /// ```
 /// # #[macro_use] extern crate amplify_derive;
 /// #
-/// #[derive(From, Error, Debug, Display, Default)]
-/// #[display(Debug)]
+/// #[derive(From, Default)]
 /// #[from(::std::io::Error)]
-/// // When no explicit binding is given, structure must implement `Default`
+/// // Structure may contain no parameters
+/// pub struct IoErrorUnit;
+///
+/// #[derive(From, Default)]
+/// #[from(::std::io::Error)] // When no explicit binding is given, structure must implement `Default`
 /// pub struct IoError {
 ///     details: String,
 ///
-///     // From with empty paretheis is the same as `#[from]`
-///     #[from()]
-///     kind: ::std::io::ErrorKind,
+///     #[from]
+///     kind: IoErrorUnit,
 /// }
 ///
-/// #[derive(From, Error, Debug, Display)]
-/// #[display(Debug)]
-/// #[from(::std::io::Error)]
-/// // Alternatively, structure may contain no parameters
-/// pub struct IoErrorUnit;
-///
-/// #[derive(From, Error, Debug, Display)]
-/// #[display(doc_comments)]
+/// #[derive(From)]
 /// pub enum Error {
-///     /// I/O error
-///     #[from(::std::io::Error, IoError)]
+///     // You can specify multiple conversions with separate attributes
+///     #[from(::std::io::Error)]
+///     #[from(IoError)]
 ///     Io,
 ///
-///     /// Formatting error
 ///     #[from]
 ///     Format(::std::fmt::Error),
 ///
-///     /// Complex format error
 ///     #[from]
-///     Complex { details: ::std::fmt::Error },
-///
-///     /// One error with multiple arguments
-///     Multiple {
+///     WithFields { details: ::std::str::Utf8Error },
+///     /*
+///     MultipleFields {
 ///         // ...and you can also covert error type
 ///         #[from(::std::string::ParseError)]
 ///         // rest of parameters must implement `Default`
 ///         io: ::std::str::Utf8Error,
 ///         details: String,
 ///     },
+///     */
 /// }
 ///
 /// #[derive(From)]

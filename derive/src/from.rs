@@ -15,15 +15,16 @@
 // If not, see <https://opensource.org/licenses/MIT>.
 
 use syn::export::{Span, TokenStream2};
+use syn::punctuated::Punctuated;
 use syn::spanned::Spanned;
 use syn::{
     Attribute, Data, DataEnum, DataStruct, DataUnion, DeriveInput, Error,
-    Field, Fields, Ident, Meta, MetaList, NestedMeta, Path, Result, Type,
+    Field, Fields, FieldsNamed, FieldsUnnamed, Ident, Path, Result, Type,
     TypePath,
 };
 
 const NAME: &'static str = "from";
-const EXAMPLE: &'static str = r#"#[from(Error1, Error2)]"#;
+const EXAMPLE: &'static str = r#"#[from(::std::fmt::Error)]"#;
 
 macro_rules! err {
     ( $span:expr, $msg:literal ) => {
@@ -44,19 +45,47 @@ enum InstructionEntity {
     Unnamed {
         variant: Option<Ident>,
         index: usize,
+        total: usize,
     },
 }
 
 impl InstructionEntity {
-    pub fn with_fields(fields: &Fields, variant: Option<Ident>) -> Self {
-        match fields.len() {
-            0 => InstructionEntity::Unit { variant },
-            _ => InstructionEntity::Default,
-        }
+    pub fn with_fields(
+        fields: &Fields,
+        variant: Option<Ident>,
+    ) -> Result<Self> {
+        let res = match (
+            fields.len(),
+            variant.is_some(),
+            fields,
+            fields.iter().next(),
+        ) {
+            (0, true, ..) => InstructionEntity::Unit { variant },
+            (1, _, Fields::Named(_), Some(Field { ident: Some(i), .. })) => {
+                InstructionEntity::Named {
+                    variant,
+                    field: i.clone(),
+                }
+            }
+            (1, _, Fields::Named(_), ..) => unreachable!(),
+            (1, _, Fields::Unnamed(_), ..) => InstructionEntity::Unnamed {
+                variant,
+                index: 0,
+                total: 1,
+            },
+            (_, false, ..) => InstructionEntity::Default,
+            (_, true, ..) => err!(
+                fields.span(),
+                "allowed only for enum variants with no or \
+                 a single field"
+            ),
+        };
+        Ok(res)
     }
 
     pub fn with_field(
         index: usize,
+        total: usize,
         field: &Field,
         variant: Option<Ident>,
     ) -> Self {
@@ -66,34 +95,59 @@ impl InstructionEntity {
                 field: ident.clone(),
             }
         } else {
-            InstructionEntity::Unnamed { variant, index }
+            InstructionEntity::Unnamed {
+                variant,
+                index,
+                total,
+            }
         }
     }
 
     pub fn into_token_stream2(self) -> TokenStream2 {
         match self {
             InstructionEntity::Default => quote! {
-                Self::default();
+                Self::default()
             },
             InstructionEntity::Unit { variant } => {
                 let var = variant.map_or(quote! {}, |v| quote! {:: #v});
                 quote! { Self #var }
             }
-            InstructionEntity::Named { variant, field } => {
-                let var = variant.map_or(quote! {}, |v| quote! {:: #v});
+            InstructionEntity::Named {
+                variant: None,
+                field,
+            } => {
                 quote! {
-                    Self #var { #field: v.into(), ..Default::default() }
+                    Self { #field: v.into(), ..Default::default() }
                 }
             }
-            InstructionEntity::Unnamed { variant, index } => {
+            InstructionEntity::Named {
+                variant: Some(var),
+                field,
+            } => {
+                quote! {
+                    Self :: #var { #field: v.into() }
+                }
+            }
+            InstructionEntity::Unnamed {
+                variant,
+                index,
+                total,
+            } => {
                 let var = variant.map_or(quote! {}, |v| quote! {:: #v});
                 let prefix =
                     (0..index).fold(TokenStream2::new(), |mut stream, _| {
                         stream.extend(quote! {Default::default(),});
                         stream
                     });
+                let suffix = ((index + 1)..total).fold(
+                    TokenStream2::new(),
+                    |mut stream, _| {
+                        stream.extend(quote! {Default::default(),});
+                        stream
+                    },
+                );
                 quote! {
-                    Self #var ( #prefix v.into(), ..Default::default() )
+                    Self #var ( #prefix v.into(), #suffix )
                 }
             }
         }
@@ -136,41 +190,24 @@ impl InstructionEntry {
     ) -> Result<Vec<InstructionEntry>> {
         let mut list = Vec::<InstructionEntry>::new();
         for attr in attrs.iter().filter(|attr| attr.path.is_ident(NAME)) {
-            match attr.parse_meta()? {
-                // #[from]
-                Meta::Path(_) => match (fields.len(), fields.iter().next()) {
+            // #[from]
+            if attr.tokens.is_empty() {
+                match (fields.len(), fields.iter().next()) {
                     (1, Some(field)) => list
                         .push(InstructionEntry::with_type(&field.ty, &entity)),
                     _ => err!(
-                        attr.span(),
-                        "empty `#[from]` attribute allowed only for entities \
-                             with a single field; for multi-field entities \
-                             specify `#[from]` right ahead of the target field"
+                        attr,
+                        "empty attribute is allowed only for entities \
+                         with a single field; for multi-field entities \
+                         specify the attribute right ahead of the target field"
                     ),
-                },
-
-                // #[from(A,B)]
-                Meta::List(MetaList { nested, .. }) => {
-                    for meta in &nested {
-                        match meta {
-                            NestedMeta::Meta(Meta::Path(path)) => list.push(
-                                InstructionEntry::with_path(&path, &entity),
-                            ),
-                            NestedMeta::Meta(_) => {
-                                err!(nested.span(), "wrong type name")
-                            }
-                            NestedMeta::Lit(_) => {
-                                err!(nested.span(), "unexpected literal")
-                            }
-                        }
-                    }
                 }
-
-                // #[from="..."]
-                Meta::NameValue(p) => {
-                    err!(p.span(), "do not use quotes; use `()` instead")
-                }
-            };
+            } else {
+                list.push(InstructionEntry::with_path(
+                    &attr.parse_args()?,
+                    &entity,
+                ));
+            }
         }
         Ok(list)
     }
@@ -193,13 +230,31 @@ impl InstructionTable {
         self.extend(InstructionEntry::parse(
             &fields,
             &attrs,
-            InstructionEntity::with_fields(fields, variant.clone()),
+            InstructionEntity::with_fields(fields, variant.clone())?,
         )?)?;
         for (index, field) in fields.iter().enumerate() {
+            let mut punctuated = Punctuated::new();
+            punctuated.push_value(field.clone());
             self.extend(InstructionEntry::parse(
-                &fields,
+                &field.ident.as_ref().map_or(
+                    Fields::Unnamed(FieldsUnnamed {
+                        paren_token: Default::default(),
+                        unnamed: punctuated.clone(),
+                    }),
+                    |_| {
+                        Fields::Named(FieldsNamed {
+                            brace_token: Default::default(),
+                            named: punctuated,
+                        })
+                    },
+                ),
                 &field.attrs,
-                InstructionEntity::with_field(index, field, variant.clone()),
+                InstructionEntity::with_field(
+                    index,
+                    fields.len(),
+                    field,
+                    variant.clone(),
+                ),
             )?)?;
         }
         Ok(self)
@@ -252,6 +307,10 @@ pub(crate) fn inner(input: DeriveInput) -> Result<TokenStream2> {
         Data::Enum(ref data) => inner_enum(&input, data),
         Data::Union(ref data) => inner_union(&input, data),
     }
+    .map(|stream| {
+        println!("{}", stream);
+        stream
+    })
 }
 
 fn inner_struct(
