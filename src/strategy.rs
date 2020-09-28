@@ -15,8 +15,9 @@
 // If not, see <https://opensource.org/licenses/MIT>.
 
 //! This is a trick for rust compiler helping to distinguish types implementing
-//! mutually-exclusive traits (required until negative trait impls will be there)
-//! Implemented after concept by Martin Habovštiak <martin.habovstiak@gmail.com>
+//! mutually-exclusive traits (required until negative trait impls will be
+//! there) Implemented after concept by Martin Habovštiak
+//! <martin.habovstiak@gmail.com>
 
 use ::core::marker::PhantomData;
 
