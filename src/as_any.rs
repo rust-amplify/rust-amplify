@@ -138,3 +138,38 @@ impl<T, U> AsAny for (T, U) {
     }
 }
 */
+
+#[cfg(test)]
+mod test {
+    use super::AsAny;
+
+    #[test]
+    fn test_as_any_correct() {
+        assert_eq!(1usize.as_any().downcast_ref::<usize>().unwrap(), &1usize);
+        assert_eq!(1u8.as_any().downcast_ref::<u8>().unwrap(), &1u8);
+        assert_eq!(1u16.as_any().downcast_ref::<u16>().unwrap(), &1u16);
+        assert_eq!(1u32.as_any().downcast_ref::<u32>().unwrap(), &1u32);
+        assert_eq!(1u64.as_any().downcast_ref::<u64>().unwrap(), &1u64);
+        assert_eq!(1u128.as_any().downcast_ref::<u128>().unwrap(), &1u128);
+        assert_eq!(1i8.as_any().downcast_ref::<i8>().unwrap(), &1i8);
+        assert_eq!(1i16.as_any().downcast_ref::<i16>().unwrap(), &1i16);
+        assert_eq!(1i32.as_any().downcast_ref::<i32>().unwrap(), &1i32);
+        assert_eq!(1i64.as_any().downcast_ref::<i64>().unwrap(), &1i64);
+        assert_eq!(1i128.as_any().downcast_ref::<i128>().unwrap(), &1i128);
+        assert_eq!(
+            s!("string").as_any().downcast_ref::<String>().unwrap(),
+            &"string"
+        );
+    }
+
+    #[test]
+    fn test_as_any_wrong() {
+        assert!(1usize.as_any().downcast_ref::<u32>().is_none());
+        assert!(1i8.as_any().downcast_ref::<u8>().is_none());
+        assert!(1i16.as_any().downcast_ref::<u16>().is_none());
+        assert!(1i32.as_any().downcast_ref::<u32>().is_none());
+        assert!(1i64.as_any().downcast_ref::<u64>().is_none());
+        assert!(1i128.as_any().downcast_ref::<u128>().is_none());
+        assert!(s!("str").as_any().downcast_ref::<&str>().is_none());
+    }
+}
