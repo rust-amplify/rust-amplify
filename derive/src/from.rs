@@ -19,8 +19,7 @@ use syn::punctuated::Punctuated;
 use syn::spanned::Spanned;
 use syn::{
     Attribute, Data, DataEnum, DataStruct, DataUnion, DeriveInput, Error,
-    Field, Fields, FieldsNamed, FieldsUnnamed, Ident, Path, Result, Type,
-    TypePath,
+    Field, Fields, FieldsNamed, FieldsUnnamed, Ident, Result, Type,
 };
 
 const NAME: &'static str = "from";
@@ -212,16 +211,6 @@ impl InstructionEntry {
         Self(ty.clone(), entity.clone())
     }
 
-    pub fn with_path(path: &Path, entity: &InstructionEntity) -> Self {
-        Self(
-            Type::Path(TypePath {
-                path: path.clone(),
-                qself: None,
-            }),
-            entity.clone(),
-        )
-    }
-
     pub fn parse(
         fields: &Fields,
         attrs: &Vec<Attribute>,
@@ -242,7 +231,7 @@ impl InstructionEntry {
                     ),
                 }
             } else {
-                list.push(InstructionEntry::with_path(
+                list.push(InstructionEntry::with_type(
                     &attr.parse_args()?,
                     &entity,
                 ));

@@ -262,6 +262,25 @@ pub fn derive_error(input: TokenStream) -> TokenStream {
 /// #[derive(From)]
 /// pub struct Wrapper(u32, i16);
 /// ```
+///
+/// If you use rust nightly and `#![feature(never_type)]` for [`!`], you can
+/// even do the following:
+/// ```ignore
+/// #![feature(never_type)]
+///
+/// #[macro_use]
+/// extern crate amplify_derive;
+///
+/// #[derive(From)]
+/// pub enum Error {
+///     // ... other error types
+///     #[from(!)]
+///     NeverType,
+/// }
+///
+/// # fn main () {
+/// # }
+/// ```
 #[proc_macro_derive(From, attributes(from))]
 pub fn derive_from(input: TokenStream) -> TokenStream {
     let derive_input = parse_macro_input!(input as DeriveInput);
