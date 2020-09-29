@@ -7,6 +7,8 @@
 Amplifying Rust language capabilities: multiple generic trait implementations, 
 type wrappers, derive macros.
 
+Minimum supported rust compiler version (MSRV): 1.46 (stable channel)
+
 ## Main features
 
 ### Derive macros
@@ -72,9 +74,6 @@ TODO: write description
 
 ## Build
 
-Important: for now this library uses rust nightly version, to unlock most
-of Rust language power. This will change in the future with overall library
-maturation.
 
 ```shell script
 rustup install nightly

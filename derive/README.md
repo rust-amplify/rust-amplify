@@ -10,6 +10,8 @@ type wrappers, derive macros.
 This is a part of Rust language amplification library providing required derive
 macros.
 
+Minimum supported rust compiler version (MSRV): 1.46 (stable channel)
+
 ## Overview
 
 - [Display](#display-derive)
