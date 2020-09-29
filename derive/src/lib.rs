@@ -137,13 +137,15 @@ use syn::DeriveInput;
 /// Advanced use with enums:
 /// ```
 /// # #[macro_use] extern crate amplify_derive;
-/// #[derive(Debug, Display)]
-/// #[display(Debug)]
+/// #[derive(Display)]
 /// enum Test {
 ///     Some,
 ///
 ///     #[display = "OtherName"]
 ///     Other,
+///
+///     /// Document comment working as display string
+///     Commented,
 ///
 ///     Named {
 ///         x: u8,
