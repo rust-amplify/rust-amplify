@@ -17,8 +17,6 @@
 #![recursion_limit = "256"]
 #![cfg_attr(test, deny(warnings))]
 #![allow(dead_code)]
-#![feature(bool_to_option)]
-#![feature(move_ref_pattern)]
 
 #[macro_use]
 extern crate quote;

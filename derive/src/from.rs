@@ -59,7 +59,12 @@ impl InstructionEntity {
         fields: &Fields,
         variant: Option<Ident>,
     ) -> Result<Self> {
-        let res = match (fields.len(), variant, fields, fields.iter().next()) {
+        let res = match (
+            fields.len(),
+            variant,
+            fields.clone(),
+            fields.iter().next().cloned(),
+        ) {
             (0, Some(v), ..) => InstructionEntity::Unit { variant: Some(v) },
             (_, variant, Fields::Unit, ..) => {
                 InstructionEntity::Unit { variant }
@@ -76,7 +81,7 @@ impl InstructionEntity {
                     .named
                     .iter()
                     .filter_map(|f| f.ident.clone())
-                    .filter(|ident| ident != i)
+                    .filter(|ident| ident != &i)
                     .collect(),
             },
             (1, _, Fields::Named(_), ..) => unreachable!(
