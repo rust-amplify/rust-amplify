@@ -2,22 +2,22 @@
 # It is not intended for manual editing.
 [[package]]
 name = "amplify"
-version = "1.0.0-beta.1"
+version = "1.0.0"
 dependencies = [
  "serde",
 ]
 
 [[package]]
 name = "amplify"
-version = "1.0.0-beta.1"
+version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0ff3e43900177713959949e5143190828d5772f61531992ae3330e70f31e35b2"
+checksum = "f7bb80c6461fdb3caa8c0ebbbcbe340f66ee0b240ec0e6b55a2f980b5f10917c"
 
 [[package]]
 name = "amplify_derive"
-version = "1.0.0-beta.1"
+version = "1.0.0"
 dependencies = [
- "amplify 1.0.0-beta.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "amplify 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "quote",
  "syn",
 ]
