@@ -96,6 +96,7 @@ macro_rules! impl_into_stringly {
     }
 }
 
+/// Implements `impl_into_stringly` for `$type` and traits with `$type`
 #[macro_export]
 macro_rules! impl_into_stringly_standard {
     ($type:ty) => {

@@ -270,13 +270,46 @@ pub fn derive_from(input: TokenStream) -> TokenStream {
         .into()
 }
 
+/// Trait [`amplify::AsAny`] allows simple conversion of any type into a generic
+/// "thick" pointer `&dyn Any` (see [`::core::any::Any`]), that can be later
+/// converted back to the original type with a graceful failing for all other
+/// conversions. `AsAny` derive macro allows to implement this trait for
+/// arbitrary time without much hussle:
+///
+/// # Example
+///
 /// ```
 /// # #[macro_use] extern crate amplify_derive;
-/// #[derive(AsAny)]
-/// struct One {
-///     a: Vec<u8>,
-///     b: bool,
+/// extern crate amplify;
+/// use amplify::AsAny;
+///
+/// #[derive(AsAny, Copy, Clone, PartialEq, Eq, Debug)]
+/// struct Point {
+///     pub x: u64,
+///     pub y: u64,
 /// }
+///
+/// #[derive(AsAny, PartialEq, Debug)]
+/// struct Circle {
+///     pub radius: f64,
+///     pub center: Point,
+/// }
+///
+/// let mut point = Point { x: 1, y: 2 };
+/// let point_ptr = point.as_any();
+///
+/// let mut circle = Circle {
+///     radius: 18.,
+///     center: point,
+/// };
+/// let circle_ptr = circle.as_any();
+///
+/// assert_eq!(point_ptr.downcast_ref(), Some(&point));
+/// assert_eq!(circle_ptr.downcast_ref(), Some(&circle));
+/// assert_eq!(circle_ptr.downcast_ref::<Point>(), None);
+///
+/// let p = point_ptr.downcast_ref::<Point>().unwrap();
+/// assert_eq!(p.x, 1)
 /// ```
 #[proc_macro_derive(AsAny)]
 pub fn derive_as_any(input: TokenStream) -> TokenStream {

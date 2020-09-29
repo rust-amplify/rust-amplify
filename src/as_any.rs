@@ -15,12 +15,52 @@
 // If not, see <https://opensource.org/licenses/MIT>.
 
 use ::core::any::Any;
-//use ::std::collections::{BTreeMap, BTreeSet, HashMap, HashSet, VecDeque};
 
-// TODO: We can't do a default implementation with current rust compiler
-//       limitations, but we can do a derive macro for an automatic
-//       implementation of the trait, which is trivial
+/// Trait `AsAny` allows simple conversion of any type into a generic "thick"
+/// pointer `&dyn Any` (see [`::core::any::Any`]), that can be later converted
+/// back to the original type with a graceful failing for all other conversions.
+/// For simple conversions it is recommended to use `#[derive(AsAny)]` macro
+/// from `amplify_derive` crate (see [`amplify_derive::AsAny`]).
+///
+/// # Example
+///
+/// ```compile_fail
+/// #[macro_use]
+/// extern crate amplify_derive;
+/// extern crate amplify;
+/// use amplify::AsAny;
+///
+/// #[derive(AsAny, Copy, Clone, PartialEq, Eq, Debug)]
+/// struct Point {
+///     pub x: u64,
+///     pub y: u64,
+/// }
+///
+/// #[derive(AsAny, PartialEq, Debug)]
+/// struct Circle {
+///     pub radius: f64,
+///     pub center: Point,
+/// }
+///
+/// let mut point = Point { x: 1, y: 2 };
+/// let point_ptr = point.as_any();
+///
+/// let mut circle = Circle {
+///     radius: 18.,
+///     center: point,
+/// };
+/// let circle_ptr = circle.as_any();
+///
+/// assert_eq!(point_ptr.downcast_ref(), Some(&point));
+/// assert_eq!(circle_ptr.downcast_ref(), Some(&circle));
+/// assert_eq!(circle_ptr.downcast_ref::<Point>(), None);
+///
+/// let p = point_ptr.downcast_ref::<Point>().unwrap();
+/// assert_eq!(p.x, 1)
+/// ```
 pub trait AsAny {
+    /// Returns thick pointer of `&dyn Any` type, that can be later downcasted
+    /// back to a reference of the original type.
     fn as_any(&self) -> &dyn Any;
 }
 
@@ -95,49 +135,6 @@ impl AsAny for String {
         self as &dyn Any
     }
 }
-/*
-impl<'a, T> AsAny for Vec<T> {
-    fn as_any(&'a self) -> &'a dyn Any {
-        self as &'a dyn Any
-    }
-}
-
-impl<T> AsAny for HashSet<T> {
-    fn as_any(&self) -> &dyn Any {
-        self as &dyn Any
-    }
-}
-
-impl<T, U> AsAny for HashMap<T, U> {
-    fn as_any(&self) -> &dyn Any {
-        self as &dyn Any
-    }
-}
-
-impl<T> AsAny for BTreeSet<T> {
-    fn as_any(&self) -> &dyn Any {
-        self as &dyn Any
-    }
-}
-
-impl<T, U> AsAny for BTreeMap<T, U> {
-    fn as_any(&self) -> &dyn Any {
-        self as &dyn Any
-    }
-}
-
-impl<T> AsAny for VecDeque<T> {
-    fn as_any(&self) -> &dyn Any {
-        self as &dyn Any
-    }
-}
-
-impl<T, U> AsAny for (T, U) {
-    fn as_any(&self) -> &dyn Any {
-        self as &dyn Any
-    }
-}
-*/
 
 #[cfg(test)]
 mod test {

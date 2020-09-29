@@ -14,7 +14,14 @@
 // along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
+/// Trait defining wrapped types ("newtypes" in rust terminology). Wrapped
+/// types are used for allowing implemeting foreign traits to foreign types:
+/// <https://doc.rust-lang.org/stable/rust-by-example/generics/new_types.html>
+///
+/// Trait defines convenient methods for accessing inner data, construct
+/// and deconstruct newtype. It also serves as a marker trait for newtypes.
 pub trait Wrapper {
+    /// Inner type wrapped by the current newtype
     type Inner: Clone;
 
     /// Instantiates wrapper type with the inner data
@@ -35,6 +42,18 @@ pub trait Wrapper {
 
 // TODO: Add generic support to the wrapper
 // TODO: Convert to derive macro
+/// Macro simplifying creation of new wrapped types. It automatically implements
+/// [`Wrapper`] trait, adds default implementation for the following traits:
+/// * [`AsRef`]
+/// * [`AsMut`]
+/// * [`Borrow`]
+/// * [`BorrowMut`]
+/// * [`Deref`]
+/// * [`DerefMut`]
+/// * [`From`]`<Wrapper>`
+/// * [`From`]`<Inner>`
+///
+/// Macro allows to add custom derives to the newtype using `derive` argument
 #[macro_export]
 macro_rules! wrapper {
     ($name:ident, $from:ty, $docs:meta, derive=[$( $derive:ident ),+]) => {

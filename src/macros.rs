@@ -14,6 +14,23 @@
 // along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
+/// Macro for quick & simple `&str` -> `String` conversion:
+/// ```
+/// #[macro_use]
+/// extern crate amplify;
+///
+/// # fn main() {
+/// enum Error {
+///     Io(String),
+/// }
+///
+/// impl From<std::io::Error> for Error {
+///     fn from(err: std::io::Error) -> Error {
+///         Self::Io(s!("I/O error"))
+///     }
+/// }
+/// # }
+/// ```
 #[macro_export]
 macro_rules! s {
     ( $str:literal ) => {
@@ -21,6 +38,19 @@ macro_rules! s {
     };
 }
 
+/// Macro for creating [`HashMap`] in the same manner as `vec!` is used for
+/// [`Vec`]:
+/// ```
+/// #[macro_use]
+/// extern crate amplify;
+///
+/// # fn main() {
+/// let map = map! {
+///     s!("key") => 5,
+///     s!("other_key") => 10
+/// };
+/// # }
+/// ```
 #[macro_export]
 macro_rules! map {
     { } =>  {
@@ -40,6 +70,26 @@ macro_rules! map {
     }
 }
 
+/// Macro for creating [`HashSet`] in the same manner as `vec!` is used for
+/// [`Vec`]:
+/// ```
+/// #[macro_use]
+/// extern crate amplify;
+///
+/// # fn main() {
+/// let map = set![5, 6, 7];
+/// # }
+/// ```
+///
+/// NB: you can't use repeated values with [`HashSet`], unlike to [`Vec`]'s:
+/// ```
+/// #[macro_use]
+/// extern crate amplify;
+///
+/// # fn main() {
+/// assert_eq!(set![1, 2, 3, 1], set![1, 2, 3]);
+/// # }
+/// ```
 #[macro_export]
 macro_rules! set {
     { } =>  {
@@ -59,6 +109,19 @@ macro_rules! set {
     }
 }
 
+/// Macro for creating [`BTreeMap`] in the same manner as `vec!` is used for
+/// [`Vec`]:
+/// ```
+/// #[macro_use]
+/// extern crate amplify;
+///
+/// # fn main() {
+/// let map = bmap! {
+///     s!("key") => 5,
+///     s!("other_key") => 10
+/// };
+/// # }
+/// ```
 #[macro_export]
 macro_rules! bmap {
     { } =>  {
@@ -78,6 +141,26 @@ macro_rules! bmap {
     }
 }
 
+/// Macro for creating [`BTreeSet`] in the same manner as `vec!` is used for
+/// [`Vec`]:
+/// ```
+/// #[macro_use]
+/// extern crate amplify;
+///
+/// # fn main() {
+/// let map = bset![5, 6, 7];
+/// # }
+/// ```
+///
+/// NB: you can't use repeated values with [`HashSet`], unlike to [`Vec`]'s:
+/// ```
+/// #[macro_use]
+/// extern crate amplify;
+///
+/// # fn main() {
+/// assert_eq!(bset![1, 2, 3, 1], bset![1, 2, 3]);
+/// # }
+/// ```
 #[macro_export]
 macro_rules! bset {
     { } =>  {
@@ -97,6 +180,20 @@ macro_rules! bset {
     }
 }
 
+/// Macro for creating [`LinkedList`] in the same manner as `vec!` is used for
+/// [`Vec`]:
+/// ```
+/// #[macro_use]
+/// extern crate amplify;
+///
+/// # fn main() {
+/// let list = list! {
+///     s!("item one") =>
+///     s!("item two") =>
+///     s!("item three")
+/// };
+/// # }
+/// ```
 #[macro_export]
 macro_rules! list {
     { } =>  {

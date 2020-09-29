@@ -14,6 +14,11 @@
 // along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
+//! Amplifying Rust language capabilities: multiple generic trait
+//! implementations, type wrappers, derive macros.
+//!
+//! Minimum supported rust compiler version (MSRV): 1.46 (stable channel)
+
 #![recursion_limit = "256"]
 #![deny(
     non_upper_case_globals,
@@ -22,9 +27,9 @@
     unused_mut,
     unused_imports,
     dead_code,
+    missing_docs,
     warnings
 )]
-// TODO: Add `missing_docs`
 
 #[macro_use]
 mod macros;

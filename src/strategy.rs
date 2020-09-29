@@ -21,18 +21,23 @@
 
 use ::core::marker::PhantomData;
 
+/// Helper type allowing implementation of trait object for generic types
+/// multiple times. In practice this type is never used
 pub struct Holder<T, S>(T, PhantomData<S>);
 impl<T, S> Holder<T, S> {
+    #[allow(missing_docs)]
     #[inline]
     pub fn new(val: T) -> Self {
         Self(val, PhantomData::<S>::default())
     }
 
+    #[allow(missing_docs)]
     #[inline]
     pub fn into_inner(self) -> T {
         self.0
     }
 
+    #[allow(missing_docs)]
     #[inline]
     pub fn as_inner(&self) -> &T {
         &self.0
