@@ -220,11 +220,14 @@ impl Technique {
         attrs
             .iter()
             .filter(|attr| attr.path.is_ident("doc"))
-            .try_fold(TokenStream2::new(), |mut stream, attr| {
+            .try_fold(TokenStream2::new(), |stream, attr| {
                 match attr.parse_meta() {
                     Ok(Meta::NameValue(MetaNameValue { lit, .. })) => {
-                        stream.extend(quote! { #lit });
-                        Ok(stream)
+                        if stream.is_empty() {
+                            Ok(quote! { #lit })
+                        } else {
+                            Ok(quote! { concat!(#stream, #lit) })
+                        }
                     }
                     _ => Err(attr_err!(
                         attr.span(),
@@ -355,6 +358,8 @@ fn inner_enum(input: &DeriveInput, data: &DataEnum) -> Result<TokenStream2> {
         }
         _ => unreachable!(),
     };
+
+    println!("{}", content);
 
     Ok(quote! {
         impl #impl_generics ::std::fmt::Display for #ident_name #ty_generics #where_clause {

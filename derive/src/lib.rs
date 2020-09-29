@@ -111,6 +111,7 @@ use syn::DeriveInput;
 ///     #[display(doc_comments)]
 ///     enum Variants {
 ///         /// Letter A
+///         /// Multiline comments are also working
 ///         A,
 ///         /// Letter B
 ///         B,
@@ -118,7 +119,9 @@ use syn::DeriveInput;
 ///         #[display("Letter C")]
 ///         C,
 ///         /// Letter {_0}
-///         Letter(String)
+///         Letter(String),
+///         /// You can omit parameters and just have a normal doc comment
+///         Number(u8),
 ///     };
 ///
 ///     assert_eq!(format!("{}", Variants::C), "Letter C");
