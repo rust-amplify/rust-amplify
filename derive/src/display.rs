@@ -324,18 +324,30 @@ fn inner_enum(input: &DeriveInput, data: &DataEnum) -> Result<TokenStream2> {
                     .named
                     .iter()
                     .map(|f| f.ident.as_ref().unwrap())
+                    .filter(|ident| {
+                        let s = format_str.to_string();
+                        let m1 = format!("{}{}:", '{', ident);
+                        let m2 = format!("{}{}{}", '{', ident, '}');
+                        s.contains(&m1) || s.contains(&m2)
+                    })
                     .collect::<Vec<_>>();
                 display.extend(quote_spanned! { v.span() =>
-                    Self::#type_name { #( #idents, )* } => write!(f, #format_str, #( #idents = #idents, )*),
+                    Self::#type_name { #( #idents, )* .. } => write!(f, #format_str, #( #idents = #idents, )*),
                 });
             }
             (Fields::Unnamed(fields), Some(format_str)) => {
                 use_global = false;
                 let idents = (0..fields.unnamed.len())
                     .map(|i| Ident::new(&format!("_{}", i), v.span()))
+                    .filter(|ident| {
+                        let s = format_str.to_string();
+                        let m1 = format!("{}{}:", '{', ident);
+                        let m2 = format!("{}{}{}", '{', ident, '}');
+                        s.contains(&m1) || s.contains(&m2)
+                    })
                     .collect::<Vec<_>>();
                 display.extend(quote_spanned! { v.span() =>
-                    Self::#type_name ( #( #idents, )* ) => write!(f, #format_str, #( #idents = #idents, )*),
+                    Self::#type_name ( #( #idents, )* .. ) => write!(f, #format_str, #( #idents = #idents, )*),
                 });
             }
             (Fields::Unit, Some(format_str)) => {
@@ -358,8 +370,6 @@ fn inner_enum(input: &DeriveInput, data: &DataEnum) -> Result<TokenStream2> {
         }
         _ => unreachable!(),
     };
-
-    println!("{}", content);
 
     Ok(quote! {
         impl #impl_generics ::std::fmt::Display for #ident_name #ty_generics #where_clause {

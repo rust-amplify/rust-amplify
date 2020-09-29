@@ -122,6 +122,8 @@ use syn::DeriveInput;
 ///         Letter(String),
 ///         /// You can omit parameters and just have a normal doc comment
 ///         Number(u8),
+///         /// ... for variants with named fields as well
+///         Named { some: String }
 ///     };
 ///
 ///     assert_eq!(format!("{}", Variants::C), "Letter C");
