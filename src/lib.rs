@@ -14,6 +14,18 @@
 // along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
+#![recursion_limit = "256"]
+#![deny(
+    non_upper_case_globals,
+    non_camel_case_types,
+    non_snake_case,
+    unused_mut,
+    unused_imports,
+    dead_code,
+    warnings
+)]
+// TODO: Add `missing_docs`
+
 mod as_any;
 #[macro_use]
 mod convert;
