@@ -52,33 +52,36 @@ macro_rules! impl_try_from_stringly {
 #[macro_export]
 macro_rules! impl_try_from_stringly_standard {
     ($type:ty) => {
-        #[cfg(feature = "std")]
-        use ::std::borrow::Cow;
-        #[cfg(feature = "std")]
-        use ::std::rc::Rc;
-        #[cfg(feature = "std")]
-        use ::std::sync::Arc;
+        mod __try_from_stringly_standard {
+            use super::*;
+            #[cfg(feature = "std")]
+            use ::std::borrow::Cow;
+            #[cfg(feature = "std")]
+            use ::std::rc::Rc;
+            #[cfg(feature = "std")]
+            use ::std::sync::Arc;
 
-        impl_try_from_stringly! { $type,
-            &str,
-            String,
+            impl_try_from_stringly! { $type,
+                &str,
+                String,
+            }
+
+            #[cfg(feature = "std")]
+            impl_try_from_stringly! { $type,
+                Cow<'_, str>,
+                Box<str>,
+                Box<Cow<'_, str>>,
+                Rc<str>,
+                Rc<String>,
+                Rc<Cow<'_, str>>,
+                Arc<str>,
+                Arc<String>,
+                Arc<Cow<'_, str>>,
+            }
+
+            #[cfg(feature = "serde")]
+            impl_try_from_stringly!($type, $crate::CowHelper<'_>);
         }
-
-        #[cfg(feature = "std")]
-        impl_try_from_stringly! { @std $type,
-            Cow<'_, str>
-            Box<str>,
-            Box<Cow<'_, str>>,
-            Rc<str>,
-            Rc<String>,
-            Rc<Cow<'_, str>>,
-            Arc<str>,
-            Arc<String>,
-            Arc<Cow<'_, str>>,
-        }
-
-        #[cfg(feature = "serde")]
-        impl_try_from_stringly!($type, $crate::CowHelper<'_>);
     };
 }
 
@@ -100,25 +103,28 @@ macro_rules! impl_into_stringly {
 #[macro_export]
 macro_rules! impl_into_stringly_standard {
     ($type:ty) => {
-        #[cfg(feature = "std")]
-        use ::core::rc::Rc;
-        #[cfg(feature = "std")]
-        use ::core::sync::Arc;
-        #[cfg(feature = "std")]
-        use ::std::borrow::Cow;
+        mod __into_stringly_standard {
+            use super::*;
+            #[cfg(feature = "std")]
+            use ::std::borrow::Cow;
+            #[cfg(feature = "std")]
+            use ::std::rc::Rc;
+            #[cfg(feature = "std")]
+            use ::std::sync::Arc;
 
-        impl_into_stringly! { $type,
-            String,
-        }
+            impl_into_stringly! { $type,
+                String,
+            }
 
-        #[cfg(feature = "std")]
-        impl_into_stringly! { @std, $type,
-            Cow<'_, str>
-            Box<str>,
-            Rc<str>,
-            Rc<String>,
-            Arc<str>,
-            Arc<String>,
+            #[cfg(feature = "std")]
+            impl_into_stringly! { $type,
+                Cow<'_, str>,
+                Box<str>,
+                Rc<str>,
+                Rc<String>,
+                Arc<str>,
+                Arc<String>,
+            }
         }
     };
 }

@@ -30,20 +30,37 @@
     missing_docs,
     warnings
 )]
+#![cfg_attr(feature = "never_type", feature(never_type))]
+
+#[cfg(feature = "async")]
+#[macro_use]
+extern crate async_trait;
+#[cfg(feature = "serde")]
+#[macro_use]
+extern crate serde;
 
 #[macro_use]
 mod macros;
-mod as_any;
 #[macro_use]
 mod convert;
-#[cfg(feature = "serde")]
-mod serde;
-mod strategy;
 #[macro_use]
 mod wrapper;
 
-pub use crate::as_any::AsAny;
+mod as_any;
+mod bipolar;
+#[cfg(feature = "std")]
+pub mod internet;
 #[cfg(feature = "serde")]
-pub use crate::serde::CowHelper;
+mod serde_helpers;
+#[cfg(feature = "async")]
+mod service;
+mod strategy;
+
+pub use crate::as_any::AsAny;
+pub use crate::bipolar::Bipolar;
+#[cfg(feature = "serde")]
+pub use crate::serde_helpers::CowHelper;
+#[cfg(feature = "async")]
+pub use crate::service::{Service, TryService};
 pub use crate::strategy::Holder;
 pub use crate::wrapper::Wrapper;
