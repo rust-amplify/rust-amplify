@@ -42,11 +42,12 @@ jobs:
         with:
           command: fmt
           args: --all -- --check
-  toolchains:
+  matrix:
     runs-on: ubuntu-latest
     strategy:
       matrix:
         toolchain: [ nightly, beta, stable, 1.46.0 ]
+        feature: [ serde, std, async, tor, never_type ]
     steps:
       - uses: actions/checkout@v2
       - name: Install rust ${{matrix.toolchain}}
@@ -54,9 +55,23 @@ jobs:
         with:
           toolchain: ${{matrix.toolchain}}
           override: true
-          components: rustfmt
-      - name: Build
+      - name: All features
         uses: actions-rs/cargo@v1
         with:
           command: build
           args: --all-features
+      - name: No features
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --no-default-features
+      - name: Feature ${{matrix.feature}}
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --no-default-features --features=${{matrix.feature}}
+      - name: Defaults + ${{matrix.feature}}
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --no-default-features --features=${{matrix.feature}}
