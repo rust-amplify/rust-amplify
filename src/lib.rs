@@ -60,6 +60,6 @@ pub use crate::bipolar::Bipolar;
 #[cfg(feature = "serde")]
 pub use crate::serde_helpers::CowHelper;
 #[cfg(feature = "async")]
-pub use crate::service::{Service, TryService};
+pub use crate::service::{Exec, Service, TryService};
 pub use crate::strategy::Holder;
 pub use crate::wrapper::Wrapper;
