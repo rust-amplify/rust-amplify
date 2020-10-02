@@ -17,13 +17,12 @@
 use syn::export::{Span, TokenStream2};
 use syn::spanned::Spanned;
 use syn::{
-    Attribute, Data, DataEnum, DataStruct, DataUnion, DeriveInput, Error,
-    Fields, Ident, Lit, LitStr, Meta, MetaNameValue, NestedMeta, Path, Result,
+    Attribute, Data, DataEnum, DataStruct, DataUnion, DeriveInput, Error, Fields, Ident, Lit,
+    LitStr, Meta, MetaNameValue, NestedMeta, Path, Result,
 };
 
 const NAME: &'static str = "display";
-const EXAMPLE: &'static str =
-    r#"#[display("format {} string" | Trait | Type::function)]"#;
+const EXAMPLE: &'static str = r#"#[display("format {} string" | Trait | Type::function)]"#;
 
 macro_rules! err {
     ( $span:expr, $msg:literal ) => {
@@ -126,16 +125,12 @@ impl Technique {
                     Some(NestedMeta::Lit(Lit::Str(format))) => {
                         Some(Self::WithFormat(format.clone()))
                     }
-                    Some(NestedMeta::Meta(Meta::Path(path)))
-                        if path.is_ident("doc_comments") =>
-                    {
+                    Some(NestedMeta::Meta(Meta::Path(path))) if path.is_ident("doc_comments") => {
                         Some(Self::DocComments)
                     }
                     Some(NestedMeta::Meta(Meta::Path(path))) => Some(
                         FormattingTrait::from_path(path, list.span())?
-                            .map_or(Self::FromMethod(path.clone()), |fmt| {
-                                Self::FromTrait(fmt)
-                            }),
+                            .map_or(Self::FromMethod(path.clone()), |fmt| Self::FromTrait(fmt)),
                     ),
                     Some(_) => err!(span, "argument must be a string literal"),
                     None => err!(span, "argument is required"),
@@ -160,11 +155,7 @@ impl Technique {
         }
     }
 
-    pub fn into_token_stream2(
-        self,
-        fields: &Fields,
-        span: Span,
-    ) -> TokenStream2 {
+    pub fn into_token_stream2(self, fields: &Fields, span: Span) -> TokenStream2 {
         match self {
             Technique::FromTrait(fmt) => fmt.into_token_stream2(span),
             Technique::FromMethod(path) => quote_spanned! { span =>
@@ -180,11 +171,7 @@ impl Technique {
         }
     }
 
-    fn impl_format(
-        fields: &Fields,
-        format: &TokenStream2,
-        span: Span,
-    ) -> TokenStream2 {
+    fn impl_format(fields: &Fields, format: &TokenStream2, span: Span) -> TokenStream2 {
         match fields {
             // Format string
             Fields::Named(fields) => {
@@ -248,23 +235,17 @@ pub(crate) fn inner(input: DeriveInput) -> Result<TokenStream2> {
     }
 }
 
-fn inner_struct(
-    input: &DeriveInput,
-    data: &DataStruct,
-) -> Result<TokenStream2> {
-    let (impl_generics, ty_generics, where_clause) =
-        input.generics.split_for_impl();
+fn inner_struct(input: &DeriveInput, data: &DataStruct) -> Result<TokenStream2> {
+    let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
     let ident_name = &input.ident;
 
-    let technique = Technique::from_attrs(&input.attrs, input.span())?.ok_or(
-        Error::new(
-            input.span(),
-            format!(
-                "Deriving `Display`: required attribute `{}` is missing.\n{}",
-                NAME, EXAMPLE
-            ),
+    let technique = Technique::from_attrs(&input.attrs, input.span())?.ok_or(Error::new(
+        input.span(),
+        format!(
+            "Deriving `Display`: required attribute `{}` is missing.\n{}",
+            NAME, EXAMPLE
         ),
-    )?;
+    ))?;
 
     let stream = technique.into_token_stream2(&data.fields, input.span());
 
@@ -278,8 +259,7 @@ fn inner_struct(
 }
 
 fn inner_enum(input: &DeriveInput, data: &DataEnum) -> Result<TokenStream2> {
-    let (impl_generics, ty_generics, where_clause) =
-        input.generics.split_for_impl();
+    let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
     let ident_name = &input.ident;
     let mut display = TokenStream2::new();
 
@@ -365,9 +345,7 @@ fn inner_enum(input: &DeriveInput, data: &DataEnum) -> Result<TokenStream2> {
                 #display
             }
         },
-        (true, Some(tenchique)) => {
-            tenchique.into_token_stream2(&Fields::Unit, input.span())
-        }
+        (true, Some(tenchique)) => tenchique.into_token_stream2(&Fields::Unit, input.span()),
         _ => unreachable!(),
     };
 
@@ -381,8 +359,7 @@ fn inner_enum(input: &DeriveInput, data: &DataEnum) -> Result<TokenStream2> {
 }
 
 fn inner_union(input: &DeriveInput, data: &DataUnion) -> Result<TokenStream2> {
-    let (impl_generics, ty_generics, where_clause) =
-        input.generics.split_for_impl();
+    let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
     let ident_name = &input.ident;
     let mut display = vec![];
 
@@ -414,9 +391,7 @@ fn inner_union(input: &DeriveInput, data: &DataUnion) -> Result<TokenStream2> {
     }
 
     let content = match global {
-        Some(tenchique) => {
-            tenchique.into_token_stream2(&Fields::Unit, input.span())
-        }
+        Some(tenchique) => tenchique.into_token_stream2(&Fields::Unit, input.span()),
         None => quote! {
             match self {
                 #( #display )*

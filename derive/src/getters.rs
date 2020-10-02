@@ -18,8 +18,7 @@ use syn::spanned::Spanned;
 use syn::{Data, DeriveInput, Error, Fields, Result};
 
 pub(crate) fn inner(input: DeriveInput) -> Result<TokenStream2> {
-    let (impl_generics, ty_generics, where_clause) =
-        input.generics.split_for_impl();
+    let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
     let ident_name = &input.ident;
 
     let data = match input.data {
