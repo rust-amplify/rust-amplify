@@ -120,4 +120,23 @@ mod tests {
         )
         .unwrap();
     }
+
+    #[test]
+    fn conversions() {
+        // I have no clue why Rust fails to infer the type.
+        let before_conversion = <Cow<'_, str>>::Borrowed("foo");
+        let after_conversion = Cow::from(DeserBorrowStr::from(before_conversion.clone()));
+        assert_eq!(after_conversion, before_conversion);
+
+        let before_conversion = <Cow<'_, str>>::Owned("foo".to_string());
+        let after_conversion = Cow::from(DeserBorrowStr::from(before_conversion.clone()));
+        assert_eq!(after_conversion, before_conversion);
+    }
+
+    #[test]
+    fn deref() {
+        let string = "This isn't the kind of software where we can leave so many unresolved bugs that we need a tracker for them.";
+        let wrapped = DeserBorrowStr::from(<Cow<'_, str>>::Borrowed(string));
+        assert_eq!(&*wrapped, string);
+    }
 }
