@@ -1,7 +1,7 @@
 [package]
 name = "serde_str_helpers"
 version = "0.1.0"
-authors = ["Martin Habovstiak <martin.habovstiak@gmail.com>", "Dr. Maxim Orlovsky <orlovsky@pandoracore.com>"]
+authors = ["Martin Habovstiak <martin.habovstiak@gmail.com>"]
 edition = "2018"
 keywords = ["serde", "deserialization", "zero-copy", "patterns"]
 categories = ["data-structures", "rust-patterns"]
