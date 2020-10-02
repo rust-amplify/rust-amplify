@@ -304,10 +304,9 @@ impl FromStr for InetAddr {
         }
 
         #[cfg(not(feature = "tor"))]
-        if let Ok(ip_addr) = IpAddr::from_str(s) {
-            Ok(Self::from(ip_addr))
-        } else {
-            Err(String::from(
+        match IpAddr::from_str(s) {
+            Ok(ip_addr) => Ok(InetAddr::from(ip_addr)),
+            _ => Err(String::from(
                 "Tor addresses are not supported; consider compiling with 'tor' feature",
             ))
         }
