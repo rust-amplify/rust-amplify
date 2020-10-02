@@ -20,7 +20,9 @@
 
 use std::convert::TryFrom;
 use std::fmt;
-use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
+use std::net::{
+    IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6,
+};
 use std::str::FromStr;
 #[cfg(feature = "tor")]
 use torut::onion::{
@@ -77,12 +79,19 @@ impl InetAddr {
     /// Length of the encoded address; equal to the maximal length of encoding
     /// for different address types
     #[cfg(feature = "tor")]
-    pub const UNIFORM_ADDR_LEN: usize = TORV3_PUBLIC_KEY_LENGTH; //32usize
+    pub const UNIFORM_ADDR_LEN: usize = TORV3_PUBLIC_KEY_LENGTH + 1; //32usize
+
+    const IPV4_TAG: u8 = 0;
+    const IPV6_TAG: u8 = 1;
+    #[cfg(feature = "tor")]
+    const TORV2_TAG: u8 = 2;
+    #[cfg(feature = "tor")]
+    const TORV3_TAG: u8 = 3;
 
     /// Length of the encoded address; equal to the maximal length of encoding
     /// for different address types
     #[cfg(not(feature = "tor"))]
-    pub const UNIFORM_ADDR_LEN: usize = 32;
+    pub const UNIFORM_ADDR_LEN: usize = 33;
     #[inline]
 
     /// Returns an IP6 address, if any, or [`Option::None`]
@@ -124,20 +133,23 @@ impl InetAddr {
         let mut slice = [0u8; Self::UNIFORM_ADDR_LEN];
         slice.clone_from_slice(data);
 
-        match slice {
-            d if d[0..28] == [0u8; 28] => {
+        match slice[0] {
+            Self::IPV4_TAG => {
                 let mut a = [0u8; 4];
-                a.clone_from_slice(&d[28..]);
+                a.clone_from_slice(&slice[29..]);
                 Some(InetAddr::IPv4(Ipv4Addr::from(a)))
             }
-            d if d[0..16] == [0u8; 16] => {
+            Self::IPV6_TAG => {
                 let mut a = [0u8; 16];
-                a.clone_from_slice(&d[16..]);
+                a.clone_from_slice(&slice[17..]);
                 Some(InetAddr::IPv6(Ipv6Addr::from(a)))
             }
             #[cfg(feature = "tor")]
-            d => TorPublicKeyV3::from_bytes(&d).map(InetAddr::Tor).ok(),
-            #[cfg(not(feature = "tor"))]
+            Self::TORV3_TAG => {
+                let mut a = [0u8; TORV3_PUBLIC_KEY_LENGTH];
+                a.clone_from_slice(&slice[1..]);
+                TorPublicKeyV3::from_bytes(&a).map(InetAddr::Tor).ok()
+            }
             _ => None,
         }
     }
@@ -149,16 +161,22 @@ impl InetAddr {
         let mut buf = [0u8; Self::UNIFORM_ADDR_LEN];
         match self {
             InetAddr::IPv4(ipv4_addr) => {
-                buf[28..].copy_from_slice(&ipv4_addr.octets())
+                buf[0] = Self::IPV4_TAG;
+                buf[29..].copy_from_slice(&ipv4_addr.octets())
             }
             InetAddr::IPv6(ipv6_addr) => {
-                buf[16..].copy_from_slice(&ipv6_addr.octets())
+                buf[0] = Self::IPV6_TAG;
+                buf[17..].copy_from_slice(&ipv6_addr.octets())
             }
             #[cfg(feature = "tor")]
-            InetAddr::Tor(tor_pubkey) => buf = tor_pubkey.to_bytes(),
+            InetAddr::Tor(tor_pubkey) => {
+                buf[0] = Self::TORV3_TAG;
+                buf[1..].copy_from_slice(&tor_pubkey.to_bytes())
+            }
             #[cfg(feature = "tor")]
             InetAddr::TorV2(onion_addr) => {
-                buf[22..].copy_from_slice(onion_addr.get_raw_bytes().as_ref())
+                buf[0] = Self::TORV2_TAG;
+                buf[23..].copy_from_slice(onion_addr.get_raw_bytes().as_ref())
             }
         }
         buf
@@ -185,6 +203,7 @@ impl fmt::Display for InetAddr {
     }
 }
 
+#[cfg(feature = "tor")]
 impl TryFrom<InetAddr> for IpAddr {
     type Error = String;
     #[inline]
@@ -201,6 +220,17 @@ impl TryFrom<InetAddr> for IpAddr {
                 "IpAddr can't be used to store Tor v2 address",
             ))?,
         })
+    }
+}
+
+#[cfg(not(feature = "tor"))]
+impl From<InetAddr> for IpAddr {
+    #[inline]
+    fn from(addr: InetAddr) -> Self {
+        match addr {
+            InetAddr::IPv4(addr) => IpAddr::V4(addr),
+            InetAddr::IPv6(addr) => IpAddr::V6(addr),
+        }
     }
 }
 
@@ -357,12 +387,16 @@ impl From<[u16; 8]> for InetAddr {
 }
 
 #[cfg(feature = "tor")]
-impl TryFrom<[u8; InetAddr::UNIFORM_ADDR_LEN]> for InetAddr {
+impl TryFrom<[u8; TORV3_PUBLIC_KEY_LENGTH]> for InetAddr {
     type Error = String;
     #[inline]
-    fn try_from(value: [u8; 32]) -> Result<Self, Self::Error> {
-        Self::from_uniform_encoding(&value)
-            .ok_or(String::from("Wrong `InetAddr` binary encoding"))
+    fn try_from(
+        value: [u8; TORV3_PUBLIC_KEY_LENGTH],
+    ) -> Result<Self, Self::Error> {
+        let mut buf = [3u8; Self::UNIFORM_ADDR_LEN];
+        buf[1..].copy_from_slice(&value);
+        Self::from_uniform_encoding(&buf)
+            .ok_or(s!("Wrong `InetAddr` binary encoding"))
     }
 }
 
@@ -531,7 +565,27 @@ impl fmt::Display for InetSocketAddr {
 
 impl FromStr for InetSocketAddr {
     type Err = String;
+
+    #[allow(unreachable_code)]
     fn from_str(s: &str) -> Result<Self, Self::Err> {
+        if let Ok(socket_addr) = SocketAddrV6::from_str(s) {
+            return Ok(Self::new(
+                (*socket_addr.ip()).into(),
+                socket_addr.port(),
+            ));
+        } else if let Ok(socket_addr) = SocketAddrV4::from_str(s) {
+            return Ok(Self::new(
+                (*socket_addr.ip()).into(),
+                socket_addr.port(),
+            ));
+        } else {
+            #[cfg(not(feature = "tor"))]
+            return Err(format!(
+                "Can't parse internet address {}. Tor addresses are not supported",
+                s
+            ));
+        }
+
         let mut vals = s.split(':');
         let err_msg =
             String::from("Wrong format of socket address string; use <inet_address>[:<port>]");
@@ -551,7 +605,8 @@ impl FromStr for InetSocketAddr {
     }
 }
 
-impl TryFrom<InetSocketAddr> for std::net::SocketAddr {
+#[cfg(feature = "tor")]
+impl TryFrom<InetSocketAddr> for SocketAddr {
     type Error = String;
     #[inline]
     fn try_from(socket_addr: InetSocketAddr) -> Result<Self, Self::Error> {
@@ -562,15 +617,38 @@ impl TryFrom<InetSocketAddr> for std::net::SocketAddr {
     }
 }
 
-impl From<std::net::SocketAddr> for InetSocketAddr {
+#[cfg(not(feature = "tor"))]
+impl From<InetSocketAddr> for SocketAddr {
+    #[inline]
+    fn from(socket_addr: InetSocketAddr) -> Self {
+        Self::new(IpAddr::from(socket_addr.address), socket_addr.port)
+    }
+}
+
+impl From<SocketAddr> for InetSocketAddr {
     #[inline]
     fn from(addr: SocketAddr) -> Self {
         Self::new(addr.ip().into(), addr.port())
     }
 }
 
+impl From<SocketAddrV4> for InetSocketAddr {
+    #[inline]
+    fn from(addr: SocketAddrV4) -> Self {
+        Self::new((*addr.ip()).into(), addr.port())
+    }
+}
+
+impl From<SocketAddrV6> for InetSocketAddr {
+    #[inline]
+    fn from(addr: SocketAddrV6) -> Self {
+        Self::new((*addr.ip()).into(), addr.port())
+    }
+}
+
 /// Internet socket address of [`InetSocketAddr`] type, extended with a
 /// transport-level protocol information (see [`Transport`])
+#[derive(Clone, Debug, PartialEq, Eq, Default)]
 pub struct InetSocketAddrExt(
     /// Transport-level protocol details (like TCP, UDP etc)
     pub Transport,
@@ -649,5 +727,161 @@ impl FromStr for InetSocketAddrExt {
         } else {
             Err(err_msg)
         }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    // TODO: Add tests for Tor
+
+    #[test]
+    fn test_inet_addr() {
+        let ip4a = "127.0.0.1".parse().unwrap();
+        let ip6a = "::1".parse().unwrap();
+
+        let ip4 = InetAddr::IPv4(ip4a);
+        let ip6 = InetAddr::IPv6(ip6a);
+        assert_eq!(
+            ip4.get_ip6().unwrap(),
+            Ipv6Addr::from_str("::ffff:127.0.0.1").unwrap()
+        );
+        assert_eq!(ip6.get_ip6().unwrap(), ip6a);
+        assert_eq!(InetAddr::from(IpAddr::V4(ip4a)), ip4);
+        assert_eq!(InetAddr::from(IpAddr::V6(ip6a)), ip6);
+        assert_eq!(InetAddr::from(ip4a), ip4);
+        assert_eq!(InetAddr::from(ip6a), ip6);
+
+        assert_eq!(InetAddr::default(), InetAddr::from_str("0.0.0.0").unwrap());
+
+        #[cfg(feature = "tor")]
+        assert_eq!(IpAddr::try_from(ip4.clone()).unwrap(), IpAddr::V4(ip4a));
+        #[cfg(feature = "tor")]
+        assert_eq!(IpAddr::try_from(ip6.clone()).unwrap(), IpAddr::V6(ip6a));
+
+        #[cfg(not(feature = "tor"))]
+        assert_eq!(IpAddr::from(ip4.clone()), IpAddr::V4(ip4a));
+        #[cfg(not(feature = "tor"))]
+        assert_eq!(IpAddr::from(ip6.clone()), IpAddr::V6(ip6a));
+
+        assert_eq!(InetAddr::from_str("127.0.0.1").unwrap(), ip4);
+        assert_eq!(InetAddr::from_str("::1").unwrap(), ip6);
+        assert_eq!(format!("{}", ip4), "127.0.0.1");
+        assert_eq!(format!("{}", ip6), "::1");
+
+        assert!(!ip4.is_tor());
+        assert!(!ip6.is_tor());
+
+        let uenc4 = ip4.to_uniform_encoding();
+        assert_eq!(InetAddr::from_uniform_encoding(&uenc4).unwrap(), ip4);
+        let uenc6 = ip6.to_uniform_encoding();
+        assert_ne!(uenc4.to_vec(), uenc6.to_vec());
+        assert_eq!(InetAddr::from_uniform_encoding(&uenc6).unwrap(), ip6);
+    }
+
+    #[test]
+    fn test_transport() {
+        assert_eq!(format!("{}", Transport::TCP), "tcp");
+        assert_eq!(format!("{}", Transport::UDP), "udp");
+        assert_eq!(format!("{}", Transport::QUIC), "quic");
+        assert_eq!(format!("{}", Transport::MTCP), "mtcp");
+
+        assert_eq!(Transport::from_str("tcp").unwrap(), Transport::TCP);
+        assert_eq!(Transport::from_str("Tcp").unwrap(), Transport::TCP);
+        assert_eq!(Transport::from_str("TCP").unwrap(), Transport::TCP);
+        assert_eq!(Transport::from_str("udp").unwrap(), Transport::UDP);
+        assert_eq!(Transport::from_str("quic").unwrap(), Transport::QUIC);
+        assert_eq!(Transport::from_str("mtcp").unwrap(), Transport::MTCP);
+        assert!(Transport::from_str("xtp").is_err());
+    }
+
+    #[test]
+    fn test_inet_socket_addr() {
+        let ip4a = "127.0.0.1".parse().unwrap();
+        let ip6a = "::1".parse().unwrap();
+        let socket4a = "127.0.0.1:6865".parse().unwrap();
+        let socket6a = "[::1]:6865".parse().unwrap();
+
+        let ip4 = InetSocketAddr::new(ip4a, 6865);
+        let ip6 = InetSocketAddr::new(ip6a, 6865);
+        assert_eq!(InetSocketAddr::from(SocketAddr::V4(socket4a)), ip4);
+        assert_eq!(InetSocketAddr::from(SocketAddr::V6(socket6a)), ip6);
+        assert_eq!(InetSocketAddr::from(socket4a), ip4);
+        assert_eq!(InetSocketAddr::from(socket6a), ip6);
+
+        assert_eq!(
+            InetSocketAddr::default(),
+            InetSocketAddr::from_str("0.0.0.0:0").unwrap()
+        );
+
+        #[cfg(feature = "tor")]
+        assert_eq!(
+            SocketAddr::try_from(ip4.clone()).unwrap(),
+            SocketAddr::V4(socket4a)
+        );
+        #[cfg(feature = "tor")]
+        assert_eq!(
+            SocketAddr::try_from(ip6.clone()).unwrap(),
+            SocketAddr::V6(socket6a)
+        );
+
+        #[cfg(not(feature = "tor"))]
+        assert_eq!(SocketAddr::from(ip4.clone()), SocketAddr::V4(socket4a));
+        #[cfg(not(feature = "tor"))]
+        assert_eq!(SocketAddr::from(ip6.clone()), SocketAddr::V6(socket6a));
+
+        assert_eq!(InetSocketAddr::from_str("127.0.0.1:6865").unwrap(), ip4);
+        assert_eq!(InetSocketAddr::from_str("[::1]:6865").unwrap(), ip6);
+        assert_eq!(format!("{}", ip4), "127.0.0.1:6865");
+        assert_eq!(format!("{}", ip6), "::1:6865");
+
+        assert!(!ip4.is_tor());
+        assert!(!ip6.is_tor());
+
+        let uenc4 = ip4.to_uniform_encoding();
+        assert_eq!(InetSocketAddr::from_uniform_encoding(&uenc4).unwrap(), ip4);
+        let uenc6 = ip6.to_uniform_encoding();
+        assert_ne!(uenc4.to_vec(), uenc6.to_vec());
+        assert_eq!(InetSocketAddr::from_uniform_encoding(&uenc6).unwrap(), ip6);
+    }
+
+    #[test]
+    fn test_inet_socket_addr_ext() {
+        let ip4a = "127.0.0.1".parse().unwrap();
+        let ip6a = "::1".parse().unwrap();
+
+        let ip4 = InetSocketAddrExt::tcp(ip4a, 6865);
+        let ip6 = InetSocketAddrExt::udp(ip6a, 6865);
+
+        assert_eq!(
+            InetSocketAddrExt::default(),
+            InetSocketAddrExt::from_str("tcp://0.0.0.0:0").unwrap()
+        );
+
+        #[cfg(feature = "tor")]
+        assert_eq!(
+            InetSocketAddrExt::from_str("tcp://127.0.0.1:6865").unwrap(),
+            ip4
+        );
+        #[cfg(feature = "tor")]
+        assert_eq!(
+            InetSocketAddrExt::from_str("udp://[::1]:6865").unwrap(),
+            ip6
+        );
+        assert_eq!(format!("{}", ip4), "tcp://127.0.0.1:6865");
+        assert_eq!(format!("{}", ip6), "udp://::1:6865");
+
+        let uenc4 = ip4.to_uniform_encoding();
+        assert_eq!(
+            InetSocketAddrExt::from_uniform_encoding(&uenc4).unwrap(),
+            ip4
+        );
+        let uenc6 = ip6.to_uniform_encoding();
+        assert_ne!(uenc4.to_vec(), uenc6.to_vec());
+        assert_eq!(
+            InetSocketAddrExt::from_uniform_encoding(&uenc6).unwrap(),
+            ip6
+        );
     }
 }
