@@ -1,6 +1,6 @@
 [package]
 name = "amplify"
-version = "1.1.0"
+version = "1.1.1"
 description = "Amplifying Rust language capabilities: multiple generic trait implementations, type wrappers, derive macros"
 authors = ["Dr. Maxim Orlovsky <orlovsky@pandoracore.com>", "Martin Habovstiak <martin.habovstiak@gmail.com>"]
 keywords = ["generics", "core", "no_std", "wrap", "patterns"]
