@@ -33,5 +33,5 @@ tor = ["torut/v3", "torut/v2", "ed25519-dalek", "parse_arg", "std"]
 async = ["async-trait", "std"]
 
 [workspace]
-members = ["derive", "."]
+members = ["derive", ".", "serde_str_helpers"]
 default-members = ["derive", "."]
