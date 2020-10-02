@@ -54,8 +54,7 @@ use std::ops::Deref;
 ///     }
 /// }
 ///
-/// let x = serde_json::from_str::<StringlyNumber>("\"42\"")
-///     .expect("Failed to deserialize");
+/// let x = serde_json::from_str::<StringlyNumber>("\"42\"").expect("Failed to deserialize");
 ///
 /// assert_eq!(x.0, 42);
 /// ```
@@ -116,6 +115,9 @@ mod tests {
             }
         }
 
-        let _ = serde_json::from_str::<CheckDeser>("\"The Times 03/Jan/2009 Chancellor on brink of second bailout for banks\"").unwrap();
+        let _ = serde_json::from_str::<CheckDeser>(
+            "\"The Times 03/Jan/2009 Chancellor on brink of second bailout for banks\"",
+        )
+        .unwrap();
     }
 }

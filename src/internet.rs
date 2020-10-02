@@ -20,14 +20,10 @@
 
 use std::convert::TryFrom;
 use std::fmt;
-use std::net::{
-    IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6,
-};
+use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6};
 use std::str::FromStr;
 #[cfg(feature = "tor")]
-use torut::onion::{
-    OnionAddressV2, OnionAddressV3, TorPublicKeyV3, TORV3_PUBLIC_KEY_LENGTH,
-};
+use torut::onion::{OnionAddressV2, OnionAddressV3, TorPublicKeyV3, TORV3_PUBLIC_KEY_LENGTH};
 
 /// A universal address covering IPv4, IPv6 and Tor in a single byte sequence
 /// of 32 bytes.
@@ -53,11 +49,7 @@ use torut::onion::{
 #[cfg_attr(
     feature = "serde",
     derive(Serialize, Deserialize),
-    serde(
-        try_from = "crate::CowHelper",
-        into = "String",
-        crate = "serde_crate"
-    )
+    serde(try_from = "crate::CowHelper", into = "String", crate = "serde_crate")
 )]
 pub enum InetAddr {
     /// IP address of V4 standard
@@ -212,13 +204,11 @@ impl TryFrom<InetAddr> for IpAddr {
             InetAddr::IPv4(addr) => IpAddr::V4(addr),
             InetAddr::IPv6(addr) => IpAddr::V6(addr),
             #[cfg(feature = "tor")]
-            InetAddr::Tor(_) => Err(String::from(
-                "IpAddr can't be used to store Tor v3 address",
-            ))?,
+            InetAddr::Tor(_) => Err(String::from("IpAddr can't be used to store Tor v3 address"))?,
             #[cfg(feature = "tor")]
-            InetAddr::TorV2(_) => Err(String::from(
-                "IpAddr can't be used to store Tor v2 address",
-            ))?,
+            InetAddr::TorV2(_) => {
+                Err(String::from("IpAddr can't be used to store Tor v2 address"))?
+            }
         })
     }
 }
@@ -308,7 +298,7 @@ impl FromStr for InetAddr {
             Ok(ip_addr) => Ok(InetAddr::from(ip_addr)),
             _ => Err(String::from(
                 "Tor addresses are not supported; consider compiling with 'tor' feature",
-            ))
+            )),
         }
     }
 }
@@ -389,13 +379,10 @@ impl From<[u16; 8]> for InetAddr {
 impl TryFrom<[u8; TORV3_PUBLIC_KEY_LENGTH]> for InetAddr {
     type Error = String;
     #[inline]
-    fn try_from(
-        value: [u8; TORV3_PUBLIC_KEY_LENGTH],
-    ) -> Result<Self, Self::Error> {
+    fn try_from(value: [u8; TORV3_PUBLIC_KEY_LENGTH]) -> Result<Self, Self::Error> {
         let mut buf = [3u8; Self::UNIFORM_ADDR_LEN];
         buf[1..].copy_from_slice(&value);
-        Self::from_uniform_encoding(&buf)
-            .ok_or(s!("Wrong `InetAddr` binary encoding"))
+        Self::from_uniform_encoding(&buf).ok_or(s!("Wrong `InetAddr` binary encoding"))
     }
 }
 
@@ -547,10 +534,8 @@ impl InetSocketAddr {
     #[inline]
     pub fn to_uniform_encoding(&self) -> [u8; Self::UNIFORM_ADDR_LEN] {
         let mut buf = [0u8; Self::UNIFORM_ADDR_LEN];
-        buf[..InetAddr::UNIFORM_ADDR_LEN]
-            .copy_from_slice(&self.address.to_uniform_encoding());
-        buf[InetAddr::UNIFORM_ADDR_LEN..]
-            .copy_from_slice(&self.port.to_be_bytes());
+        buf[..InetAddr::UNIFORM_ADDR_LEN].copy_from_slice(&self.address.to_uniform_encoding());
+        buf[InetAddr::UNIFORM_ADDR_LEN..].copy_from_slice(&self.port.to_be_bytes());
         buf
     }
 }
@@ -568,15 +553,9 @@ impl FromStr for InetSocketAddr {
     #[allow(unreachable_code)]
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         if let Ok(socket_addr) = SocketAddrV6::from_str(s) {
-            return Ok(Self::new(
-                (*socket_addr.ip()).into(),
-                socket_addr.port(),
-            ));
+            return Ok(Self::new((*socket_addr.ip()).into(), socket_addr.port()));
         } else if let Ok(socket_addr) = SocketAddrV4::from_str(s) {
-            return Ok(Self::new(
-                (*socket_addr.ip()).into(),
-                socket_addr.port(),
-            ));
+            return Ok(Self::new((*socket_addr.ip()).into(), socket_addr.port()));
         } else {
             #[cfg(not(feature = "tor"))]
             return Err(format!(
@@ -716,9 +695,7 @@ impl FromStr for InetSocketAddrExt {
         let mut vals = s.split("://");
         let err_msg = String::from("Wrong format of extended socket address string; use <transport>://<inet_address>[:<port>]");
         let em = |_| String::from(err_msg.clone());
-        if let (Some(transport), Some(addr), None) =
-            (vals.next(), vals.next(), vals.next())
-        {
+        if let (Some(transport), Some(addr), None) = (vals.next(), vals.next(), vals.next()) {
             Ok(Self(
                 transport.parse().map_err(em)?,
                 addr.parse().map_err(em)?,
