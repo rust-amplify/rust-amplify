@@ -8,7 +8,7 @@ Currently there is only a helper for deserializing stringly values more
 efficiently by avoiding allocation (and copying) in certain cases. New helpers
 may appear in the future.
 
-## `DeserStrHelper`
+## `DeserBorrowStr`
 
 A helper for deserializing using `TryFrom` more efficiently.
 
@@ -21,7 +21,7 @@ A naive idea is to use `std::borrow::Cow` to solve it. Sadly, the
 implementation of Deserialize for Cow<'de, str> doesn't borrow the string,
 so it still allocates needlessly. This helper solves the issue.
                                                                             
-Our DeserStrHelper is written such that it borrows the `str` when possible,
+Our DeserBorrowStr is written such that it borrows the `str` when possible,
 avoiding the allocation. It may still need to allocate, for example if
 string decoding (unescaping) has to be performed.
 
