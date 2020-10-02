@@ -50,9 +50,9 @@ use torut::onion::{
 /// Tor addresses are distinguished by the fact that last 16 bits
 /// must be set to 0
 #[derive(Clone, PartialEq, Eq, Debug)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(
     feature = "serde",
-    derive(Serialize, Deserialize),
     serde(
         try_from = "crate::CowHelper",
         into = "String",

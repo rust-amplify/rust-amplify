@@ -14,6 +14,8 @@
 // along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
+//! [`Display`] derive macro implementation
+
 use syn::export::{Span, TokenStream2};
 use syn::spanned::Spanned;
 use syn::{
@@ -54,14 +56,14 @@ impl FormattingTrait {
             )),
             |segment| {
                 Ok(match segment.ident.to_string().as_str() {
-                    "Debug" => Some(Self::Debug),
-                    "Octal" => Some(Self::Octal),
-                    "Binary" => Some(Self::Binary),
-                    "Pointer" => Some(Self::Pointer),
-                    "LowerHex" => Some(Self::LowerHex),
-                    "UpperHex" => Some(Self::UpperHex),
-                    "LowerExp" => Some(Self::LowerExp),
-                    "UpperExp" => Some(Self::UpperExp),
+                    "Debug" => Some(FormattingTrait::Debug),
+                    "Octal" => Some(FormattingTrait::Octal),
+                    "Binary" => Some(FormattingTrait::Binary),
+                    "Pointer" => Some(FormattingTrait::Pointer),
+                    "LowerHex" => Some(FormattingTrait::LowerHex),
+                    "UpperHex" => Some(FormattingTrait::UpperHex),
+                    "LowerExp" => Some(FormattingTrait::LowerExp),
+                    "UpperExp" => Some(FormattingTrait::UpperExp),
                     _ => None,
                 })
             },
@@ -124,18 +126,18 @@ impl Technique {
                 }
                 match list.nested.first() {
                     Some(NestedMeta::Lit(Lit::Str(format))) => {
-                        Some(Self::WithFormat(format.clone()))
+                        Some(Technique::WithFormat(format.clone()))
                     }
                     Some(NestedMeta::Meta(Meta::Path(path)))
                         if path.is_ident("doc_comments") =>
                     {
-                        Some(Self::DocComments)
+                        Some(Technique::DocComments)
                     }
                     Some(NestedMeta::Meta(Meta::Path(path))) => Some(
-                        FormattingTrait::from_path(path, list.span())?
-                            .map_or(Self::FromMethod(path.clone()), |fmt| {
-                                Self::FromTrait(fmt)
-                            }),
+                        FormattingTrait::from_path(path, list.span())?.map_or(
+                            Technique::FromMethod(path.clone()),
+                            |fmt| Technique::FromTrait(fmt),
+                        ),
                     ),
                     Some(_) => err!(span, "argument must be a string literal"),
                     None => err!(span, "argument is required"),
@@ -144,7 +146,7 @@ impl Technique {
             Some(Meta::NameValue(MetaNameValue {
                 lit: Lit::Str(format),
                 ..
-            })) => Some(Self::WithFormat(format)),
+            })) => Some(Technique::WithFormat(format)),
             Some(_) => err!(span, "argument must be a string literal"),
             None => None,
         };
@@ -153,10 +155,10 @@ impl Technique {
 
     pub fn to_fmt(&self, span: Span) -> Option<TokenStream2> {
         match self {
-            Self::FromTrait(fmt) => Some(fmt.into_token_stream2(span)),
-            Self::FromMethod(path) => Some(quote! {#path}),
-            Self::WithFormat(fmt) => Some(quote! {#fmt}),
-            Self::DocComments => None,
+            Technique::FromTrait(fmt) => Some(fmt.into_token_stream2(span)),
+            Technique::FromMethod(path) => Some(quote! {#path}),
+            Technique::WithFormat(fmt) => Some(quote! {#fmt}),
+            Technique::DocComments => None,
         }
     }
 
@@ -172,7 +174,7 @@ impl Technique {
             },
             Technique::WithFormat(format) => {
                 let format = quote! { #format };
-                Self::impl_format(fields, &format, span)
+                Technique::impl_format(fields, &format, span)
             }
             Technique::DocComments => {
                 quote! {}

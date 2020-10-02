@@ -13,6 +13,8 @@
 // along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
+//! [`Wrapper`] derive macro implementation
+
 use syn::export::TokenStream2;
 use syn::{DeriveInput, Result};
 

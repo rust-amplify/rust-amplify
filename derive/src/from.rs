@@ -14,6 +14,8 @@
 // along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
+//! [`From`] derive macro implementation
+
 use syn::export::{Span, TokenStream2};
 use syn::punctuated::Punctuated;
 use syn::spanned::Spanned;

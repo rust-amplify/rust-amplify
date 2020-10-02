@@ -36,7 +36,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        toolchain: [ nightly, beta, stable, 1.41.1 ]
+        toolchain: [ nightly, beta, stable, 1.40.0 ]
     steps:
       - uses: actions/checkout@v2
       - name: Install rust ${{matrix.toolchain}}
