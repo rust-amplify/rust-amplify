@@ -51,7 +51,11 @@ use torut::onion::{
 #[cfg_attr(
     feature = "serde",
     derive(Serialize, Deserialize),
-    serde(try_from = "crate::CowHelper", into = "String")
+    serde(
+        try_from = "crate::CowHelper",
+        into = "String",
+        crate = "serde_crate"
+    )
 )]
 pub enum InetAddr {
     /// IP address of V4 standard

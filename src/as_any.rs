@@ -65,72 +65,84 @@ pub trait AsAny {
 }
 
 impl AsAny for usize {
+    #[inline]
     fn as_any(&self) -> &dyn Any {
         self as &dyn Any
     }
 }
 
 impl AsAny for u8 {
+    #[inline]
     fn as_any(&self) -> &dyn Any {
         self as &dyn Any
     }
 }
 
 impl AsAny for u16 {
+    #[inline]
     fn as_any(&self) -> &dyn Any {
         self as &dyn Any
     }
 }
 
 impl AsAny for u32 {
+    #[inline]
     fn as_any(&self) -> &dyn Any {
         self as &dyn Any
     }
 }
 
 impl AsAny for u64 {
+    #[inline]
     fn as_any(&self) -> &dyn Any {
         self as &dyn Any
     }
 }
 
 impl AsAny for u128 {
+    #[inline]
     fn as_any(&self) -> &dyn Any {
         self as &dyn Any
     }
 }
 
 impl AsAny for i8 {
+    #[inline]
     fn as_any(&self) -> &dyn Any {
         self as &dyn Any
     }
 }
 
 impl AsAny for i16 {
+    #[inline]
     fn as_any(&self) -> &dyn Any {
         self as &dyn Any
     }
 }
 
 impl AsAny for i32 {
+    #[inline]
     fn as_any(&self) -> &dyn Any {
         self as &dyn Any
     }
 }
 
 impl AsAny for i64 {
+    #[inline]
     fn as_any(&self) -> &dyn Any {
         self as &dyn Any
     }
 }
 
 impl AsAny for i128 {
+    #[inline]
     fn as_any(&self) -> &dyn Any {
         self as &dyn Any
     }
 }
 
 impl AsAny for String {
+    #[inline]
     fn as_any(&self) -> &dyn Any {
         self as &dyn Any
     }
@@ -138,10 +150,13 @@ impl AsAny for String {
 
 #[cfg(test)]
 mod test {
+    use ::core::any::Any;
+
     use super::AsAny;
 
     #[test]
     fn test_as_any_correct() {
+        assert_eq!(1usize.as_any().type_id(), (&5usize as &dyn Any).type_id());
         assert_eq!(1usize.as_any().downcast_ref::<usize>().unwrap(), &1usize);
         assert_eq!(1u8.as_any().downcast_ref::<u8>().unwrap(), &1u8);
         assert_eq!(1u16.as_any().downcast_ref::<u16>().unwrap(), &1u16);

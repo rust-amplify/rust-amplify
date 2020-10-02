@@ -1,0 +1,51 @@
+name: Features & Rust ver
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  features:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        feature: [ serde, std, async, tor ]
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install rust stable
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+      - name: Feature ${{matrix.feature}}
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --no-default-features --features=${{matrix.feature}}
+      - name: Defaults + ${{matrix.feature}}
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --features=${{matrix.feature}}
+  toolchains:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        toolchain: [ nightly, beta, stable, 1.46.0 ]
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install rust ${{matrix.toolchain}}
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{matrix.toolchain}}
+          override: true
+      - name: All features
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --workspace --all-targets --all-features

@@ -30,6 +30,7 @@ use ::std::borrow::Cow;
 /// allocation.
 #[cfg(feature = "serde")]
 #[derive(Deserialize)]
+#[serde(crate = "serde_crate")]
 pub struct CowHelper<'a>(#[serde(borrow)] Cow<'a, str>);
 
 impl<'a> Deref for CowHelper<'a> {

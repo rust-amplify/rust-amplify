@@ -30,14 +30,13 @@
     missing_docs,
     warnings
 )]
-#![cfg_attr(feature = "never_type", feature(never_type))]
 
 #[cfg(feature = "async")]
 #[macro_use]
 extern crate async_trait;
 #[cfg(feature = "serde")]
 #[macro_use]
-extern crate serde;
+extern crate serde_crate as serde;
 
 #[macro_use]
 mod macros;
