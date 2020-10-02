@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        feature: [ serde, std, async, tor ]
+        feature: [ serde, std, async, tor, serde,parse_arg ]
     steps:
       - uses: actions/checkout@v2
       - name: Install rust stable
@@ -36,7 +36,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        toolchain: [ nightly, beta, stable, 1.40.0 ]
+        toolchain: [ nightly, beta, stable, 1.41.1 ]
     steps:
       - uses: actions/checkout@v2
       - name: Install rust ${{matrix.toolchain}}
@@ -49,3 +49,20 @@ jobs:
         with:
           command: build
           args: --workspace --all-targets --all-features
+#  toolchains-old:
+#    runs-on: ubuntu-latest
+#    strategy:
+#      matrix:
+#        toolchain: [ 1.37.0 ]
+#    steps:
+#      - uses: actions/checkout@v2
+#      - name: Install rust ${{matrix.toolchain}}
+#        uses: actions-rs/toolchain@v1
+#        with:
+#          toolchain: ${{matrix.toolchain}}
+#          override: true
+#      - name: All features
+#        uses: actions-rs/cargo@v1
+#        with:
+#          command: build
+#          args: --workspace --all-targets --features=serde,std,async,parse_arg

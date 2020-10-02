@@ -7,7 +7,8 @@
 Amplifying Rust language capabilities: multiple generic trait implementations, 
 type wrappers, derive macros.
 
-Minimum supported rust compiler version (MSRV): 1.41.1
+Minimum supported rust compiler version (MSRV): 1.37.0 for all features except
+`tor` (it requires 1.41.1)
 
 ## Main features
 

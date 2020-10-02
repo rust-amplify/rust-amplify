@@ -401,7 +401,10 @@ impl TryFrom<[u8; TORV3_PUBLIC_KEY_LENGTH]> for InetAddr {
 
 /// Transport protocols that may be part of `TransportAddr`
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-#[non_exhaustive]
+// TODO: Re-enable this once MSRV for all features will get above 1.40.0
+// (we already have it for `tor`)
+#[cfg_attr(non_exhaustive, feature = "tor")]
+//#[non_exhaustive]
 #[repr(u8)]
 pub enum Transport {
     /// Normal TCP
