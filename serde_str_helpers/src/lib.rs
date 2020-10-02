@@ -128,7 +128,7 @@ mod tests {
         let after_conversion = Cow::from(DeserBorrowStr::from(before_conversion.clone()));
         assert_eq!(after_conversion, before_conversion);
 
-        let before_conversion = <Cow::<'_, str>>::Owned("foo".to_string());
+        let before_conversion = <Cow<'_, str>>::Owned("foo".to_string());
         let after_conversion = Cow::from(DeserBorrowStr::from(before_conversion.clone()));
         assert_eq!(after_conversion, before_conversion);
     }
