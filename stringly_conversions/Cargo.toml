@@ -10,5 +10,5 @@ edition = "2018"
 alloc = []
 
 [dependencies]
-serde_str_helpers = { version = "0.1", path = "../serde_str_helpers", optional = true }
+serde_str_helpers = { version = "0.1", optional = true }
 paste = "1.0.1"

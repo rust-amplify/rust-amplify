@@ -543,6 +543,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "serde_str_helpers"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0b6009251ec4a3826c297b8a7baade19d73a642a89759d107826ca9ac944cc4a"
+dependencies = [
+ "serde",
+ "serde_derive",
+]
+
+[[package]]
 name = "sha1"
 version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -597,7 +607,7 @@ name = "stringly_conversions"
 version = "0.1.0"
 dependencies = [
  "paste",
- "serde_str_helpers",
+ "serde_str_helpers 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
