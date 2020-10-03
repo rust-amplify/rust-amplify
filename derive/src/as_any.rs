@@ -17,8 +17,7 @@ use syn::export::TokenStream2;
 use syn::{DeriveInput, Result};
 
 pub(crate) fn inner(input: DeriveInput) -> Result<TokenStream2> {
-    let (impl_generics, ty_generics, where_clause) =
-        input.generics.split_for_impl();
+    let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
     let ident_name = &input.ident;
 
     Ok(quote! {
