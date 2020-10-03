@@ -1,0 +1,13 @@
+[package]
+name = "stringly_conversions"
+version = "0.1.0"
+authors = ["Martin Habovstiak <martin.habovstiak@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[features]
+alloc = []
+
+[dependencies]
+serde_str_helpers = { version = "0.1", path = "../serde_str_helpers", optional = true }
