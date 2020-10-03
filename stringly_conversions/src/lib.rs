@@ -67,8 +67,15 @@ macro_rules! impl_try_from_stringly {
 
 /// Calls impl_try_from_stringly!() with a set of standard stringly types.
 ///
+/// A module is generated internally and its name is derived from the type name.
+/// This obviously fails when the type name is generic or contains other non-ident
+/// characters. In such case supply the macro with a second argument which is some
+/// unique identifier.
+///
 /// The currently supported types are:
 ///
+/// * `&str` - also supported in `no_std`
+/// * `String`
 /// * `Cow<'_, str>,`
 /// * `Box<str>,`
 /// * `Box<Cow<'_, str>>,`
@@ -80,44 +87,50 @@ macro_rules! impl_try_from_stringly {
 /// * `Arc<Cow<'_, str>>,`
 ///
 /// Types from external crates:
-/// * 
+/// * `serde_str_helpers::DeserBorrowStr`
 ///
 #[macro_export]
 macro_rules! impl_try_from_stringly_standard {
     ($type:ty) => {
-        mod __try_from_stringly_standard {
-            use super::*;
-            #[cfg(feature = "alloc")]
-            use alloc::string::String;
-            #[cfg(feature = "alloc")]
-            use alloc::boxed::Box;
-            #[cfg(feature = "alloc")]
-            use alloc::borrow::Cow;
-            #[cfg(feature = "alloc")]
-            use alloc::rc::Rc;
-            #[cfg(feature = "alloc")]
-            use alloc::sync::Arc;
+        $crate::impl_try_from_stringly_standard!($type, $type);
+    };
+    ($type:ty, $module_suffix:ty) => {
+        paste::paste! {
+            #[allow(non_snake_case)]
+            mod [<__try_from_stringly_standard_ $module_suffix >] {
+                use super::*;
+                #[cfg(feature = "alloc")]
+                use alloc::string::String;
+                #[cfg(feature = "alloc")]
+                use alloc::boxed::Box;
+                #[cfg(feature = "alloc")]
+                use alloc::borrow::Cow;
+                #[cfg(feature = "alloc")]
+                use alloc::rc::Rc;
+                #[cfg(feature = "alloc")]
+                use alloc::sync::Arc;
 
-            impl_try_from_stringly! { $type,
-                &str,
+                impl_try_from_stringly! { $type,
+                    &str,
+                }
+
+                #[cfg(feature = "alloc")]
+                impl_try_from_stringly! { $type,
+                    String,
+                    Cow<'_, str>,
+                    Box<str>,
+                    Box<Cow<'_, str>>,
+                    Rc<str>,
+                    Rc<String>,
+                    Rc<Cow<'_, str>>,
+                    Arc<str>,
+                    Arc<String>,
+                    Arc<Cow<'_, str>>,
+                }
+
+                #[cfg(feature = "serde_str_helpers")]
+                impl_try_from_stringly!($type, $crate::serde_str_helpers::DeserBorrowStr<'_>);
             }
-
-            #[cfg(feature = "alloc")]
-            impl_try_from_stringly! { $type,
-                String,
-                Cow<'_, str>,
-                Box<str>,
-                Box<Cow<'_, str>>,
-                Rc<str>,
-                Rc<String>,
-                Rc<Cow<'_, str>>,
-                Arc<str>,
-                Arc<String>,
-                Arc<Cow<'_, str>>,
-            }
-
-            #[cfg(feature = "serde_str_helpers")]
-            impl_try_from_stringly!($type, $crate::serde_str_helpers::DeserBorrowStr<'_>);
         }
     };
 }
@@ -137,27 +150,53 @@ macro_rules! impl_into_stringly {
 }
 
 /// Implements `impl_into_stringly` for `$type` and traits with `$type`
+///
+/// A module is generated internally and its name is derived from the type name.
+/// This obviously fails when the type name is generic or contains other non-ident
+/// characters. In such case supply the macro with a second argument which is some
+/// unique identifier.
+///
+/// The currently supported types are:
+///
+/// * `String`
+/// * `Cow<'_, str>,`
+/// * `Box<str>,`
+/// * `Box<Cow<'_, str>>,`
+/// * `Rc<str>,`
+/// * `Rc<String>,`
+/// * `Rc<Cow<'_, str>>,`
+/// * `Arc<str>,`
+/// * `Arc<String>,`
+/// * `Arc<Cow<'_, str>>,`
+///
 #[macro_export]
 macro_rules! impl_into_stringly_standard {
     ($type:ty) => {
-        mod __into_stringly_standard {
-            use super::*;
-            #[cfg(feature = "alloc")]
-            use alloc::borrow::Cow;
-            #[cfg(feature = "alloc")]
-            use alloc::rc::Rc;
-            #[cfg(feature = "alloc")]
-            use alloc::sync::Arc;
+        $crate::impl_into_stringly_standard!($type, $type);
+    };
+    ($type:ty, $module_suffix:ty) => {
+        paste::paste! {
+            #[allow(non_snake_case)]
+            mod [< __into_stringly_standard_ $type >] {
+                #[allow(unused)]
+                use super::*;
+                #[cfg(feature = "alloc")]
+                use alloc::borrow::Cow;
+                #[cfg(feature = "alloc")]
+                use alloc::rc::Rc;
+                #[cfg(feature = "alloc")]
+                use alloc::sync::Arc;
 
-            #[cfg(feature = "alloc")]
-            impl_into_stringly! { $type,
-                String,
-                Cow<'_, str>,
-                Box<str>,
-                Rc<str>,
-                Rc<String>,
-                Arc<str>,
-                Arc<String>,
+                #[cfg(feature = "alloc")]
+                impl_into_stringly! { $type,
+                    String,
+                    Cow<'_, str>,
+                    Box<str>,
+                    Rc<str>,
+                    Rc<String>,
+                    Arc<str>,
+                    Arc<String>,
+                }
             }
         }
     };
@@ -199,20 +238,18 @@ mod tests {
     }
 
 
-    /* This doesn't compile because of missing hygiene
+    // Intended for testing clashes, the code itself is irrelevant.
+    struct Foo<T>(T);
 
-    struct Foo(u32);
+    impl_try_from_stringly_standard!(Foo<u32>, Foo__u32);
 
-    impl_try_from_stringly_standard!(Foo);
-
-    impl core::str::FromStr for Foo {
+    impl core::str::FromStr for Foo<u32> {
         type Err = core::num::ParseIntError;
 
         fn from_str(s: &str) -> Result<Self, Self::Err> {
             s.parse().map(Foo)
         }
     }
-    */
 
     #[test]
     fn parse_str() {
@@ -237,6 +274,7 @@ mod tests {
         assert_eq!(Number::try_from(serde_str_helpers::DeserBorrowStr::from(<Cow<'_, str>>::from("42"))).unwrap().0, 42);
     }
 
+    #[cfg(feature = "alloc")]
     #[test]
     fn display() {
         assert_eq!(&*<String>::from(Number(42)), "42");
