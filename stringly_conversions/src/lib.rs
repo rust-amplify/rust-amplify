@@ -29,9 +29,9 @@ pub extern crate serde_str_helpers;
 /// impls TryFrom<T> where T: Deref<Target=str> in terms of FromStr.
 ///
 /// If your type implements `FromStr` then it could also implement `TryFrom<T>`
-/// where `T` are various stringly types like `&str`, `String`, `Cow<'a, str>`...
-/// Implementing these conversions as a blanket impl is impossible due to the
-/// conflict with `T: Into<Self>`. Implementing them manually is tedious.
+/// where `T` are various stringly types like `&str`, `String`, `Cow<'a,
+/// str>`... Implementing these conversions as a blanket impl is impossible due
+/// to the conflict with `T: Into<Self>`. Implementing them manually is tedious.
 /// This macro will help you. However, take a look at
 /// `impl_into_stringly_standard` which will help you even more!
 ///
@@ -68,9 +68,9 @@ macro_rules! impl_try_from_stringly {
 /// Calls impl_try_from_stringly!() with a set of standard stringly types.
 ///
 /// A module is generated internally and its name is derived from the type name.
-/// This obviously fails when the type name is generic or contains other non-ident
-/// characters. In such case supply the macro with a second argument which is some
-/// unique identifier.
+/// This obviously fails when the type name is generic or contains other
+/// non-ident characters. In such case supply the macro with a second argument
+/// which is some unique identifier.
 ///
 /// The currently supported types are:
 ///
@@ -88,7 +88,6 @@ macro_rules! impl_try_from_stringly {
 ///
 /// Types from external crates:
 /// * `serde_str_helpers::DeserBorrowStr`
-///
 #[macro_export]
 macro_rules! impl_try_from_stringly_standard {
     ($type:ty) => {
@@ -152,9 +151,9 @@ macro_rules! impl_into_stringly {
 /// Implements `impl_into_stringly` for `$type` and traits with `$type`
 ///
 /// A module is generated internally and its name is derived from the type name.
-/// This obviously fails when the type name is generic or contains other non-ident
-/// characters. In such case supply the macro with a second argument which is some
-/// unique identifier.
+/// This obviously fails when the type name is generic or contains other
+/// non-ident characters. In such case supply the macro with a second argument
+/// which is some unique identifier.
 ///
 /// The currently supported types are:
 ///
@@ -168,7 +167,6 @@ macro_rules! impl_into_stringly {
 /// * `Arc<str>,`
 /// * `Arc<String>,`
 /// * `Arc<Cow<'_, str>>,`
-///
 #[macro_export]
 macro_rules! impl_into_stringly_standard {
     ($type:ty) => {
@@ -208,13 +206,13 @@ mod tests {
     use core::fmt;
 
     #[cfg(feature = "alloc")]
-    use alloc::string::String;
+    use alloc::borrow::Cow;
     #[cfg(feature = "alloc")]
     use alloc::boxed::Box;
     #[cfg(feature = "alloc")]
-    use alloc::borrow::Cow;
-    #[cfg(feature = "alloc")]
     use alloc::rc::Rc;
+    #[cfg(feature = "alloc")]
+    use alloc::string::String;
     #[cfg(feature = "alloc")]
     use alloc::sync::Arc;
 
@@ -236,7 +234,6 @@ mod tests {
             write!(f, "{}", self.0)
         }
     }
-
 
     // Intended for testing clashes, the code itself is irrelevant.
     struct Foo<T>(T);
@@ -265,13 +262,23 @@ mod tests {
         assert_eq!(Number::try_from(<Rc<str>>::from("42")).unwrap().0, 42);
         assert_eq!(Number::try_from(Rc::new(String::from("42"))).unwrap().0, 42);
         assert_eq!(Number::try_from(<Arc<str>>::from("42")).unwrap().0, 42);
-        assert_eq!(Number::try_from(Arc::new(String::from("42"))).unwrap().0, 42);
+        assert_eq!(
+            Number::try_from(Arc::new(String::from("42"))).unwrap().0,
+            42
+        );
     }
 
     #[cfg(all(feature = "serde_str_helpers", feature = "alloc"))]
     #[test]
     fn test_serde_str_helpers() {
-        assert_eq!(Number::try_from(serde_str_helpers::DeserBorrowStr::from(<Cow<'_, str>>::from("42"))).unwrap().0, 42);
+        assert_eq!(
+            Number::try_from(serde_str_helpers::DeserBorrowStr::from(
+                <Cow<'_, str>>::from("42")
+            ))
+            .unwrap()
+            .0,
+            42
+        );
     }
 
     #[cfg(feature = "alloc")]
