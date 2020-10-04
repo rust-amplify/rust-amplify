@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        feature: [ serde, std, async, tor ]
+        feature: [ serde, std, async, tor, parse_arg ]
     steps:
       - uses: actions/checkout@v2
       - name: Install rust stable
