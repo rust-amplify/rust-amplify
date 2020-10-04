@@ -1,6 +1,6 @@
 [package]
 name = "stringly_conversions"
-version = "0.1.0"
+version = "0.1.1"
 description = "A crate helping to convert to/from various representations of strings."
 authors = ["Martin Habovstiak <martin.habovstiak@gmail.com>"]
 keywords = ["macros", "try_from", "string", "no_std", "patterns"]
