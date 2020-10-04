@@ -17,9 +17,14 @@
 //!
 //! Currently there is only a helper for deserializing stringly values more
 //! efficiently by avoiding allocation (and copying) in certain cases.
+//!
+//! This crate is `no_std`, but **does** require `alloc`.
 
-use std::borrow::Cow;
-use std::ops::Deref;
+#![no_std]
+
+extern crate alloc;
+use alloc::borrow::Cow;
+use core::ops::Deref;
 
 /// This is a helper for deserializing using `TryFrom` more efficiently.
 ///
@@ -40,14 +45,14 @@ use std::ops::Deref;
 /// ```
 /// use serde_derive::Deserialize;
 /// use serde_str_helpers::DeserBorrowStr;
-/// use std::convert::TryFrom;
+/// use core::convert::TryFrom;
 ///
 /// #[derive(Deserialize)]
 /// #[serde(try_from = "DeserBorrowStr")]
 /// struct StringlyNumber(u64);
 ///
 /// impl<'a> TryFrom<DeserBorrowStr<'a>> for StringlyNumber {
-///     type Error = std::num::ParseIntError;
+///     type Error = core::num::ParseIntError;
 ///
 ///     fn try_from(value: DeserBorrowStr<'a>) -> Result<Self, Self::Error> {
 ///         value.parse().map(StringlyNumber)
@@ -84,9 +89,10 @@ impl<'a> Deref for DeserBorrowStr<'a> {
 #[cfg(test)]
 mod tests {
     use super::DeserBorrowStr;
-    use std::borrow::Cow;
-    use std::convert::TryFrom;
-    use std::fmt;
+    use alloc::borrow::Cow;
+    use alloc::string::ToString;
+    use core::convert::TryFrom;
+    use core::fmt;
 
     #[test]
     fn actually_borrows_str() {

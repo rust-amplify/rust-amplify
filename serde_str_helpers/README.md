@@ -8,6 +8,8 @@ Currently there is only a helper for deserializing stringly values more
 efficiently by avoiding allocation (and copying) in certain cases. New helpers
 may appear in the future.
 
+This crate is `no_std` but **does** require `alloc`.
+
 ## `DeserBorrowStr`
 
 A helper for deserializing using `TryFrom` more efficiently.
