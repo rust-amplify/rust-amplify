@@ -22,6 +22,8 @@
 #[cfg(feature = "alloc")]
 pub extern crate alloc;
 
+pub extern crate paste;
+
 // We republish all supported external crates for access from the macros
 #[cfg(feature = "serde_str_helpers")]
 pub extern crate serde_str_helpers;
@@ -94,7 +96,7 @@ macro_rules! impl_try_from_stringly_standard {
         $crate::impl_try_from_stringly_standard!($type, $type);
     };
     ($type:ty, $module_suffix:ty) => {
-        paste::paste! {
+        $crate::paste::paste! {
             #[allow(non_snake_case)]
             mod [<__try_from_stringly_standard_ $module_suffix >] {
                 use super::*;
@@ -173,7 +175,7 @@ macro_rules! impl_into_stringly_standard {
         $crate::impl_into_stringly_standard!($type, $type);
     };
     ($type:ty, $module_suffix:ty) => {
-        paste::paste! {
+        $crate::paste::paste! {
             #[allow(non_snake_case)]
             mod [< __into_stringly_standard_ $type >] {
                 #[allow(unused)]
