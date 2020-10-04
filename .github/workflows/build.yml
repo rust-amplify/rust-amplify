@@ -49,3 +49,26 @@ jobs:
         with:
           command: build
           args: --workspace --all-targets --all-features
+  dependency:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install rust stable
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+      - name: Create dependency
+        run: |
+          cargo new dep_test
+          cd dep_test
+          printf 'amplify = { path = ".." }\namplify_derive = { path = "../derive" }\n\n[workspace]' >> Cargo.toml
+      - name: Build dependency
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --verbose
+      - name: Clean up
+        run: |
+          cd ..
+          rm -rf dep_test
