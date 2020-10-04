@@ -1,4 +1,4 @@
-name: Tests
+name: Lints
 
 on:
   push:
@@ -10,17 +10,18 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  testing:
+  rustfmt:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - name: Install rust nightly
         uses: actions-rs/toolchain@v1
         with:
-            toolchain: nightly
-            override: true
-      - name: Build & test
-        uses: actions-rs/cargo@v1
+          toolchain: nightly
+          override: true
+          components: rustfmt
+      - uses: actions-rs/cargo@v1
+        name: Lints
         with:
-          command: test
-          args: --workspace --all-features --no-fail-fast
+          command: fmt
+          args: --all -- --check

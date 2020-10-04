@@ -1,11 +1,11 @@
 [package]
 name = "serde_str_helpers"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Martin Habovstiak <martin.habovstiak@gmail.com>"]
 edition = "2018"
 description = "Helpers for using serde with strings"
 keywords = ["serde", "deserialization", "zero-copy", "patterns"]
-categories = ["data-structures", "rust-patterns"]
+categories = ["data-structures", "rust-patterns", "no_std"]
 repository = "https://github.com/LNP-BP/rust-amplify"
 homepage = "https://github.com/LNP-BP"
 license = "MIT"
