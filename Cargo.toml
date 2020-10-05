@@ -12,13 +12,16 @@ readme = "README.md"
 edition = "2018"
 
 [dependencies]
-torut = { version = "~0.1.2", features = ["v2", "v3"], optional = true }
+torut = { version = "~0.1.5", features = ["v2", "v3"], optional = true }
 ed25519-dalek = { version = "~1.0.0", optional = true }
 async-trait = { version = "~0.1.30", optional = true }
 parse_arg = { version = "~0.1.4", optional = true }
 # This strange naming is a workaround for not being able to define required features for a dependency
 # See https://github.com/rust-lang/api-guidelines/issues/180 for the explanation and references.
 serde_crate = { package = "serde", version = "~1.0.111", features = ["derive"], optional = true }
+
+[patch.crates-io]
+torut = { git = "https://github.com/LNP-BP/torut", branch = "develop" }
 
 [lib]
 name = "amplify"

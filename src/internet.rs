@@ -45,7 +45,7 @@ use torut::onion::{OnionAddressV2, OnionAddressV3, TorPublicKeyV3, TORV3_PUBLIC_
 ///
 /// Tor addresses are distinguished by the fact that last 16 bits
 /// must be set to 0
-#[derive(Clone, PartialEq, Eq, Debug)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
 #[cfg_attr(
     feature = "serde",
     derive(Serialize, Deserialize),
@@ -476,7 +476,7 @@ impl fmt::Display for Transport {
 /// and a port number (without protocol specification, i.e. TCP/UDP etc). If you
 /// need to include transport-level protocol information into the socket
 /// details, pls check [`InetSocketAddrExt`]
-#[derive(Clone, Debug, PartialEq, Eq, Default)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
 pub struct InetSocketAddr {
     /// Address part of the socket
     pub address: InetAddr,
@@ -626,7 +626,7 @@ impl From<SocketAddrV6> for InetSocketAddr {
 
 /// Internet socket address of [`InetSocketAddr`] type, extended with a
 /// transport-level protocol information (see [`Transport`])
-#[derive(Clone, Debug, PartialEq, Eq, Default)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
 pub struct InetSocketAddrExt(
     /// Transport-level protocol details (like TCP, UDP etc)
     pub Transport,
