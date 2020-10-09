@@ -1,6 +1,6 @@
 [package]
 name = "amplify"
-version = "1.1.1"
+version = "1.2.0"
 description = "Amplifying Rust language capabilities: multiple generic trait implementations, type wrappers, derive macros"
 authors = ["Dr. Maxim Orlovsky <orlovsky@pandoracore.com>", "Martin Habovstiak <martin.habovstiak@gmail.com>"]
 keywords = ["generics", "core", "no_std", "wrap", "patterns"]
@@ -10,6 +10,7 @@ homepage = "https://github.com/LNP-BP"
 license = "MIT"
 readme = "README.md"
 edition = "2018"
+exclude = [".github", "derive", "serde_str_helpers", "stringly_conversions"]
 
 [dependencies]
 torut = { version = "~0.1.6", features = ["v2", "v3"], optional = true }
@@ -34,5 +35,5 @@ async = ["async-trait", "std"]
 vendored_openssl = ["torut/vendored_openssl"]
 
 [workspace]
-members = ["derive", ".", "serde_str_helpers", "stringly_conversions"]
-default-members = ["derive", "."]
+members = [".", "derive", "serde_str_helpers", "stringly_conversions"]
+default-members = ["."]
