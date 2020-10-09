@@ -86,8 +86,9 @@ impl InetAddr {
     pub const UNIFORM_ADDR_LEN: usize = 33;
     #[inline]
 
-    /// Returns an IP6 address, if any, or [`Option::None`]
-    pub fn get_ip6(&self) -> Option<Ipv6Addr> {
+    /// Returns an IPv6 address, constructed from IPv4 data; or, if Onion
+    /// address is used, [`Option::None`]
+    pub fn to_ipv6(&self) -> Option<Ipv6Addr> {
         match self {
             InetAddr::IPv4(ipv4_addr) => Some(ipv4_addr.to_ipv6_mapped()),
             InetAddr::IPv6(ipv6_addr) => Some(*ipv6_addr),
@@ -96,11 +97,39 @@ impl InetAddr {
         }
     }
 
-    /// Determines whether provided address is a Tor address
+    /// Returns an IPv4 address, if any, or [`Option::None`]
+    pub fn to_ipv4(&self) -> Option<Ipv6Addr> {
+        match self {
+            InetAddr::IPv4(ipv4_addr) => Some(ipv4_addr.to_ipv6_mapped()),
+            InetAddr::IPv6(ipv6_addr) => Some(*ipv6_addr),
+            #[cfg(feature = "tor")]
+            _ => None,
+        }
+    }
+
+    /// Determines whether provided address is a Tor address. Always returns
+    /// `fales` (the library is built without `tor` feature; use it to
+    /// enable Tor addresses).
     #[cfg(not(feature = "tor"))]
     #[inline]
     pub fn is_tor(&self) -> bool {
         false
+    }
+
+    /// Always returns [`Option::None`] (the library is built without `tor`
+    /// feature; use it to enable Tor addresses).
+    #[cfg(not(feature = "tor"))]
+    #[inline]
+    pub fn to_onion_v2(&self) -> Option<()> {
+        None
+    }
+
+    /// Always returns [`Option::None`] (the library is built without `tor`
+    /// feature; use it to enable Tor addresses).
+    #[cfg(not(feature = "tor"))]
+    #[inline]
+    pub fn to_onion(&self) -> Option<()> {
+        None
     }
 
     /// Determines whether provided address is a Tor address
@@ -111,6 +140,26 @@ impl InetAddr {
             InetAddr::Tor(_) => true,
             InetAddr::TorV2(_) => true,
             _ => false,
+        }
+    }
+
+    /// Returns Onion v2 address, if any, or [`Option::None`]
+    #[cfg(feature = "tor")]
+    #[inline]
+    pub fn to_onion_v2(&self) -> Option<OnionAddressV2> {
+        match self {
+            InetAddr::IPv4(_) | InetAddr::IPv6(_) | InetAddr::Tor(_) => None,
+            InetAddr::TorV2(onion) => Some(*onion),
+        }
+    }
+
+    /// Returns Onion v3 address, if any, or [`Option::None`]
+    #[cfg(feature = "tor")]
+    #[inline]
+    pub fn to_onion(&self) -> Option<OnionAddressV3> {
+        match self {
+            InetAddr::IPv4(_) | InetAddr::IPv6(_) | InetAddr::TorV2(_) => None,
+            InetAddr::Tor(key) => Some(OnionAddressV3::from(key)),
         }
     }
 
@@ -720,10 +769,10 @@ mod test {
         let ip4 = InetAddr::IPv4(ip4a);
         let ip6 = InetAddr::IPv6(ip6a);
         assert_eq!(
-            ip4.get_ip6().unwrap(),
+            ip4.to_ipv6().unwrap(),
             Ipv6Addr::from_str("::ffff:127.0.0.1").unwrap()
         );
-        assert_eq!(ip6.get_ip6().unwrap(), ip6a);
+        assert_eq!(ip6.to_ipv6().unwrap(), ip6a);
         assert_eq!(InetAddr::from(IpAddr::V4(ip4a)), ip4);
         assert_eq!(InetAddr::from(IpAddr::V6(ip6a)), ip6);
         assert_eq!(InetAddr::from(ip4a), ip4);
