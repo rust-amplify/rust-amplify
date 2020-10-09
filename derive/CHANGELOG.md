@@ -1,9 +1,13 @@
 Change Log
 ==========
 
+1.2.0
+-----
+- Upgrading to `amplify` v1.2.0
+
 1.1.0
 -----
-- Upgrading to `amplify` v1.2
+- Upgrading to `amplify` v1.1.0
 
 1.0.0
 -----
