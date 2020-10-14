@@ -1,9 +1,11 @@
 # Rust Amplify Library
 [![crates.io](https://meritbadge.herokuapp.com/amplify)](https://crates.io/crates/amplify)
+[![Docs](https://docs.rs/amplify/badge.svg)](https://docs.rs/amplify)
 ![Build](https://github.com/LNP-BP/rust-amplify/workflows/Build/badge.svg)
 ![Tests](https://github.com/LNP-BP/rust-amplify/workflows/Tests/badge.svg)
 ![Lints](https://github.com/LNP-BP/rust-amplify/workflows/Lints/badge.svg)
 [![codecov](https://codecov.io/gh/LNP-BP/rust-amplify/branch/master/graph/badge.svg)](https://codecov.io/gh/LNP-BP/rust-amplify)
+[![unsafe forbidden](https://img.shields.io/badge/unsafe-forbidden-success.svg)](https://github.com/rust-secure-code/safety-dance/)
 [![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 
 Amplifying Rust language capabilities: multiple generic trait implementations, 
@@ -12,6 +14,66 @@ type wrappers, derive macros.
 Minimum supported rust compiler version (MSRV): 1.41.1
 
 ## Main features
+
+### Generics
+
+Library proposes **generic implementation strategies**, which allow multiple
+generic trait implementations.
+
+Implementing trait for a generic type ("blanket implementation") more than once 
+(applies both for local and foreign traits) - or implement foreign trait for a 
+concrete type where there is some blanket implementation in the upstream. The 
+solution is to use special pattern by @Kixunil. I use it widely and have a 
+special helper type in [`src/strategy.rs`]()src/strategy.rs module.
+
+With that helper type you can write the following code, which will provide you
+with efficiently multiple blanket implementations of some trait `SampleTrait`:
+
+```rust
+pub trait SampleTrait {
+    fn sample_trait_method(&self);
+}
+
+// Define strategies, one per specific implementation that you need,
+// either blanket or concrete
+pub struct StrategyA;
+pub struct StrategyB;
+pub struct StrategyC;
+
+// Define a single marker type
+pub trait Strategy {
+    type Strategy;
+}
+
+// Do a single blanket implementation using Holder and Strategy marker trait
+impl<T> SampleTrait for T
+where
+    T: Strategy + Clone,
+    amplify::Holder<T, <T as Strategy>::Strategy>: SampleTrait,
+{
+    // Do this for each of sample trait methods:
+    fn sample_trait_method(&self) {
+        amplify::Holder::new(self.clone()).sample_trait_method()
+    }
+}
+
+// Do this type of implementation for each of the strategies
+impl<T> SampleTrait for amplify::Holder<T, StrategyA>
+where
+    T: Strategy,
+{
+    fn sample_trait_method(&self) {
+        /* ... write your implementation-specific code here */
+    }
+}
+
+# pub struct ConcreteTypeA;
+// Finally, apply specific implementation strategy to a concrete type
+// (or do it in a blanket generic way) as a marker:
+impl Strategy for ConcreteTypeA {
+    type Strategy = StrategyA;
+}
+```
 
 ### Derive macros
 
@@ -65,22 +127,20 @@ See more in `amplify_derive` crate [README](derive/README.md).
   - `set!` & `bset!` for a rappid `HashSet` and `BTreeSet` creation
   - `list!` for `LinkedList`
 
-### Generics
-
-Library proposes **generic implementation strategies**, which allow multiple
-generic trait implementations. See `src/strategy.rs` mod for the details.
-
 ### Wapper type
 
 TODO: write description
 
+
 ## Build
 
-
 ```shell script
-rustup install nightly
-rustup default nightly
 cargo build --all
 cargo test
 ```
+
+As a reminder, minimum supported rust compiler version (MSRV) is 1.41.1, so it
+can be build with either nightly, dev, stable or 1.41+ version of the rust 
+compiler. Use `rustup` for getting the proper version, or add `+toolchain`
+parameter to both `cargo build` and `cargo test` commands.
 

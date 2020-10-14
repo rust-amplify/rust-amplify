@@ -1,5 +1,6 @@
 # Rust Amplify Library: derive macros
 [![crates.io](https://meritbadge.herokuapp.com/amplify_derive)](https://crates.io/crates/amplify_derive)
+[![Docs](https://docs.rs/amplify_derive/badge.svg)](https://docs.rs/amplify_derive)
 ![Build](https://github.com/LNP-BP/rust-amplify/workflows/Build/badge.svg)
 ![Tests](https://github.com/LNP-BP/rust-amplify/workflows/Tests/badge.svg)
 ![Lints](https://github.com/LNP-BP/rust-amplify/workflows/Lints/badge.svg)
