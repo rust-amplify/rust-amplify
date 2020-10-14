@@ -37,11 +37,13 @@ extern crate async_trait;
 #[cfg(feature = "serde")]
 #[macro_use]
 extern crate serde_crate as serde;
+#[cfg(feature = "stringly_conversions")]
+pub extern crate stringly_conversions;
+#[cfg(feature = "stringly_conversions")]
+pub use stringly_conversions::*;
 
 #[macro_use]
 mod macros;
-#[macro_use]
-mod convert;
 #[macro_use]
 mod wrapper;
 
