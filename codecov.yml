@@ -5,8 +5,13 @@ coverage:
   precision: 1
   round: nearest
   range: "0...95"
+  # TODO: Update codecov default requirements after v0.1 release
   status:
     project:
       default:
-        target: 50%
-        threshold: 2%
+        target: 0%
+        threshold: 1%
+    patch:
+      default:
+        target: 0%
+        threshold: 1%
