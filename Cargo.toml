@@ -1,6 +1,6 @@
 [package]
 name = "amplify"
-version = "1.2.1"
+version = "2.0.0"
 description = "Amplifying Rust language capabilities: multiple generic trait implementations, type wrappers, derive macros"
 authors = ["Dr. Maxim Orlovsky <orlovsky@pandoracore.com>", "Martin Habovstiak <martin.habovstiak@gmail.com>"]
 keywords = ["generics", "core", "no_std", "wrap", "patterns"]
@@ -30,6 +30,7 @@ all = ["serde", "std", "tor", "parse_arg"]
 serde = ["serde_crate", "torut/serialize", "std", "stringly_conversions", "stringly_conversions/serde_str_helpers"]
 default = ["std"]
 std = []
+nightly = []
 tor = ["torut/v3", "torut/v2", "ed25519-dalek", "parse_arg", "std"]
 vendored_openssl = ["torut/vendored_openssl"]
 
