@@ -38,6 +38,17 @@ macro_rules! s {
     };
 }
 
+/// This macro allows more semantically-clear code (which can be used especially
+/// with structure initialization), indicating that instead of type value we are
+/// generating no value at all (empty collection or data structure filled with
+/// information indicating absence of data)
+#[macro_export]
+macro_rules! none {
+    () => {
+        Default::default()
+    };
+}
+
 /// Macro for creating [`HashMap`] in the same manner as `vec!` is used for
 /// [`Vec`]:
 /// ```
