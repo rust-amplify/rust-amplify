@@ -20,8 +20,9 @@ Minimum supported rust compiler version (MSRV): 1.41.1
 - [Display](#display-derive)
 - [From](#from-derive)
 - [Error](#error-derive)
-- Getters
-- AsAny
+- [Getters](#getters-derive)
+- [Wrapper](#wrapper-derive)
+- [AsAny](#asany-derive)
 
 ## Display derive 
 
@@ -176,4 +177,134 @@ pub enum Error {
 
 #[derive(From)]
 pub struct Wrapper(u32, i16);
+```
+
+## Wrapper derive
+
+Creates rust new type wrapping existing type. Can be used in sturctures
+containing multiple named or unnamed fields; in this case the field you'd
+like to wrap should be marked with `#[wrap]` attribute; otherwise the first
+field is assumed to be the wrapped one.
+
+Use with multiple fileds requires that you do `From` and `Default` derive
+on the main structure.
+
+Supports automatic implementation of the following traits:
+* `amplify::Wrapper`
+* `AsRef`
+* `AsMut`
+* `Borrow`
+* `BorrowMut`
+* `Deref`
+* `DerefMut`
+
+Complete usage of this derive macro is possible only with nightly rust
+compiler with `trivial_bounds` feature gate set for the crate and `nightly`
+feature set. This will give you an automatic implementation for additional
+traits, it they are implemented for the wrapped type:
+* `Display`
+* `LowerHex`
+* `UpperHex`
+* `LowerExp`
+* `UpperExp`
+* `Octal`
+* `Index`
+* `IndexMut`
+* `Add`
+* `AddAssign`
+* `Sub`
+* `SubAssign`
+* `Mul`
+* `MulAssign`
+* `Div`
+* `DivAssign`
+
+Other traits, such as `PartialEq`, `Eq`, `PartialOrd`, `Ord`,
+`Hash` can be implemented using standard `#[derive]` attribute in the
+same manner as `Default`, `Debug` and `From`
+
+### Example
+
+```rust
+use std::marker::PhantomData;
+use amplify::Wrapper;
+
+#[derive(Clone, Wrapper, Default, From, Debug)]
+struct Wrapped<T, U>(
+    #[wrap]
+    #[from]
+    HashMap<usize, Vec<U>>,
+    PhantomData<T>,
+)
+where
+    U: Sized + Clone;
+
+let w = Wrapped::<(), u8>::default();
+assert_eq!(w.into_inner(), HashMap::<usize, Vec<u8>>::default());
+```
+
+## Getters derive
+
+Creates getter methods matching field names for all fields within a
+structure (including public and private fields). Getters return reference
+types.
+
+### Example
+
+```
+#[derive(Getters, Default)]
+struct One {
+    a: Vec<u8>,
+    pub b: bool,
+    pub(self) c: u8,
+}
+
+let one = One::default();
+assert_eq!(one.a(), &Vec::<u8>::default());
+assert_eq!(one.b(), &bool::default());
+assert_eq!(one.c(), &u8::default());
+```
+
+## AsAny derive
+
+Trait [`amplify::AsAny`] allows simple conversion of any type into a generic
+"thick" pointer `&dyn Any` (see [`::core::any::Any`]), that can be later
+converted back to the original type with a graceful failing for all other
+conversions. `AsAny` derive macro allows to implement this trait for
+arbitrary time without much hussle:
+
+### Example
+
+```
+# #[macro_use] extern crate amplify_derive;
+extern crate amplify;
+use amplify::AsAny;
+
+#[derive(AsAny, Copy, Clone, PartialEq, Eq, Debug)]
+struct Point {
+    pub x: u64,
+    pub y: u64,
+}
+
+#[derive(AsAny, PartialEq, Debug)]
+struct Circle {
+    pub radius: f64,
+    pub center: Point,
+}
+
+let mut point = Point { x: 1, y: 2 };
+let point_ptr = point.as_any();
+
+let mut circle = Circle {
+    radius: 18.,
+    center: point,
+};
+let circle_ptr = circle.as_any();
+
+assert_eq!(point_ptr.downcast_ref(), Some(&point));
+assert_eq!(circle_ptr.downcast_ref(), Some(&circle));
+assert_eq!(circle_ptr.downcast_ref::<Point>(), None);
+
+let p = point_ptr.downcast_ref::<Point>().unwrap();
+assert_eq!(p.x, 1)
 ```

@@ -82,6 +82,7 @@ impl Strategy for ConcreteTypeA {
 - Error
 - Getters
 - AsAny
+- Wrapper
 
 A sample of what can be done with the macros:
 ```rust
@@ -117,10 +118,13 @@ pub enum Error {
 }
 ```
 
-See more in `amplify_derive` crate [README](derive/README.md).
+More information is given in `amplify_derive` crate [README](derive/README.md).
 
 ### Macros
 
+- `none!` as an alias for `Default::default()` on collection types and types
+  for which semantics makes it sensible to emphasize that the operation 
+  initializes empty structure.
 - `s!` for fast `&str` -> `String` conversions
 - Collection-generating macros:
   - `map!` & `bmap!` for a rappid `HashMap` and `BTreeMap` creation
@@ -129,7 +133,14 @@ See more in `amplify_derive` crate [README](derive/README.md).
 
 ### Wapper type
 
-TODO: write description
+Wrapper trait helps in creating wrapped rust *newtypes*, Wrapped types are used 
+for allowing implemeting foreign traits to foreign types:
+<https://doc.rust-lang.org/stable/rust-by-example/generics/new_types.html>
+
+Trait defines convenient methods for accessing inner data, construct
+and deconstruct newtype. It also serves as a marker trait for newtypes.
+
+The trait works well with `#[derive(Wrapper)]` from `amplify_derive` crate
 
 
 ## Build

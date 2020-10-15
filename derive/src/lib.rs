@@ -33,7 +33,6 @@
 extern crate quote;
 #[macro_use]
 extern crate syn;
-extern crate amplify;
 
 /// Macro producing [`Result::Err`] with [`syn::Error`] containing span
 /// information from `$attr` (first) argument and formatted string describing
@@ -185,6 +184,8 @@ pub fn derive_display(input: TokenStream) -> TokenStream {
 /// are used. With `#[derive(Display)]` and `[display(doc_comments)]` it uses
 /// doc comments for generating error descriptions; with `#[derive(From)]` it
 /// may automatically implement transofrations from other error types.
+///
+/// # Example
 ///
 /// ```
 /// # #[macro_use] extern crate amplify_derive;
@@ -338,13 +339,25 @@ pub fn derive_as_any(input: TokenStream) -> TokenStream {
         .into()
 }
 
+/// Creates getter methods matching field names for all fields within a
+/// structure (including public and private fields). Getters return reference
+/// types.
+///
+/// # Example
+///
 /// ```
 /// # #[macro_use] extern crate amplify_derive;
-/// #[derive(Getters)]
+/// #[derive(Getters, Default)]
 /// struct One {
 ///     a: Vec<u8>,
-///     b: bool,
+///     pub b: bool,
+///     pub(self) c: u8,
 /// }
+///
+/// let one = One::default();
+/// assert_eq!(one.a(), &Vec::<u8>::default());
+/// assert_eq!(one.b(), &bool::default());
+/// assert_eq!(one.c(), &u8::default());
 /// ```
 #[proc_macro_derive(Getters)]
 pub fn derive_getters(input: TokenStream) -> TokenStream {
@@ -354,13 +367,67 @@ pub fn derive_getters(input: TokenStream) -> TokenStream {
         .into()
 }
 
+/// Creates rust new type wrapping existing type. Can be used in sturctures
+/// containing multiple named or unnamed fields; in this case the field you'd
+/// like to wrap should be marked with `#[wrap]` attribute; otherwise the first
+/// field is assumed to be the wrapped one.
+///
+/// Use with multiple fileds requires that you do `From` and `Default` derive
+/// on the main structure.
+///
+/// Supports automatic implementation of the following traits:
+/// * [`amplify::Wrapper`]
+/// * [`AsRef`]
+/// * [`AsMut`]
+/// * [`Borrow`]
+/// * [`BorrowMut`]
+/// * [`Deref`]
+/// * [`DerefMut`]
+///
+/// Complete usage of this derive macro is possible only with nightly rust
+/// compiler with `trivial_bounds` feature gate set for the crate and `nightly`
+/// feature set. This will give you an automatic implementation for additional
+/// traits, it they are implemented for the wrapped type:
+/// * [`Display`]
+/// * [`LowerHex`]
+/// * [`UpperHex`]
+/// * [`LowerExp`]
+/// * [`UpperExp`]
+/// * [`Octal`]
+/// * [`Index`]
+/// * [`IndexMut`]
+/// * [`Add`]
+/// * [`AddAssign`]
+/// * [`Sub`]
+/// * [`SubAssign`]
+/// * [`Mul`]
+/// * [`MulAssign`]
+/// * [`Div`]
+/// * [`DivAssign`]
+///
+/// Other traits, such as [`PartialEq`], [`Eq`], [`PartialOrd`], [`Ord`],
+/// [`Hash`] can be implemented using standard `#[derive]` attribute in the
+/// same manner as [`Default`], [`Debug`] and [`From`]
+///
+/// # Example
+///
+/// Simple wrapper:
+/// ```
+/// # #[macro_use] extern crate amplify_derive;
+/// use amplify::Wrapper;
+///
+/// #[derive(Wrapper, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Default, From, Debug)]
+/// struct Uint64(#[from] u64);
+/// ```
+///
+/// More complex wrapper with multiple unnamed fields:
 /// ```
 /// # #[macro_use] extern crate amplify_derive;
 /// # use std::collections::HashMap;
 /// use std::marker::PhantomData;
 /// use amplify::Wrapper;
 ///
-/// #[derive(Clone, Wrapper, Default, From)]
+/// #[derive(Clone, Wrapper, Default, From, Debug)]
 /// struct Wrapped<T, U>(
 ///     #[wrap]
 ///     #[from]
@@ -369,6 +436,9 @@ pub fn derive_getters(input: TokenStream) -> TokenStream {
 /// )
 /// where
 ///     U: Sized + Clone;
+///
+/// let w = Wrapped::<(), u8>::default();
+/// assert_eq!(w.into_inner(), HashMap::<usize, Vec<u8>>::default());
 /// ```
 #[proc_macro_derive(Wrapper, attributes(wrap))]
 pub fn derive_wrapper(input: TokenStream) -> TokenStream {

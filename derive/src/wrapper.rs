@@ -100,6 +100,12 @@ pub(crate) fn inner(input: DeriveInput) -> Result<TokenStream2> {
         }
     };
 
+    let where_clause = if where_clause.is_some() {
+        quote! { #where_clause }
+    } else {
+        quote! { where Self: Sized }
+    };
+
     Ok(quote! {
         impl #impl_generics ::amplify::Wrapper for #ident_name #ty_generics #where_clause {
             type Inner = #from;
