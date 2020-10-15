@@ -23,4 +23,4 @@ path = "src/lib.rs"
 [dependencies]
 quote = "~1.0.7"
 syn = "~1.0.31"
-amplify = "~1.2.0"
+amplify = { path = ".." }

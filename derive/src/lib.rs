@@ -354,18 +354,23 @@ pub fn derive_getters(input: TokenStream) -> TokenStream {
         .into()
 }
 
-/// ```ignore
+/// ```
 /// # #[macro_use] extern crate amplify_derive;
 /// # use std::collections::HashMap;
 /// use std::marker::PhantomData;
+/// use amplify::Wrapper;
 ///
-/// #[derive(Clone, Wrapper)]
-/// #[wrap(Debug, Default, Hash, PartialEq, Eq)]
-/// struct Wrapped<T, U>(HashMap<usize, Vec<U>>, PhantomData<T>)
+/// #[derive(Clone, Wrapper, Default, From)]
+/// struct Wrapped<T, U>(
+///     #[wrap]
+///     #[from]
+///     HashMap<usize, Vec<U>>,
+///     PhantomData<T>,
+/// )
 /// where
-///     U: Sized + Eq;
+///     U: Sized + Clone;
 /// ```
-#[proc_macro_derive(Wrapper)]
+#[proc_macro_derive(Wrapper, attributes(wrap))]
 pub fn derive_wrapper(input: TokenStream) -> TokenStream {
     let derive_input = parse_macro_input!(input as DeriveInput);
     wrapper::inner(derive_input)
