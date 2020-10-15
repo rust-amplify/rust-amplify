@@ -417,7 +417,7 @@ pub fn derive_getters(input: TokenStream) -> TokenStream {
 /// use amplify::Wrapper;
 ///
 /// #[derive(Wrapper, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Default, From, Debug)]
-/// struct Uint64(#[from] u64);
+/// struct Uint64(u64);
 /// ```
 ///
 /// More complex wrapper with multiple unnamed fields:
