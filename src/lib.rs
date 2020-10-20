@@ -35,7 +35,7 @@
 #[macro_use]
 extern crate serde_crate as serde;
 #[cfg(feature = "stringly_conversions")]
-#[macro_use]
+#[cfg_attr(feature = "std", macro_use)]
 pub extern crate stringly_conversions;
 #[cfg(feature = "stringly_conversions")]
 pub use stringly_conversions::*;
