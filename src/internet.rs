@@ -330,9 +330,9 @@ impl From<OnionAddressV2> for InetAddr {
     }
 }
 
-#[cfg(all(feature = "stringly_conversions", feature = "serde_str_helpers"))]
+#[cfg(feature = "stringly_conversions")]
 impl_try_from_stringly_standard!(InetAddr);
-#[cfg(all(feature = "stringly_conversions", feature = "serde_str_helpers"))]
+#[cfg(feature = "stringly_conversions")]
 impl_into_stringly_standard!(InetAddr);
 
 impl FromStr for InetAddr {
@@ -564,9 +564,9 @@ pub struct InetSocketAddr {
     pub port: u16,
 }
 
-#[cfg(all(feature = "stringly_conversions", feature = "serde_str_helpers"))]
+#[cfg(feature = "stringly_conversions")]
 impl_try_from_stringly_standard!(InetSocketAddr);
-#[cfg(all(feature = "stringly_conversions", feature = "serde_str_helpers"))]
+#[cfg(feature = "stringly_conversions")]
 impl_into_stringly_standard!(InetSocketAddr);
 
 impl InetSocketAddr {
@@ -733,9 +733,9 @@ pub struct InetSocketAddrExt(
     pub InetSocketAddr,
 );
 
-#[cfg(all(feature = "stringly_conversions", feature = "serde_str_helpers"))]
+#[cfg(feature = "stringly_conversions")]
 impl_try_from_stringly_standard!(InetSocketAddrExt);
-#[cfg(all(feature = "stringly_conversions", feature = "serde_str_helpers"))]
+#[cfg(feature = "stringly_conversions")]
 impl_into_stringly_standard!(InetSocketAddrExt);
 
 impl InetSocketAddrExt {

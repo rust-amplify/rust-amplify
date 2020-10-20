@@ -1,6 +1,10 @@
 Change Log
 ==========
 
+2.0.3
+-----
+- Fixing feature set related to stringly conversions and serde helpers
+
 2.0.2
 -----
 - Fixing serde serialization helpers for `InetSocketAddr` and `InetSocketAddrExt` 
