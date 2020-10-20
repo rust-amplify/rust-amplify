@@ -421,6 +421,8 @@ pub fn derive_getters(input: TokenStream) -> TokenStream {
 /// * [`Octal`]
 /// * [`Index`]
 /// * [`IndexMut`]
+/// * [`Neg`]
+/// * [`Not`]
 /// * [`Add`]
 /// * [`AddAssign`]
 /// * [`Sub`]
@@ -429,6 +431,18 @@ pub fn derive_getters(input: TokenStream) -> TokenStream {
 /// * [`MulAssign`]
 /// * [`Div`]
 /// * [`DivAssign`]
+/// * [`Rem`]
+/// * [`RemAssign`]
+/// * [`Shl`]
+/// * [`ShlAssign`]
+/// * [`Shr`]
+/// * [`ShrAssign`]
+/// * [`BitAnd`]
+/// * [`BitAndAssign`]
+/// * [`BitOr`]
+/// * [`BitOrAssign`]
+/// * [`BitXor`]
+/// * [`BitXorAssign`]
 ///
 /// Other traits, such as [`PartialEq`], [`Eq`], [`PartialOrd`], [`Ord`],
 /// [`Hash`] can be implemented using standard `#[derive]` attribute in the
@@ -445,8 +459,12 @@ pub fn derive_getters(input: TokenStream) -> TokenStream {
 ///     Wrapper, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Default, From, Debug, Display,
 /// )]
 /// #[display(inner)]
-/// #[wrapper(LowerHex, Octal, Add, AddAssign, Sub, SubAssign)]
-/// struct Uint64(u64);
+/// #[wrapper(LowerHex, UpperHex, Octal)]
+/// #[wrapper(Neg, Add, Sub, Div, Mul, Rem)]
+/// #[wrapper(AddAssign, SubAssign, DivAssign, MulAssign, RemAssign)]
+/// #[wrapper(Not, Shl, Shr, BitAnd, BitOr, BitXor)]
+/// #[wrapper(ShlAssign, ShrAssign, BitAndAssign, BitOrAssign, BitXorAssign)]
+/// struct Int64(i64);
 /// ```
 ///
 /// More complex wrapper with multiple unnamed fields:

@@ -32,14 +32,28 @@ enum WrapperDerives {
     UpperExp,
     Index,
     IndexMut,
+    Neg,
+    Not,
     Add,
     Sub,
     Mul,
     Div,
+    Rem,
+    Shl,
+    Shr,
+    BitAnd,
+    BitOr,
+    BitXor,
     AddAssign,
     SubAssign,
     MulAssign,
     DivAssign,
+    RemAssign,
+    ShlAssign,
+    ShrAssign,
+    BitAndAssign,
+    BitOrAssign,
+    BitXorAssign,
 }
 
 impl WrapperDerives {
@@ -62,13 +76,27 @@ impl WrapperDerives {
                     "Index" => Some(Self::Index),
                     "IndexMut" => Some(Self::IndexMut),
                     "Add" => Some(Self::Add),
+                    "Neg" => Some(Self::Neg),
+                    "Not" => Some(Self::Not),
                     "Sub" => Some(Self::Sub),
                     "Mul" => Some(Self::Mul),
                     "Div" => Some(Self::Div),
+                    "Rem" => Some(Self::Rem),
+                    "Shl" => Some(Self::Shl),
+                    "Shr" => Some(Self::Shr),
+                    "BitAnd" => Some(Self::BitAnd),
+                    "BitOr" => Some(Self::BitOr),
+                    "BitXor" => Some(Self::BitXor),
                     "AddAssign" => Some(Self::AddAssign),
                     "SubAssign" => Some(Self::SubAssign),
                     "MulAssign" => Some(Self::MulAssign),
                     "DivAssign" => Some(Self::DivAssign),
+                    "RemAssign" => Some(Self::RemAssign),
+                    "ShlAssign" => Some(Self::ShlAssign),
+                    "ShrAssign" => Some(Self::ShrAssign),
+                    "BitAndAssign" => Some(Self::BitAndAssign),
+                    "BitOrAssign" => Some(Self::BitOrAssign),
+                    "BitXorAssign" => Some(Self::BitXorAssign),
                     _ => None,
                 })
             },
@@ -151,6 +179,26 @@ impl WrapperDerives {
                     }
                 }
             },
+            Self::Neg => quote! {
+                impl #impl_generics ::core::ops::Neg for #ident_name #ty_generics #where_clause
+                {
+                    type Output = Self;
+
+                    fn neg(self) -> Self {
+                        Self::from_inner(::core::ops::Neg::neg(self.into_inner()))
+                    }
+                }
+            },
+            Self::Not => quote! {
+                impl #impl_generics ::core::ops::Not for #ident_name #ty_generics #where_clause
+                {
+                    type Output = Self;
+
+                    fn not(self) -> Self {
+                        Self::from_inner(::core::ops::Not::not(self.into_inner()))
+                    }
+                }
+            },
             Self::Add => quote! {
                 impl #impl_generics ::core::ops::Add for #ident_name #ty_generics #where_clause
                 {
@@ -191,6 +239,66 @@ impl WrapperDerives {
                     }
                 }
             },
+            Self::Rem => quote! {
+                impl #impl_generics ::core::ops::Rem for #ident_name #ty_generics #where_clause
+                {
+                    type Output = Self;
+
+                    fn rem(self, rhs: Self) -> Self {
+                        Self::from_inner(::core::ops::Rem::rem(self.into_inner(), rhs.into_inner()))
+                    }
+                }
+            },
+            Self::Shl => quote! {
+                impl #impl_generics ::core::ops::Shl for #ident_name #ty_generics #where_clause
+                {
+                    type Output = Self;
+
+                    fn shl(self, rhs: Self) -> Self {
+                        Self::from_inner(::core::ops::Shl::shl(self.into_inner(), rhs.into_inner()))
+                    }
+                }
+            },
+            Self::Shr => quote! {
+                impl #impl_generics ::core::ops::Shr for #ident_name #ty_generics #where_clause
+                {
+                    type Output = Self;
+
+                    fn shr(self, rhs: Self) -> Self {
+                        Self::from_inner(::core::ops::Shr::shr(self.into_inner(), rhs.into_inner()))
+                    }
+                }
+            },
+            Self::BitAnd => quote! {
+                impl #impl_generics ::core::ops::BitAnd for #ident_name #ty_generics #where_clause
+                {
+                    type Output = Self;
+
+                    fn bitand(self, rhs: Self) -> Self {
+                        Self::from_inner(::core::ops::BitAnd::bitand(self.into_inner(), rhs.into_inner()))
+                    }
+                }
+            },
+            Self::BitOr => quote! {
+                impl #impl_generics ::core::ops::BitOr for #ident_name #ty_generics #where_clause
+                {
+                    type Output = Self;
+
+                    fn bitor(self, rhs: Self) -> Self {
+                        Self::from_inner(::core::ops::BitOr::bitor(self.into_inner(), rhs.into_inner()))
+                    }
+                }
+            },
+            Self::BitXor => quote! {
+                impl #impl_generics ::core::ops::BitXor for #ident_name #ty_generics #where_clause
+                {
+                    type Output = Self;
+
+                    fn bitxor(self, rhs: Self) -> Self {
+                        Self::from_inner(::core::ops::BitXor::bitxor(self.into_inner(), rhs.into_inner()))
+                    }
+                }
+            },
             Self::AddAssign => quote! {
                 impl #impl_generics ::core::ops::AddAssign for #ident_name #ty_generics #where_clause
                 {
@@ -220,6 +328,54 @@ impl WrapperDerives {
                 {
                     fn div_assign(&mut self, rhs: Self) {
                         ::core::ops::DivAssign::div_assign(self.as_inner_mut(), rhs.into_inner())
+                    }
+                }
+            },
+            Self::RemAssign => quote! {4
+                impl #impl_generics ::core::ops::RemAssign for #ident_name #ty_generics #where_clause
+                {
+                    fn rem_assign(&mut self, rhs: Self) {
+                        ::core::ops::RemAssign::rem_assign(self.as_inner_mut(), rhs.into_inner())
+                    }
+                }
+            },
+            Self::ShlAssign => quote! {
+                impl #impl_generics ::core::ops::ShlAssign for #ident_name #ty_generics #where_clause
+                {
+                    fn shl_assign(&mut self, rhs: Self) {
+                        ::core::ops::ShlAssign::shl_assign(self.as_inner_mut(), rhs.into_inner())
+                    }
+                }
+            },
+            Self::ShrAssign => quote! {
+                impl #impl_generics ::core::ops::ShrAssign for #ident_name #ty_generics #where_clause
+                {
+                    fn shr_assign(&mut self, rhs: Self) {
+                        ::core::ops::ShrAssign::shr_assign(self.as_inner_mut(), rhs.into_inner())
+                    }
+                }
+            },
+            Self::BitAndAssign => quote! {
+                impl #impl_generics ::core::ops::BitAndAssign for #ident_name #ty_generics #where_clause
+                {
+                    fn bitand_assign(&mut self, rhs: Self) {
+                        ::core::ops::BitAndAssign::bitand_assign(self.as_inner_mut(), rhs.into_inner())
+                    }
+                }
+            },
+            Self::BitOrAssign => quote! {
+                impl #impl_generics ::core::ops::BitOrAssign for #ident_name #ty_generics #where_clause
+                {
+                    fn bitor_assign(&mut self, rhs: Self) {
+                        ::core::ops::BitOrAssign::bitor_assign(self.as_inner_mut(), rhs.into_inner())
+                    }
+                }
+            },
+            Self::BitXorAssign => quote! {
+                impl #impl_generics ::core::ops::BitXorAssign for #ident_name #ty_generics #where_clause
+                {
+                    fn bitxor_assign(&mut self, rhs: Self) {
+                        ::core::ops::BitXorAssign::bitxor_assign(self.as_inner_mut(), rhs.into_inner())
                     }
                 }
             },

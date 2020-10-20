@@ -1,6 +1,12 @@
 Change Log
 ==========
 
+2.0.6
+-----
+- Itroduction of `#[wrapper()]` meta field for deriving from internal 
+  representation
+- More internal derive types: unitary operations, bitwise and rem.
+
 2.0.5
 -----
 - Fixed rare case in Wrapper derive for types having synonymous 
