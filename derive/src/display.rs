@@ -101,7 +101,7 @@ impl FormattingTrait {
 enum Technique {
     FromTrait(FormattingTrait),
     FromMethod(Path),
-    WithFormat(LitStr),
+    WithFormat(LitStr, Option<LitStr>),
     DocComments,
 }
 
@@ -118,12 +118,13 @@ impl Technique {
             .map_or(Ok(None), |r| r.map(Some))?
         {
             Some(Meta::List(list)) => {
-                if list.nested.len() > 1 {
+                if list.nested.len() > 2 {
                     err!(span, "too many arguments")
                 }
-                match list.nested.first() {
+                let mut iter = list.nested.iter();
+                let mut res = match iter.next() {
                     Some(NestedMeta::Lit(Lit::Str(format))) => {
-                        Some(Self::WithFormat(format.clone()))
+                        Some(Self::WithFormat(format.clone(), None))
                     }
                     Some(NestedMeta::Meta(Meta::Path(path))) if path.is_ident("doc_comments") => {
                         Some(Self::DocComments)
@@ -134,35 +135,71 @@ impl Technique {
                     ),
                     Some(_) => err!(span, "argument must be a string literal"),
                     None => err!(span, "argument is required"),
+                };
+                match iter.next() {
+                    Some(NestedMeta::Meta(Meta::NameValue(MetaNameValue {
+                        path,
+                        lit: Lit::Str(alt),
+                        ..
+                    }))) => {
+                        if Some("alt".to_string()) == path.get_ident().map(Ident::to_string) {
+                            if let Some(Technique::WithFormat(fmt, _)) = res {
+                                res = Some(Technique::WithFormat(fmt, Some(alt.clone())));
+                            } else {
+                                err!(
+                                    span,
+                                    "alternative formatting can be given only if \
+                                     the first argument is a format string"
+                                )
+                            }
+                        } else {
+                            err!(span, "unknown attribute argument")
+                        }
+                    }
+                    None => (),
+                    _ => err!(span, "unrecognizable second argument"),
                 }
+                res
             }
             Some(Meta::NameValue(MetaNameValue {
                 lit: Lit::Str(format),
                 ..
-            })) => Some(Self::WithFormat(format)),
+            })) => Some(Self::WithFormat(format, None)),
             Some(_) => err!(span, "argument must be a string literal"),
             None => None,
         };
         Ok(res)
     }
 
-    pub fn to_fmt(&self, span: Span) -> Option<TokenStream2> {
+    pub fn to_fmt(&self, span: Span, alt: bool) -> Option<TokenStream2> {
         match self {
             Self::FromTrait(fmt) => Some(fmt.into_token_stream2(span)),
             Self::FromMethod(path) => Some(quote! {#path}),
-            Self::WithFormat(fmt) => Some(quote! {#fmt}),
+            Self::WithFormat(fmt, fmt_alt) => Some(if alt && fmt_alt.is_some() {
+                let alt = fmt_alt
+                    .as_ref()
+                    .expect("we just checked that there are data");
+                quote! {#alt}
+            } else {
+                quote! {#fmt}
+            }),
             Self::DocComments => None,
         }
     }
 
-    pub fn into_token_stream2(self, fields: &Fields, span: Span) -> TokenStream2 {
+    pub fn into_token_stream2(self, fields: &Fields, span: Span, alt: bool) -> TokenStream2 {
         match self {
             Technique::FromTrait(fmt) => fmt.into_token_stream2(span),
             Technique::FromMethod(path) => quote_spanned! { span =>
                 f.write_str(& #path (&self))
             },
-            Technique::WithFormat(format) => {
-                let format = quote! { #format };
+            Technique::WithFormat(fmt, fmt_alt) => {
+                let format = if alt && fmt_alt.is_some() {
+                    let alt = fmt_alt.expect("we just checked that there are data");
+                    quote! { #alt }
+                } else {
+                    quote! { #fmt }
+                };
                 Self::impl_format(fields, &format, span)
             }
             Technique::DocComments => {
@@ -247,12 +284,19 @@ fn inner_struct(input: &DeriveInput, data: &DataStruct) -> Result<TokenStream2> 
         ),
     ))?;
 
-    let stream = technique.into_token_stream2(&data.fields, input.span());
+    let stream = technique
+        .clone()
+        .into_token_stream2(&data.fields, input.span(), false);
+    let stream_alt = technique.into_token_stream2(&data.fields, input.span(), true);
 
     Ok(quote! {
         impl #impl_generics ::std::fmt::Display for #ident_name #ty_generics #where_clause {
             fn fmt(&self, mut f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-                #stream
+                if !f.alternate() {
+                    #stream
+                } else {
+                    #stream_alt
+                }
             }
         }
     })
@@ -280,62 +324,81 @@ fn inner_enum(input: &DeriveInput, data: &DataEnum) -> Result<TokenStream2> {
             _ => None,
         };
 
-        let format = local.and_then(|t| t.to_fmt(v.span())).or(doc);
+        let format = local
+            .clone()
+            .and_then(|t| t.to_fmt(v.span(), false))
+            .or(doc.clone());
+        let format_alt = local.and_then(|t| t.to_fmt(v.span(), true)).or(doc);
 
-        match (&v.fields, &format) {
-            (Fields::Named(_), None) => {
+        fn has_formatters(ident: &Ident, s: String) -> bool {
+            let m1 = format!("{}{}:", '{', ident);
+            let m2 = format!("{}{}{}", '{', ident, '}');
+            s.contains(&m1) || s.contains(&m2)
+        }
+
+        match (&v.fields, &format, &format_alt) {
+            (Fields::Named(_), None, _) => {
                 display.extend(quote_spanned! { v.span() =>
                     Self::#type_name { .. } => f.write_str(concat!(#type_str, " { .. }")),
                 });
             }
-            (Fields::Unnamed(_), None) => {
+            (Fields::Unnamed(_), None, _) => {
                 display.extend(quote_spanned! { v.span() =>
                     Self::#type_name(..) => f.write_str(concat!(#type_str, "(..)")),
                 });
             }
-            (Fields::Unit, None) => {
+            (Fields::Unit, None, _) => {
                 display.extend(quote_spanned! { v.span() =>
                     Self::#type_name => f.write_str(#type_str),
                 });
             }
-            (Fields::Named(fields), Some(format_str)) => {
+            (Fields::Named(fields), Some(format_str), Some(format_alt)) => {
                 use_global = false;
-                let idents = fields
-                    .named
-                    .iter()
-                    .map(|f| f.ident.as_ref().unwrap())
-                    .filter(|ident| {
-                        let s = format_str.to_string();
-                        let m1 = format!("{}{}:", '{', ident);
-                        let m2 = format!("{}{}{}", '{', ident, '}');
-                        s.contains(&m1) || s.contains(&m2)
-                    })
+                let f = fields.named.iter().map(|f| f.ident.as_ref().unwrap());
+                let idents = f
+                    .clone()
+                    .filter(|ident| has_formatters(ident, format_str.to_string()))
+                    .collect::<Vec<_>>();
+                let idents_alt = f
+                    .filter(|ident| has_formatters(ident, format_alt.to_string()))
                     .collect::<Vec<_>>();
                 display.extend(quote_spanned! { v.span() =>
-                    Self::#type_name { #( #idents, )* .. } => write!(f, #format_str, #( #idents = #idents, )*),
+                    Self::#type_name { #( #idents, )* .. } => {
+                        if !f.alternate() {
+                            write!(f, #format_str, #( #idents = #idents, )*)
+                        } else {
+                            write!(f, #format_alt, #( #idents_alt = #idents_alt, )*)
+                        }
+                    }
                 });
             }
-            (Fields::Unnamed(fields), Some(format_str)) => {
+            (Fields::Unnamed(fields), Some(format_str), Some(format_alt)) => {
                 use_global = false;
-                let idents = (0..fields.unnamed.len())
-                    .map(|i| Ident::new(&format!("_{}", i), v.span()))
-                    .filter(|ident| {
-                        let s = format_str.to_string();
-                        let m1 = format!("{}{}:", '{', ident);
-                        let m2 = format!("{}{}{}", '{', ident, '}');
-                        s.contains(&m1) || s.contains(&m2)
-                    })
+                let f = (0..fields.unnamed.len()).map(|i| Ident::new(&format!("_{}", i), v.span()));
+                let idents = f
+                    .clone()
+                    .filter(|ident| has_formatters(ident, format_str.to_string()))
+                    .collect::<Vec<_>>();
+                let idents_alt = f
+                    .filter(|ident| has_formatters(ident, format_alt.to_string()))
                     .collect::<Vec<_>>();
                 display.extend(quote_spanned! { v.span() =>
-                    Self::#type_name ( #( #idents, )* .. ) => write!(f, #format_str, #( #idents = #idents, )*),
+                    Self::#type_name ( #( #idents, )* .. ) => {
+                        if !f.alternate() {
+                            write!(f, #format_str, #( #idents = #idents, )*)
+                        } else {
+                            write!(f, #format_alt, #( #idents_alt = #idents_alt, )*)
+                        }
+                    },
                 });
             }
-            (Fields::Unit, Some(format_str)) => {
+            (Fields::Unit, Some(format_str), Some(format_alt)) => {
                 use_global = false;
                 display.extend(quote_spanned! { v.span() =>
-                    Self::#type_name => f.write_str(#format_str),
+                    Self::#type_name => f.write_str(if !f.alternate() { #format_str } else { #format_alt }),
                 });
             }
+            _ => unreachable!(),
         }
     }
 
@@ -345,7 +408,20 @@ fn inner_enum(input: &DeriveInput, data: &DataEnum) -> Result<TokenStream2> {
                 #display
             }
         },
-        (true, Some(tenchique)) => tenchique.into_token_stream2(&Fields::Unit, input.span()),
+        (true, Some(tenchique)) => {
+            let format_str =
+                tenchique
+                    .clone()
+                    .into_token_stream2(&Fields::Unit, input.span(), false);
+            let format_alt = tenchique.into_token_stream2(&Fields::Unit, input.span(), true);
+            quote! {
+                if f.alternate() {
+                    #format_alt
+                } else {
+                    #format_str
+                }
+            }
+        }
         _ => unreachable!(),
     };
 
@@ -374,7 +450,7 @@ fn inner_union(input: &DeriveInput, data: &DataUnion) -> Result<TokenStream2> {
 
         let format = Technique::from_attrs(&field.attrs, field.span())?
             .or(global.clone())
-            .and_then(|t| t.to_fmt(field.span()));
+            .map(|t| (t.to_fmt(field.span(), false), t.to_fmt(field.span(), true)));
 
         match format {
             None => {
@@ -382,16 +458,29 @@ fn inner_union(input: &DeriveInput, data: &DataUnion) -> Result<TokenStream2> {
                     Self::#type_name => f.write_str(#type_str),
                 });
             }
-            Some(format) => {
+            Some((format_str, format_alt)) => {
                 display.push(quote_spanned! { field.span() =>
-                    Self::#type_name => f.write_str(#format),
+                    Self::#type_name => f.write_str(if !f.alternate() { #format_str } else { #format_alt }),
                 });
             }
         }
     }
 
     let content = match global {
-        Some(tenchique) => tenchique.into_token_stream2(&Fields::Unit, input.span()),
+        Some(tenchique) => {
+            let format_str =
+                tenchique
+                    .clone()
+                    .into_token_stream2(&Fields::Unit, input.span(), false);
+            let format_alt = tenchique.into_token_stream2(&Fields::Unit, input.span(), true);
+            quote! {
+                if f.alternate() {
+                    #format_alt
+                } else {
+                    #format_str
+                }
+            }
+        }
         None => quote! {
             match self {
                 #( #display )*

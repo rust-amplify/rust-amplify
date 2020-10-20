@@ -78,7 +78,6 @@ pub(crate) fn inner(input: DeriveInput) -> Result<TokenStream2> {
                             ))?;
                         }
                         let i = Index::from(index);
-                        let i = Index::from(index);
                         source = Some(quote! { #i });
                         from = field.ty.clone();
                     }

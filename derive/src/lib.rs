@@ -99,8 +99,18 @@ use syn::DeriveInput;
 ///     #[derive(Display)]
 ///     #[display("({x}, {y})")]
 ///     struct Point { x: u32, y: u32 }
+///     assert_eq!(format!("{}", Point { x: 0, y: 1 }), "(0, 1)");
 ///    ```
-/// 4. Use of doc comments for descrition representation. In this case doc
+/// 4. Support for alternative formatting with `alt` parameter:
+///    ```
+///     # #[macro_use] extern crate amplify_derive;
+///     #[derive(Display)]
+///     #[display("({x}, {y})", alt = "{x}:{y}")]
+///     struct Point { x: u32, y: u32 }
+///     assert_eq!(format!("{}", Point { x: 0, y: 1 }), "(0, 1)");
+///     assert_eq!(format!("{:#}", Point { x: 0, y: 1 }), "0:1");
+///    ```
+/// 5. Use of doc comments for descrition representation. In this case doc
 ///    comments may also contain formatting like in the case 3:
 ///    ```
 ///     # #[macro_use] extern crate amplify_derive;
@@ -140,7 +150,7 @@ use syn::DeriveInput;
 /// enum Test {
 ///     Some,
 ///
-///     #[display = "OtherName"]
+///     #[display("OtherName")]
 ///     Other,
 ///
 ///     /// Document comment working as display string
@@ -150,7 +160,7 @@ use syn::DeriveInput;
 ///         x: u8,
 ///     },
 ///
-///     #[display = "Custom{x}"]
+///     #[display("Custom{x}", alt = "this is alternative")]
 ///     NamedCustom {
 ///         x: u8,
 ///     },
@@ -158,7 +168,7 @@ use syn::DeriveInput;
 ///     Unnamed(u16),
 ///
 ///     // NB: Use `_`-prefixed indexes for tuple values
-///     #[display = "Custom{_0}"]
+///     #[display("Custom{_0}")]
 ///     UnnamedCustom(String),
 /// }
 ///
@@ -167,6 +177,10 @@ use syn::DeriveInput;
 /// assert_eq!(format!("{}", Test::Named { x: 1 }), "Named { .. }");
 /// assert_eq!(format!("{}", Test::Unnamed(5)), "Unnamed(..)");
 /// assert_eq!(format!("{}", Test::NamedCustom { x: 8 }), "Custom8");
+/// assert_eq!(
+///     format!("{:#}", Test::NamedCustom { x: 8 }),
+///     "this is alternative"
+/// );
 /// assert_eq!(
 ///     format!("{}", Test::UnnamedCustom("Test".to_string())),
 ///     "CustomTest"
