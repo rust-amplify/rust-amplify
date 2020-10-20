@@ -1,10 +1,21 @@
 Change Log
 ==========
 
+2.0.2
+-----
+- Support for `inner` as a Display alias for `{_0}` variant
+
+2.0.1
+-----
+- Fixing display derivation behaviour for typled structs
+
+2.0.0
+-----
+- Support for alternative Display formatting with `alt` attribute parameter
+
 1.2.0
 -----
 - Upgrading to `amplify` v1.2.0
-- Support for alternative Display formatting with `alt` attribute parameter
 
 1.1.0
 -----

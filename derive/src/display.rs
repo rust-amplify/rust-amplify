@@ -103,6 +103,7 @@ enum Technique {
     FromMethod(Path),
     WithFormat(LitStr, Option<LitStr>),
     DocComments,
+    Inner,
 }
 
 impl Technique {
@@ -128,6 +129,9 @@ impl Technique {
                     }
                     Some(NestedMeta::Meta(Meta::Path(path))) if path.is_ident("doc_comments") => {
                         Some(Self::DocComments)
+                    }
+                    Some(NestedMeta::Meta(Meta::Path(path))) if path.is_ident("inner") => {
+                        Some(Self::Inner)
                     }
                     Some(NestedMeta::Meta(Meta::Path(path))) => Some(
                         FormattingTrait::from_path(path, list.span())?
@@ -184,6 +188,13 @@ impl Technique {
                 quote! {#fmt}
             }),
             Self::DocComments => None,
+            Self::Inner => {
+                if alt {
+                    Some(quote! { "{_0:#}" })
+                } else {
+                    Some(quote! { "{_0}" })
+                }
+            }
         }
     }
 
@@ -196,14 +207,22 @@ impl Technique {
             Technique::WithFormat(fmt, fmt_alt) => {
                 let format = if alt && fmt_alt.is_some() {
                     let alt = fmt_alt.expect("we just checked that there are data");
-                    quote! { #alt }
+                    quote_spanned! { span => #alt }
                 } else {
-                    quote! { #fmt }
+                    quote_spanned! { span => #fmt }
                 };
                 Self::impl_format(fields, &format, span)
             }
             Technique::DocComments => {
                 quote! {}
+            }
+            Self::Inner => {
+                let format = if alt {
+                    quote_spanned! { span => "{_0:#}" }
+                } else {
+                    quote_spanned! { span => "{_0}" }
+                };
+                Self::impl_format(fields, &format, span)
             }
         }
     }

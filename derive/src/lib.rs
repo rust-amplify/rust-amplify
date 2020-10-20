@@ -193,6 +193,12 @@ use syn::DeriveInput;
 /// #[derive(Clone, Copy, Debug, Display)]
 /// #[display("{_0}")]
 /// struct Tuple(u8);
+///
+/// #[derive(Clone, Copy, Debug, Display)]
+/// #[display(inner)] // `inner` is synonym to "{_0}"
+/// struct Tuple2(u8);
+///
+/// assert_eq!(format!("{}", Tuple(5)), format!("{}", Tuple2(5)))
 /// ```
 #[proc_macro_derive(Display, attributes(display))]
 pub fn derive_display(input: TokenStream) -> TokenStream {
