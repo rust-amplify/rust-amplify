@@ -1,6 +1,10 @@
 Change Log
 ==========
 
+2.0.4
+-----
+- Including alloc feature sfrom stringly_conversions mod"
+
 2.0.3
 -----
 - Fixing feature set related to stringly conversions and serde helpers
