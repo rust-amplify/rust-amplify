@@ -448,6 +448,11 @@ impl TryFrom<[u8; TORV3_PUBLIC_KEY_LENGTH]> for InetAddr {
 
 /// Transport protocols that may be part of `TransportAddr`
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(Serialize, Deserialize),
+    serde(crate = "serde_crate")
+)]
 #[non_exhaustive]
 #[repr(u8)]
 pub enum Transport {
@@ -537,6 +542,20 @@ impl fmt::Display for Transport {
 /// need to include transport-level protocol information into the socket
 /// details, pls check [`InetSocketAddrExt`]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
+#[cfg_attr(
+    all(feature = "serde", feature = "serde_str_helpers"),
+    derive(Serialize, Deserialize),
+    serde(
+        try_from = "serde_str_helpers::DeserBorrowStr",
+        into = "String",
+        crate = "serde_crate"
+    )
+)]
+#[cfg_attr(
+    all(feature = "serde", not(feature = "serde_str_helpers")),
+    derive(Serialize, Deserialize),
+    serde(crate = "serde_crate")
+)]
 pub struct InetSocketAddr {
     /// Address part of the socket
     pub address: InetAddr,
@@ -687,6 +706,20 @@ impl From<SocketAddrV6> for InetSocketAddr {
 /// Internet socket address of [`InetSocketAddr`] type, extended with a
 /// transport-level protocol information (see [`Transport`])
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
+#[cfg_attr(
+    all(feature = "serde", feature = "serde_str_helpers"),
+    derive(Serialize, Deserialize),
+    serde(
+        try_from = "serde_str_helpers::DeserBorrowStr",
+        into = "String",
+        crate = "serde_crate"
+    )
+)]
+#[cfg_attr(
+    all(feature = "serde", not(feature = "serde_str_helpers")),
+    derive(Serialize, Deserialize),
+    serde(crate = "serde_crate")
+)]
 pub struct InetSocketAddrExt(
     /// Transport-level protocol details (like TCP, UDP etc)
     pub Transport,
