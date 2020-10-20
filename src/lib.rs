@@ -31,17 +31,16 @@
     warnings
 )]
 
-#[cfg(feature = "async")]
-#[macro_use]
-extern crate async_trait;
 #[cfg(feature = "serde")]
 #[macro_use]
 extern crate serde_crate as serde;
+#[cfg(feature = "stringly_conversions")]
+pub extern crate stringly_conversions;
+#[cfg(feature = "stringly_conversions")]
+pub use stringly_conversions::*;
 
 #[macro_use]
 mod macros;
-#[macro_use]
-mod convert;
 #[macro_use]
 mod wrapper;
 
@@ -49,17 +48,9 @@ mod as_any;
 mod bipolar;
 #[cfg(feature = "std")]
 pub mod internet;
-#[cfg(feature = "serde")]
-mod serde_helpers;
-#[cfg(feature = "async")]
-mod service;
 mod strategy;
 
 pub use crate::as_any::AsAny;
 pub use crate::bipolar::Bipolar;
-#[cfg(feature = "serde")]
-pub use crate::serde_helpers::CowHelper;
-#[cfg(feature = "async")]
-pub use crate::service::{Exec, Service, TryService};
 pub use crate::strategy::Holder;
 pub use crate::wrapper::Wrapper;

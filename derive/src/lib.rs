@@ -33,7 +33,6 @@
 extern crate quote;
 #[macro_use]
 extern crate syn;
-extern crate amplify;
 
 /// Macro producing [`Result::Err`] with [`syn::Error`] containing span
 /// information from `$attr` (first) argument and formatted string describing
@@ -100,8 +99,18 @@ use syn::DeriveInput;
 ///     #[derive(Display)]
 ///     #[display("({x}, {y})")]
 ///     struct Point { x: u32, y: u32 }
+///     assert_eq!(format!("{}", Point { x: 0, y: 1 }), "(0, 1)");
 ///    ```
-/// 4. Use of doc comments for descrition representation. In this case doc
+/// 4. Support for alternative formatting with `alt` parameter:
+///    ```
+///     # #[macro_use] extern crate amplify_derive;
+///     #[derive(Display)]
+///     #[display("({x}, {y})", alt = "{x}:{y}")]
+///     struct Point { x: u32, y: u32 }
+///     assert_eq!(format!("{}", Point { x: 0, y: 1 }), "(0, 1)");
+///     assert_eq!(format!("{:#}", Point { x: 0, y: 1 }), "0:1");
+///    ```
+/// 5. Use of doc comments for descrition representation. In this case doc
 ///    comments may also contain formatting like in the case 3:
 ///    ```
 ///     # #[macro_use] extern crate amplify_derive;
@@ -141,7 +150,7 @@ use syn::DeriveInput;
 /// enum Test {
 ///     Some,
 ///
-///     #[display = "OtherName"]
+///     #[display("OtherName")]
 ///     Other,
 ///
 ///     /// Document comment working as display string
@@ -151,7 +160,7 @@ use syn::DeriveInput;
 ///         x: u8,
 ///     },
 ///
-///     #[display = "Custom{x}"]
+///     #[display("Custom{x}", alt = "this is alternative")]
 ///     NamedCustom {
 ///         x: u8,
 ///     },
@@ -159,7 +168,7 @@ use syn::DeriveInput;
 ///     Unnamed(u16),
 ///
 ///     // NB: Use `_`-prefixed indexes for tuple values
-///     #[display = "Custom{_0}"]
+///     #[display("Custom{_0}")]
 ///     UnnamedCustom(String),
 /// }
 ///
@@ -168,6 +177,10 @@ use syn::DeriveInput;
 /// assert_eq!(format!("{}", Test::Named { x: 1 }), "Named { .. }");
 /// assert_eq!(format!("{}", Test::Unnamed(5)), "Unnamed(..)");
 /// assert_eq!(format!("{}", Test::NamedCustom { x: 8 }), "Custom8");
+/// assert_eq!(
+///     format!("{:#}", Test::NamedCustom { x: 8 }),
+///     "this is alternative"
+/// );
 /// assert_eq!(
 ///     format!("{}", Test::UnnamedCustom("Test".to_string())),
 ///     "CustomTest"
@@ -185,6 +198,8 @@ pub fn derive_display(input: TokenStream) -> TokenStream {
 /// are used. With `#[derive(Display)]` and `[display(doc_comments)]` it uses
 /// doc comments for generating error descriptions; with `#[derive(From)]` it
 /// may automatically implement transofrations from other error types.
+///
+/// # Example
 ///
 /// ```
 /// # #[macro_use] extern crate amplify_derive;
@@ -338,13 +353,25 @@ pub fn derive_as_any(input: TokenStream) -> TokenStream {
         .into()
 }
 
+/// Creates getter methods matching field names for all fields within a
+/// structure (including public and private fields). Getters return reference
+/// types.
+///
+/// # Example
+///
 /// ```
 /// # #[macro_use] extern crate amplify_derive;
-/// #[derive(Getters)]
+/// #[derive(Getters, Default)]
 /// struct One {
 ///     a: Vec<u8>,
-///     b: bool,
+///     pub b: bool,
+///     pub(self) c: u8,
 /// }
+///
+/// let one = One::default();
+/// assert_eq!(one.a(), &Vec::<u8>::default());
+/// assert_eq!(one.b(), &bool::default());
+/// assert_eq!(one.c(), &u8::default());
 /// ```
 #[proc_macro_derive(Getters)]
 pub fn derive_getters(input: TokenStream) -> TokenStream {
@@ -354,18 +381,80 @@ pub fn derive_getters(input: TokenStream) -> TokenStream {
         .into()
 }
 
-/// ```ignore
+/// Creates rust new type wrapping existing type. Can be used in sturctures
+/// containing multiple named or unnamed fields; in this case the field you'd
+/// like to wrap should be marked with `#[wrap]` attribute; otherwise the first
+/// field is assumed to be the wrapped one.
+///
+/// Use with multiple fileds requires that you do `From` and `Default` derive
+/// on the main structure.
+///
+/// Supports automatic implementation of the following traits:
+/// * [`amplify::Wrapper`]
+/// * [`AsRef`]
+/// * [`AsMut`]
+/// * [`Borrow`]
+/// * [`BorrowMut`]
+/// * [`Deref`]
+/// * [`DerefMut`]
+///
+/// Complete usage of this derive macro is possible only with nightly rust
+/// compiler with `trivial_bounds` feature gate set for the crate and `nightly`
+/// feature set. This will give you an automatic implementation for additional
+/// traits, it they are implemented for the wrapped type:
+/// * [`Display`]
+/// * [`LowerHex`]
+/// * [`UpperHex`]
+/// * [`LowerExp`]
+/// * [`UpperExp`]
+/// * [`Octal`]
+/// * [`Index`]
+/// * [`IndexMut`]
+/// * [`Add`]
+/// * [`AddAssign`]
+/// * [`Sub`]
+/// * [`SubAssign`]
+/// * [`Mul`]
+/// * [`MulAssign`]
+/// * [`Div`]
+/// * [`DivAssign`]
+///
+/// Other traits, such as [`PartialEq`], [`Eq`], [`PartialOrd`], [`Ord`],
+/// [`Hash`] can be implemented using standard `#[derive]` attribute in the
+/// same manner as [`Default`], [`Debug`] and [`From`]
+///
+/// # Example
+///
+/// Simple wrapper:
+/// ```
+/// # #[macro_use] extern crate amplify_derive;
+/// use amplify::Wrapper;
+///
+/// #[derive(Wrapper, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Default, From, Debug)]
+/// struct Uint64(u64);
+/// ```
+///
+/// More complex wrapper with multiple unnamed fields:
+/// ```
 /// # #[macro_use] extern crate amplify_derive;
 /// # use std::collections::HashMap;
 /// use std::marker::PhantomData;
+/// use amplify::Wrapper;
 ///
-/// #[derive(Clone, Wrapper)]
-/// #[wrap(Debug, Default, Hash, PartialEq, Eq)]
-/// struct Wrapped<T, U>(HashMap<usize, Vec<U>>, PhantomData<T>)
+/// #[derive(Clone, Wrapper, Default, From, Debug)]
+/// struct Wrapped<T, U>(
+///     #[wrap]
+///     #[from]
+///     HashMap<usize, Vec<U>>,
+///     PhantomData<T>,
+/// )
 /// where
-///     U: Sized + Eq;
+///     U: Sized + Clone;
+///
+/// let w = Wrapped::<(), u8>::default();
+/// assert_eq!(w.into_inner(), HashMap::<usize, Vec<u8>>::default());
 /// ```
-#[proc_macro_derive(Wrapper)]
+#[proc_macro_derive(Wrapper, attributes(wrap))]
 pub fn derive_wrapper(input: TokenStream) -> TokenStream {
     let derive_input = parse_macro_input!(input as DeriveInput);
     wrapper::inner(derive_input)

@@ -47,9 +47,18 @@ use torut::onion::{OnionAddressV2, OnionAddressV3, TorPublicKeyV3, TORV3_PUBLIC_
 /// must be set to 0
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 #[cfg_attr(
-    feature = "serde",
+    all(feature = "serde", feature = "serde_str_helpers"),
     derive(Serialize, Deserialize),
-    serde(try_from = "crate::CowHelper", into = "String", crate = "serde_crate")
+    serde(
+        try_from = "serde_str_helpers::DeserBorrowStr",
+        into = "String",
+        crate = "serde_crate"
+    )
+)]
+#[cfg_attr(
+    all(feature = "serde", not(feature = "serde_str_helpers")),
+    derive(Serialize, Deserialize),
+    serde(crate = "serde_crate")
 )]
 pub enum InetAddr {
     /// IP address of V4 standard
@@ -321,7 +330,9 @@ impl From<OnionAddressV2> for InetAddr {
     }
 }
 
+#[cfg(all(feature = "stringly_conversions", feature = "serde_str_helpers"))]
 impl_try_from_stringly_standard!(InetAddr);
+#[cfg(all(feature = "stringly_conversions", feature = "serde_str_helpers"))]
 impl_into_stringly_standard!(InetAddr);
 
 impl FromStr for InetAddr {

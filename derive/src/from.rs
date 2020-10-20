@@ -231,11 +231,8 @@ impl InstructionTable {
         attrs: &Vec<Attribute>,
         variant: Option<Ident>,
     ) -> Result<&Self> {
-        self.extend(InstructionEntry::parse(
-            &fields,
-            &attrs,
-            InstructionEntity::with_fields(fields, variant.clone())?,
-        )?)?;
+        let entity = InstructionEntity::with_fields(fields, variant.clone())?;
+        self.extend(InstructionEntry::parse(&fields, &attrs, entity.clone())?)?;
         for (index, field) in fields.iter().enumerate() {
             let mut punctuated = Punctuated::new();
             punctuated.push_value(field.clone());
@@ -256,7 +253,18 @@ impl InstructionTable {
                 InstructionEntity::with_field(index, fields.len(), field, &fields, variant.clone()),
             )?)?;
         }
+        if variant.is_none() && fields.len() == 1 && self.0.len() == 0 {
+            let field = fields
+                .into_iter()
+                .next()
+                .expect("we know we have at least one item");
+            self.push(InstructionEntry::with_type(&field.ty, &entity));
+        }
         Ok(self)
+    }
+
+    fn push(&mut self, item: InstructionEntry) {
+        self.0.push(item)
     }
 
     fn extend<T>(&mut self, list: T) -> Result<usize>

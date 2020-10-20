@@ -4,6 +4,7 @@ Change Log
 1.2.0
 -----
 - Upgrading to `amplify` v1.2.0
+- Support for alternative Display formatting with `alt` attribute parameter
 
 1.1.0
 -----

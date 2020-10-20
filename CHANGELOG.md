@@ -1,6 +1,21 @@
 Change Log
 ==========
 
+2.0.0
+-----
+### New features
+- Wrapper derive macro, replacing old declarative macto `wrapper!`, with support 
+  for generics and complex internal structure
+
+### Breaking changes
+- Adoption of the new `stringly_conversions` and `serde_str_helpers` crates. 
+  Crates are re-exported.
+- Removal of `Service`, `TryService` and `Exec` traits, which are moved into new 
+  `lnpbp_service` crate
+- Removal of `async` feature and trait (no needed once service traits got moved)
+- New simple `none!()` macro for semantic representation of empty type creation 
+  with `Default::default()`
+
 1.2.0
 -----
 ### New features
