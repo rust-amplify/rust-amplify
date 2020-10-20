@@ -226,7 +226,7 @@ impl Technique {
                     .map(|i| Ident::new(&format!("_{}", i), span))
                     .collect::<Vec<_>>();
                 let selves = (0..fields.unnamed.len())
-                    .map(|i| Ident::new(&format!("self.{}", i), span))
+                    .map(|i| quote_spanned! { span => self.#i })
                     .collect::<Vec<_>>();
                 quote_spanned! { span =>
                     write!(f, #format, #( #idents = #selves, )* )

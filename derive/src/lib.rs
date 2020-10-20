@@ -186,6 +186,14 @@ use syn::DeriveInput;
 ///     "CustomTest"
 /// );
 /// ```
+///
+/// Use with tuple types:
+/// ```
+/// # #[macro_use] extern crate amplify_derive;
+/// #[derive(Clone, Copy, Debug, Display)]
+/// #[display("{_0}")]
+/// struct Tuple(u8);
+/// ```
 #[proc_macro_derive(Display, attributes(display))]
 pub fn derive_display(input: TokenStream) -> TokenStream {
     let derive_input = parse_macro_input!(input as DeriveInput);
@@ -274,7 +282,7 @@ pub fn derive_error(input: TokenStream) -> TokenStream {
 ///     },
 /// }
 ///
-/// #[derive(From)]
+/// #[derive(Clone, Copy, PartialEq, Eq, Hash, Default, Debug, From)]
 /// pub struct Wrapper(u32, i16);
 /// ```
 ///
