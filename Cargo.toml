@@ -1,6 +1,6 @@
 [package]
 name = "amplify"
-version = "2.0.5"
+version = "2.0.6"
 description = "Amplifying Rust language capabilities: multiple generic trait implementations, type wrappers, derive macros"
 authors = ["Dr. Maxim Orlovsky <orlovsky@pandoracore.com>", "Martin Habovstiak <martin.habovstiak@gmail.com>"]
 keywords = ["generics", "core", "no_std", "wrap", "patterns"]
@@ -29,6 +29,7 @@ path = "src/lib.rs"
 all = ["serde", "std", "tor", "parse_arg", "stringly_conversions"]
 serde = ["serde_crate", "torut/serialize", "std",
          "stringly_conversions",
+         "stringly_conversions/alloc",
          "stringly_conversions/serde_str_helpers"]
 default = ["std"]
 std = []
