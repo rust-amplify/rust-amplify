@@ -1,6 +1,10 @@
 Change Log
 ==========
 
+2.0.4
+-----
+- Fixing Wrapper derivation issue with multiple formatting traits ambiguity
+
 2.0.3
 -----
 - No autroderive for Display in Wrapper (use `#[display(inner)]` to mimic the

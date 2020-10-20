@@ -194,7 +194,7 @@ pub(crate) fn inner(input: DeriveInput) -> Result<TokenStream2> {
             <Self as ::amplify::Wrapper>::Inner: ::std::fmt::LowerHex,
         {
             fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-                self.as_inner().fmt(f)
+                ::std::fmt::LowerHex::fmt(self.as_inner(), f)
             }
         }
 
@@ -204,7 +204,7 @@ pub(crate) fn inner(input: DeriveInput) -> Result<TokenStream2> {
             <Self as ::amplify::Wrapper>::Inner: ::std::fmt::UpperHex,
         {
             fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-                self.as_inner().fmt(f)
+                ::std::fmt::UpperHex::fmt(self.as_inner(), f)
             }
         }
 
@@ -214,7 +214,7 @@ pub(crate) fn inner(input: DeriveInput) -> Result<TokenStream2> {
             <Self as ::amplify::Wrapper>::Inner: ::std::fmt::Octal,
         {
             fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-                self.as_inner().fmt(f)
+                ::std::fmt::Octal::fmt(self.as_inner(), f)
             }
         }
 
@@ -224,7 +224,7 @@ pub(crate) fn inner(input: DeriveInput) -> Result<TokenStream2> {
             <Self as ::amplify::Wrapper>::Inner: ::std::fmt::LowerExp,
         {
             fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-                self.as_inner().fmt(f)
+                ::std::fmt::LowerExp::fmt(self.as_inner(), f)
             }
         }
 
@@ -234,7 +234,7 @@ pub(crate) fn inner(input: DeriveInput) -> Result<TokenStream2> {
             <Self as ::amplify::Wrapper>::Inner: ::std::fmt::UpperExp,
         {
             fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-                self.as_inner().fmt(f)
+                ::std::fmt::UpperExp::fmt(self.as_inner(), f)
             }
         }
 
