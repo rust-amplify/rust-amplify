@@ -18,7 +18,7 @@ use syn::export::{Span, TokenStream2};
 use syn::spanned::Spanned;
 use syn::{
     Attribute, Data, DataEnum, DataStruct, DataUnion, DeriveInput, Error, Fields, Ident, Lit,
-    LitStr, Meta, MetaNameValue, NestedMeta, Path, Result,
+    LitStr, Meta, MetaNameValue, NestedMeta, Path, Result, Index,
 };
 
 const NAME: &'static str = "display";
@@ -245,7 +245,10 @@ impl Technique {
                     .map(|i| Ident::new(&format!("_{}", i), span))
                     .collect::<Vec<_>>();
                 let selves = (0..fields.unnamed.len())
-                    .map(|i| quote_spanned! { span => self.#i })
+                    .map(|i| {
+                        let index = Index::from(i);
+                        quote_spanned! { span => self.#index }
+                    })
                     .collect::<Vec<_>>();
                 quote_spanned! { span =>
                     write!(f, #format, #( #idents = #selves, )* )

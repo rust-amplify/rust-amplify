@@ -190,16 +190,6 @@ pub(crate) fn inner(input: DeriveInput) -> Result<TokenStream2> {
 
         #[allow(trivial_bounds)]
         #[cfg(feature = "nightly")]
-        impl #impl_generics ::std::fmt::Display for #ident_name #ty_generics #where_clause,
-            <Self as ::amplify::Wrapper>::Inner: ::std::fmt::Display,
-        {
-            fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-                self.as_inner().fmt(f)
-            }
-        }
-
-        #[allow(trivial_bounds)]
-        #[cfg(feature = "nightly")]
         impl #impl_generics ::std::fmt::LowerHex for #ident_name #ty_generics #where_clause,
             <Self as ::amplify::Wrapper>::Inner: ::std::fmt::LowerHex,
         {

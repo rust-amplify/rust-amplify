@@ -444,7 +444,10 @@ pub fn derive_getters(input: TokenStream) -> TokenStream {
 /// # #[macro_use] extern crate amplify_derive;
 /// use amplify::Wrapper;
 ///
-/// #[derive(Wrapper, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Default, From, Debug)]
+/// #[derive(
+///     Wrapper, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Default, From, Debug, Display,
+/// )]
+/// #[display(inner)]
 /// struct Uint64(u64);
 /// ```
 ///

@@ -1,6 +1,12 @@
 Change Log
 ==========
 
+2.0.3
+-----
+- No autroderive for Display in Wrapper (use `#[display(inner)]` to mimic the
+  old behaviour)
+- Fixing display tuple derive warning
+
 2.0.2
 -----
 - Support for `inner` as a Display alias for `{_0}` variant
