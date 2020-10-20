@@ -18,7 +18,7 @@ Change Log
 
 2.0.3
 -----
-- No autroderive for Display in Wrapper (use `#[display(inner)]` to mimic the
+- No autoderive for Display in Wrapper (use `#[display(inner)]` to mimic the
   old behaviour)
 - Fixing display tuple derive warning
 

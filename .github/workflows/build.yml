@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        feature: [ serde, std, tor, parse_arg, vendored_openssl ]
+        feature: [ serde, std, tor, parse_arg, vendored_openssl, stringly_conversions ]
     steps:
       - uses: actions/checkout@v2
       - name: Install rust stable
