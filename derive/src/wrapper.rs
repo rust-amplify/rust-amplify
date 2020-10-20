@@ -13,11 +13,221 @@
 // along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
-use syn::export::TokenStream2;
-use syn::{DeriveInput, Result, Data, Error, Fields, Index};
+use syn::export::{TokenStream2};
+use syn::{
+    DeriveInput, Result, Data, Error, Fields, Index, Meta, MetaList, Path, NestedMeta,
+    spanned::Spanned,
+};
+
+const NAME: &'static str = "wrapper";
+const EXAMPLE: &'static str = r#"#[wrapper(LowerHex, Add)]"#;
+
+#[derive(Copy, Clone, PartialEq, Eq, Debug)]
+enum WrapperDerives {
+    FromStr,
+    Octal,
+    LowerHex,
+    UpperHex,
+    LowerExp,
+    UpperExp,
+    Index,
+    IndexMut,
+    Add,
+    Sub,
+    Mul,
+    Div,
+    AddAssign,
+    SubAssign,
+    MulAssign,
+    DivAssign,
+}
+
+impl WrapperDerives {
+    pub fn from_path(path: &Path) -> Result<Option<Self>> {
+        path.segments.first().map_or(
+            Err(attr_err!(
+                path.span(),
+                NAME,
+                "must contain at least one identifier",
+                EXAMPLE
+            )),
+            |segment| {
+                Ok(match segment.ident.to_string().as_str() {
+                    "FromStr" => Some(Self::FromStr),
+                    "Octal" => Some(Self::Octal),
+                    "LowerHex" => Some(Self::LowerHex),
+                    "UpperHex" => Some(Self::UpperHex),
+                    "LowerExp" => Some(Self::LowerExp),
+                    "UpperExp" => Some(Self::UpperExp),
+                    "Index" => Some(Self::Index),
+                    "IndexMut" => Some(Self::IndexMut),
+                    "Add" => Some(Self::Add),
+                    "Sub" => Some(Self::Sub),
+                    "Mul" => Some(Self::Mul),
+                    "Div" => Some(Self::Div),
+                    "AddAssign" => Some(Self::AddAssign),
+                    "SubAssign" => Some(Self::SubAssign),
+                    "MulAssign" => Some(Self::MulAssign),
+                    "DivAssign" => Some(Self::DivAssign),
+                    _ => None,
+                })
+            },
+        )
+    }
+
+    pub fn into_token_stream2(self, input: &DeriveInput) -> TokenStream2 {
+        let impl_generics_params = input.generics.params.clone();
+        let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
+        let ident_name = &input.ident;
+
+        match self {
+            Self::FromStr => quote! {
+                impl #impl_generics ::std::str::FromStr for #ident_name #ty_generics #where_clause
+                {
+                    type Err = <<Self as ::amplify::Wrapper>::Inner as ::std::str::FromStr>::Err;
+
+                    fn from_str(s: &str) -> Result<Self, Self::Err> {
+                        Ok(Self::from_inner(
+                            <Self as ::amplify::Wrapper>::Inner::from_str(s)?,
+                        ))
+                    }
+                }
+            },
+            Self::Octal => quote! {
+                impl #impl_generics ::std::fmt::Octal for #ident_name #ty_generics #where_clause
+                {
+                    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+                        ::std::fmt::Octal::fmt(self.as_inner(), f)
+                    }
+                }
+            },
+            Self::LowerHex => quote! {
+                impl #impl_generics ::std::fmt::LowerHex for #ident_name #ty_generics #where_clause
+                {
+                    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+                        ::std::fmt::LowerHex::fmt(self.as_inner(), f)
+                    }
+                }
+            },
+            Self::UpperHex => quote! {
+                impl #impl_generics ::std::fmt::UpperHex for #ident_name #ty_generics #where_clause
+                {
+                    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+                        ::std::fmt::UpperHex::fmt(self.as_inner(), f)
+                    }
+                }
+            },
+            Self::LowerExp => quote! {
+                impl #impl_generics ::std::fmt::LowerExp for #ident_name #ty_generics #where_clause
+                {
+                    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+                        ::std::fmt::LowerExp::fmt(self.as_inner(), f)
+                    }
+                }
+            },
+            Self::UpperExp => quote! {
+                impl #impl_generics ::std::fmt::UpperExp for #ident_name #ty_generics #where_clause
+                {
+                    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+                        ::std::fmt::UpperExp::fmt(self.as_inner(), f)
+                    }
+                }
+            },
+            Self::Index => quote! {
+                impl <_IndexType, #impl_generics_params> ::core::ops::Index<_IndexType> for #ident_name #ty_generics #where_clause
+                {
+                    type Output = <<Self as ::amplify::Wrapper>::Inner as ::core::ops::Index<_IndexType>>::Output;
+
+                    fn index(&self, index: _IndexType) -> &Self::Output {
+                        self.as_inner().index(index)
+                    }
+                }
+            },
+            Self::IndexMut => quote! {
+                impl <_IndexType, #impl_generics_params> ::core::ops::IndexMut<_IndexType> for #ident_name #ty_generics #where_clause
+                {
+                    fn index_mut(&mut self, index: _IndexType) -> &mut Self::Output {
+                        self.as_inner_mut().index_mut(index)
+                    }
+                }
+            },
+            Self::Add => quote! {
+                impl #impl_generics ::core::ops::Add for #ident_name #ty_generics #where_clause
+                {
+                    type Output = Self;
+
+                    fn add(self, rhs: Self) -> Self {
+                        Self::from_inner(::core::ops::Add::add(self.into_inner(), rhs.into_inner()))
+                    }
+                }
+            },
+            Self::Sub => quote! {
+                impl #impl_generics ::core::ops::Sub for #ident_name #ty_generics #where_clause
+                {
+                    type Output = Self;
+
+                    fn sub(self, rhs: Self) -> Self {
+                        Self::from_inner(::core::ops::Sub::sub(self.into_inner(), rhs.into_inner()))
+                    }
+                }
+            },
+            Self::Mul => quote! {
+                impl #impl_generics ::core::ops::Mul for #ident_name #ty_generics #where_clause
+                {
+                    type Output = Self;
+
+                    fn mul(self, rhs: Self) -> Self {
+                        Self::from_inner(::core::ops::Mul::mul(self.into_inner(), rhs.into_inner()))
+                    }
+                }
+            },
+            Self::Div => quote! {
+                impl #impl_generics ::core::ops::Div for #ident_name #ty_generics #where_clause
+                {
+                    type Output = Self;
+
+                    fn div(self, rhs: Self) -> Self {
+                        Self::from_inner(::core::ops::Div::div(self.into_inner(), rhs.into_inner()))
+                    }
+                }
+            },
+            Self::AddAssign => quote! {
+                impl #impl_generics ::core::ops::AddAssign for #ident_name #ty_generics #where_clause
+                {
+                    fn add_assign(&mut self, rhs: Self) {
+                        ::core::ops::AddAssign::add_assign(self.as_inner_mut(), rhs.into_inner())
+                    }
+                }
+            },
+            Self::SubAssign => quote! {
+                impl #impl_generics ::core::ops::SubAssign for #ident_name #ty_generics #where_clause
+                {
+                    fn sub_assign(&mut self, rhs: Self) {
+                        ::core::ops::SubAssign::sub_assign(self.as_inner_mut(), rhs.into_inner())
+                    }
+                }
+            },
+            Self::MulAssign => quote! {
+                impl #impl_generics ::core::ops::MulAssign for #ident_name #ty_generics #where_clause
+                {
+                    fn mul_assign(&mut self, rhs: Self) {
+                        ::core::ops::MulAssign::mul_assign(self.as_inner_mut(), rhs.into_inner())
+                    }
+                }
+            },
+            Self::DivAssign => quote! {
+                impl #impl_generics ::core::ops::DivAssign for #ident_name #ty_generics #where_clause
+                {
+                    fn div_assign(&mut self, rhs: Self) {
+                        ::core::ops::DivAssign::div_assign(self.as_inner_mut(), rhs.into_inner())
+                    }
+                }
+            },
+        }
+    }
+}
 
 pub(crate) fn inner(input: DeriveInput) -> Result<TokenStream2> {
-    let impl_generics_params = input.generics.params.clone();
     let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
     let ident_name = &input.ident;
 
@@ -33,6 +243,34 @@ pub(crate) fn inner(input: DeriveInput) -> Result<TokenStream2> {
             "Deriving wrapper is not supported in unions",
         ))?,
     };
+
+    let mut wrappers = vec![];
+    const WRAPPER_DERIVE_ERR: &'static str = "Wrapper attributes must be in a form of type list";
+    for attr in input
+        .attrs
+        .iter()
+        .filter(|attr| attr.path.is_ident("wrapper"))
+    {
+        match attr
+            .parse_meta()
+            .map_err(|_| attr_err!(attr, WRAPPER_DERIVE_ERR))?
+        {
+            Meta::List(MetaList { nested, .. }) => {
+                for meta in nested {
+                    match meta {
+                        NestedMeta::Meta(Meta::Path(path)) => {
+                            wrappers.push(
+                                WrapperDerives::from_path(&path)?
+                                    .ok_or(attr_err!(path, "Unrecognized wrapper parameter"))?,
+                            );
+                        }
+                        _ => Err(attr_err!(meta, WRAPPER_DERIVE_ERR))?,
+                    }
+                }
+            }
+            _ => Err(attr_err!(attr, WRAPPER_DERIVE_ERR))?,
+        }
+    }
 
     let field;
     let mut from;
@@ -100,11 +338,7 @@ pub(crate) fn inner(input: DeriveInput) -> Result<TokenStream2> {
         }
     };
 
-    let where_clause = if where_clause.is_some() {
-        quote! { #where_clause }
-    } else {
-        quote! { where Self: Sized }
-    };
+    let wrapper_derive = wrappers.iter().map(|w| w.into_token_stream2(&input));
 
     Ok(quote! {
         impl #impl_generics ::amplify::Wrapper for #ident_name #ty_generics #where_clause {
@@ -174,182 +408,6 @@ pub(crate) fn inner(input: DeriveInput) -> Result<TokenStream2> {
             }
         }
 
-        #[allow(trivial_bounds)]
-        #[cfg(feature = "nightly")]
-        impl #impl_generics ::std::str::FromStr for #ident_name #ty_generics #where_clause,
-            <Self as ::amplify::Wrapper>::Inner: ::std::str::FromStr,
-        {
-            type Err = <<Self as ::amplify::Wrapper>::Inner as ::std::str::FromStr>::Err;
-
-            fn from_str(s: &str) -> Result<Self, Self::Err> {
-                Ok(Self::from_inner(
-                    <Self as ::amplify::Wrapper>::Inner::from_str(s)?,
-                ))
-            }
-        }
-
-        #[allow(trivial_bounds)]
-        #[cfg(feature = "nightly")]
-        impl #impl_generics ::std::fmt::LowerHex for #ident_name #ty_generics #where_clause,
-            <Self as ::amplify::Wrapper>::Inner: ::std::fmt::LowerHex,
-        {
-            fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-                ::std::fmt::LowerHex::fmt(self.as_inner(), f)
-            }
-        }
-
-        #[allow(trivial_bounds)]
-        #[cfg(feature = "nightly")]
-        impl #impl_generics ::std::fmt::UpperHex for #ident_name #ty_generics #where_clause,
-            <Self as ::amplify::Wrapper>::Inner: ::std::fmt::UpperHex,
-        {
-            fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-                ::std::fmt::UpperHex::fmt(self.as_inner(), f)
-            }
-        }
-
-        #[allow(trivial_bounds)]
-        #[cfg(feature = "nightly")]
-        impl #impl_generics ::std::fmt::Octal for #ident_name #ty_generics #where_clause,
-            <Self as ::amplify::Wrapper>::Inner: ::std::fmt::Octal,
-        {
-            fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-                ::std::fmt::Octal::fmt(self.as_inner(), f)
-            }
-        }
-
-        #[allow(trivial_bounds)]
-        #[cfg(feature = "nightly")]
-        impl #impl_generics ::std::fmt::LowerExp for #ident_name #ty_generics #where_clause,
-            <Self as ::amplify::Wrapper>::Inner: ::std::fmt::LowerExp,
-        {
-            fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-                ::std::fmt::LowerExp::fmt(self.as_inner(), f)
-            }
-        }
-
-        #[allow(trivial_bounds)]
-        #[cfg(feature = "nightly")]
-        impl #impl_generics ::std::fmt::UpperExp for #ident_name #ty_generics #where_clause,
-            <Self as ::amplify::Wrapper>::Inner: ::std::fmt::UpperExp,
-        {
-            fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-                ::std::fmt::UpperExp::fmt(self.as_inner(), f)
-            }
-        }
-
-        #[allow(trivial_bounds)]
-        #[cfg(feature = "nightly")]
-        impl <_IndexType, #impl_generics_params> ::core::ops::Index<_IndexType> for #ident_name #ty_generics #where_clause,
-            <Self as ::amplify::Wrapper>::Inner: ::core::ops::Index<_IndexType>,
-        {
-            type Output = <<Self as ::amplify::Wrapper>::Inner as ::core::ops::Index<_IndexType>>::Output;
-
-            fn index(&self, index: _IndexType) -> &Self::Output {
-                self.as_inner().index(index)
-            }
-        }
-
-        #[allow(trivial_bounds)]
-        #[cfg(feature = "nightly")]
-        impl <_IndexType, #impl_generics_params> ::core::ops::IndexMut<_IndexType> for #ident_name #ty_generics #where_clause,
-            <Self as ::amplify::Wrapper>::Inner: ::core::ops::IndexMut<_IndexType>,
-        {
-            fn index_mut(&mut self, index: _IndexType) -> &mut Self::Output {
-                self.as_inner_mut().index_mut(index)
-            }
-        }
-
-        #[allow(trivial_bounds)]
-        #[cfg(feature = "nightly")]
-        impl #impl_generics ::core::ops::Add for #ident_name #ty_generics #where_clause,
-            <Self as ::amplify::Wrapper>::Inner:
-                ::core::ops::Add<Output = <Self as ::amplify::Wrapper>::Inner>,
-        {
-            type Output = Self;
-
-            fn add(self, rhs: Self) -> Self {
-                Self::from_inner(self.into_inner().add(rhs.into_inner()))
-            }
-        }
-
-        #[allow(trivial_bounds)]
-        #[cfg(feature = "nightly")]
-        impl #impl_generics ::core::ops::Sub for #ident_name #ty_generics #where_clause,
-            <Self as ::amplify::Wrapper>::Inner:
-                ::core::ops::Sub<Output = <Self as ::amplify::Wrapper>::Inner>,
-        {
-            type Output = Self;
-
-            fn sub(self, rhs: Self) -> Self {
-                Self::from_inner(self.into_inner().sub(rhs.into_inner()))
-            }
-        }
-
-        #[allow(trivial_bounds)]
-        #[cfg(feature = "nightly")]
-        impl #impl_generics ::core::ops::Mul for #ident_name #ty_generics #where_clause,
-            <Self as ::amplify::Wrapper>::Inner:
-                ::core::ops::Mul<Output = <Self as ::amplify::Wrapper>::Inner>,
-        {
-            type Output = Self;
-
-            fn mul(self, rhs: Self) -> Self {
-                Self::from_inner(self.into_inner().mul(rhs.into_inner()))
-            }
-        }
-
-        #[allow(trivial_bounds)]
-        #[cfg(feature = "nightly")]
-        impl #impl_generics ::core::ops::Div for #ident_name #ty_generics #where_clause,
-            <Self as ::amplify::Wrapper>::Inner:
-                ::core::ops::Div<Output = <Self as ::amplify::Wrapper>::Inner>,
-        {
-            type Output = Self;
-
-            fn div(self, rhs: Self) -> Self {
-                Self::from_inner(self.into_inner().div(rhs.into_inner()))
-            }
-        }
-
-        #[allow(trivial_bounds)]
-        #[cfg(feature = "nightly")]
-        impl #impl_generics ::core::ops::AddAssign for #ident_name #ty_generics #where_clause,
-            <Self as ::amplify::Wrapper>::Inner: ::core::ops::AddAssign,
-        {
-            fn add_assign(&mut self, rhs: Self) {
-                ::core::ops::AddAssign::add_assign(self.as_inner_mut(), rhs.into_inner())
-            }
-        }
-
-        #[allow(trivial_bounds)]
-        #[cfg(feature = "nightly")]
-        impl #impl_generics ::core::ops::SubAssign for #ident_name #ty_generics #where_clause,
-            <Self as ::amplify::Wrapper>::Inner: ::core::ops::SubAssign,
-        {
-            fn sub_assign(&mut self, rhs: Self) {
-                ::core::ops::SubAssign::sub_assign(self.as_inner_mut(), rhs.into_inner())
-            }
-        }
-
-        #[allow(trivial_bounds)]
-        #[cfg(feature = "nightly")]
-        impl #impl_generics ::core::ops::MulAssign for #ident_name #ty_generics #where_clause,
-            <Self as ::amplify::Wrapper>::Inner: ::core::ops::MulAssign,
-        {
-            fn mul_assign(&mut self, rhs: Self) {
-                ::core::ops::MulAssign::mul_assign(self.as_inner_mut(), rhs.into_inner())
-            }
-        }
-
-        #[allow(trivial_bounds)]
-        #[cfg(feature = "nightly")]
-        impl #impl_generics ::core::ops::DivAssign for #ident_name #ty_generics #where_clause,
-            <Self as ::amplify::Wrapper>::Inner: ::core::ops::DivAssign,
-        {
-            fn div_assign(&mut self, rhs: Self) {
-                ::core::ops::DivAssign::div_assign(self.as_inner_mut(), rhs.into_inner())
-            }
-        }
+        #( #wrapper_derive )*
     })
 }

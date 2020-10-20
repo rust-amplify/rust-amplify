@@ -412,11 +412,8 @@ pub fn derive_getters(input: TokenStream) -> TokenStream {
 /// * [`Deref`]
 /// * [`DerefMut`]
 ///
-/// Complete usage of this derive macro is possible only with nightly rust
-/// compiler with `trivial_bounds` feature gate set for the crate and `nightly`
-/// feature set. This will give you an automatic implementation for additional
-/// traits, it they are implemented for the wrapped type:
-/// * [`Display`]
+/// You can implement additonal derives, it they are implemented for the wrapped
+/// type, using `#[wrapper()]` proc macro:
 /// * [`LowerHex`]
 /// * [`UpperHex`]
 /// * [`LowerExp`]
@@ -448,6 +445,7 @@ pub fn derive_getters(input: TokenStream) -> TokenStream {
 ///     Wrapper, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Default, From, Debug, Display,
 /// )]
 /// #[display(inner)]
+/// #[wrapper(LowerHex, Octal, Add, AddAssign, Sub, SubAssign)]
 /// struct Uint64(u64);
 /// ```
 ///
@@ -471,7 +469,7 @@ pub fn derive_getters(input: TokenStream) -> TokenStream {
 /// let w = Wrapped::<(), u8>::default();
 /// assert_eq!(w.into_inner(), HashMap::<usize, Vec<u8>>::default());
 /// ```
-#[proc_macro_derive(Wrapper, attributes(wrap))]
+#[proc_macro_derive(Wrapper, attributes(wrap, wrapper))]
 pub fn derive_wrapper(input: TokenStream) -> TokenStream {
     let derive_input = parse_macro_input!(input as DeriveInput);
     wrapper::inner(derive_input)

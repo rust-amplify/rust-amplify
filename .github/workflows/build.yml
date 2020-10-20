@@ -32,25 +32,6 @@ jobs:
         with:
           command: build
           args: --features=${{matrix.feature}}
-  nightly_features:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Install rust nightly
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: nightly
-          override: true
-      - name: Nightly feature
-        uses: actions-rs/cargo@v1
-        with:
-          command: build
-          args: --no-default-features --features=nightly
-      - name: Defaults + nightly
-        uses: actions-rs/cargo@v1
-        with:
-          command: build
-          args: --features=nightly
   toolchains:
     runs-on: ubuntu-latest
     strategy:
@@ -67,8 +48,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: build
-          # Here we do not use `--all-features` since this will enable `nightly`
-          args: --workspace --all-targets --features=all
+          args: --workspace --all-targets --all-features
   dependency:
     runs-on: ubuntu-latest
     steps:
