@@ -1,6 +1,11 @@
 Change Log
 ==========
 
+2.0.2
+-----
+- Fixing serde serialization helpers for `InetSocketAddr` and `InetSocketAddrExt` 
+  types
+
 2.0.1
 -----
 - Fixing serialization for `InetSocketAddr` and `InetSocketAddrExt` types

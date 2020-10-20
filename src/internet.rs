@@ -564,6 +564,11 @@ pub struct InetSocketAddr {
     pub port: u16,
 }
 
+#[cfg(all(feature = "stringly_conversions", feature = "serde_str_helpers"))]
+impl_try_from_stringly_standard!(InetSocketAddr);
+#[cfg(all(feature = "stringly_conversions", feature = "serde_str_helpers"))]
+impl_into_stringly_standard!(InetSocketAddr);
+
 impl InetSocketAddr {
     /// Constructs new socket address from an internet address and a port
     /// information
@@ -727,6 +732,11 @@ pub struct InetSocketAddrExt(
     /// information
     pub InetSocketAddr,
 );
+
+#[cfg(all(feature = "stringly_conversions", feature = "serde_str_helpers"))]
+impl_try_from_stringly_standard!(InetSocketAddrExt);
+#[cfg(all(feature = "stringly_conversions", feature = "serde_str_helpers"))]
+impl_into_stringly_standard!(InetSocketAddrExt);
 
 impl InetSocketAddrExt {
     /// Length of the encoded address; equal to the maximal length of encoding
