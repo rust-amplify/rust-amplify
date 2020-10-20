@@ -318,7 +318,7 @@ pub(crate) fn inner(input: DeriveInput) -> Result<TokenStream2> {
             <Self as ::amplify::Wrapper>::Inner: ::core::ops::AddAssign,
         {
             fn add_assign(&mut self, rhs: Self) {
-                self.as_inner_mut().add_assign(rhs.into_inner())
+                ::core::ops::AddAssign::add_assign(self.as_inner_mut(), rhs.into_inner())
             }
         }
 
@@ -328,7 +328,7 @@ pub(crate) fn inner(input: DeriveInput) -> Result<TokenStream2> {
             <Self as ::amplify::Wrapper>::Inner: ::core::ops::SubAssign,
         {
             fn sub_assign(&mut self, rhs: Self) {
-                self.as_inner_mut().sub_assign(rhs.into_inner())
+                ::core::ops::SubAssign::sub_assign(self.as_inner_mut(), rhs.into_inner())
             }
         }
 
@@ -338,7 +338,7 @@ pub(crate) fn inner(input: DeriveInput) -> Result<TokenStream2> {
             <Self as ::amplify::Wrapper>::Inner: ::core::ops::MulAssign,
         {
             fn mul_assign(&mut self, rhs: Self) {
-                self.as_inner_mut().mul_assign(rhs.into_inner())
+                ::core::ops::MulAssign::mul_assign(self.as_inner_mut(), rhs.into_inner())
             }
         }
 
@@ -348,7 +348,7 @@ pub(crate) fn inner(input: DeriveInput) -> Result<TokenStream2> {
             <Self as ::amplify::Wrapper>::Inner: ::core::ops::DivAssign,
         {
             fn div_assign(&mut self, rhs: Self) {
-                self.as_inner_mut().div_assign(rhs.into_inner())
+                ::core::ops::DivAssign::div_assign(self.as_inner_mut(), rhs.into_inner())
             }
         }
     })

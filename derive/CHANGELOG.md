@@ -1,6 +1,11 @@
 Change Log
 ==========
 
+2.0.5
+-----
+- Fixed rare case in Wrapper derive for types having synonymous 
+  `add/mul/*_assign` methods
+
 2.0.4
 -----
 - Fixing Wrapper derivation issue with multiple formatting traits ambiguity
