@@ -400,8 +400,9 @@ pub fn derive_getters(input: TokenStream) -> TokenStream {
 /// like to wrap should be marked with `#[wrap]` attribute; otherwise the first
 /// field is assumed to be the wrapped one.
 ///
-/// Use with multiple fileds requires that you do `From` and `Default` derive
-/// on the main structure.
+/// NB: You have to use `derive(From)` in order foe Wrapper to work properly.
+/// Also, in case of multiple fields, each non-wrapped field type must implement
+/// `Default` trait.
 ///
 /// Supports automatic implementation of the following traits:
 /// * [`amplify::Wrapper`]

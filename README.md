@@ -1,10 +1,12 @@
 # Rust Amplify Library
-[![crates.io](https://meritbadge.herokuapp.com/amplify)](https://crates.io/crates/amplify)
-[![Docs](https://docs.rs/amplify/badge.svg)](https://docs.rs/amplify)
+
 ![Build](https://github.com/LNP-BP/rust-amplify/workflows/Build/badge.svg)
 ![Tests](https://github.com/LNP-BP/rust-amplify/workflows/Tests/badge.svg)
 ![Lints](https://github.com/LNP-BP/rust-amplify/workflows/Lints/badge.svg)
 [![codecov](https://codecov.io/gh/LNP-BP/rust-amplify/branch/master/graph/badge.svg)](https://codecov.io/gh/LNP-BP/rust-amplify)
+
+[![crates.io](https://meritbadge.herokuapp.com/amplify)](https://crates.io/crates/amplify)
+[![Docs](https://docs.rs/amplify/badge.svg)](https://docs.rs/amplify)
 [![unsafe forbidden](https://img.shields.io/badge/unsafe-forbidden-success.svg)](https://github.com/rust-secure-code/safety-dance/)
 [![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 
