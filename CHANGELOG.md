@@ -1,6 +1,10 @@
 Change Log
 ==========
 
+2.1.0
+-----
+- Internet address-specific error types (#31)
+
 2.0.5
 -----
 - stringly_conversions are now separate feature

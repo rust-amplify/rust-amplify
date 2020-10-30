@@ -11,9 +11,9 @@ dependencies = [
 
 [[package]]
 name = "amplify"
-version = "2.0.7"
+version = "2.1.0"
 dependencies = [
- "amplify_derive 2.0.7 (registry+https://github.com/rust-lang/crates.io-index)",
+ "amplify_derive 2.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "ed25519-dalek",
  "parse_arg",
  "serde",
@@ -23,7 +23,7 @@ dependencies = [
 
 [[package]]
 name = "amplify_derive"
-version = "2.0.7"
+version = "2.1.0"
 dependencies = [
  "amplify",
  "quote 1.0.7",
@@ -32,9 +32,9 @@ dependencies = [
 
 [[package]]
 name = "amplify_derive"
-version = "2.0.7"
+version = "2.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "22116aaaa46d2469f6953fad8c42501cb808f8dc3598f29e5f59b4adcff2ab8e"
+checksum = "b2351a89167a8350983b3c7501c5a604ed4d64885e2c5fcaa92f42bcfc21a8b8"
 dependencies = [
  "quote 1.0.7",
  "syn 1.0.48",

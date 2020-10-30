@@ -1,6 +1,12 @@
 Change Log
 ==========
 
+2.1.0
+-----
+- Multiple display derivation improvements
+- Index wrapper derivations
+
+
 2.0.7
 -----
 - Improvements to `#[display()]`: #26, #32
