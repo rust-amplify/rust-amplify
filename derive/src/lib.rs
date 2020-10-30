@@ -74,7 +74,10 @@ use syn::DeriveInput;
 ///     # #[macro_use] extern crate amplify_derive;
 ///     #[derive(Display, Debug)]
 ///     #[display(Debug)]
-///     struct Some { /* ... */ }
+///     enum Some {
+///         Once,
+///         Twice(u8)
+///     }
 ///    ```
 /// 2. Use existing function for displaying descriptions:
 ///    ```

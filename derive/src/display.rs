@@ -496,6 +496,18 @@ fn inner_enum(input: &DeriveInput, data: &DataEnum) -> Result<TokenStream2> {
                             }
                         }
                     });
+                } else if let Some(Technique::FromTrait(tr)) = current {
+                    let a = Technique::FromTrait(tr).into_token_stream2(&v.fields, v.span(), false);
+                    let b = Technique::FromTrait(tr).into_token_stream2(&v.fields, v.span(), true);
+                    display.extend(quote_spanned! { v.span() =>
+                        Self::#type_name { .. } => {
+                            if !f.alternate() {
+                                #a
+                            } else {
+                                #b
+                            }
+                        }
+                    })
                 } else {
                     let f = fields.named.iter().map(|f| f.ident.as_ref().unwrap());
                     let idents = f
@@ -518,23 +530,38 @@ fn inner_enum(input: &DeriveInput, data: &DataEnum) -> Result<TokenStream2> {
             }
             (Fields::Unnamed(fields), Some(tokens_fmt), Some(tokens_alt)) => {
                 use_global = false;
-                let f = (0..fields.unnamed.len()).map(|i| Ident::new(&format!("_{}", i), v.span()));
-                let idents = f
-                    .clone()
-                    .filter(|ident| has_formatters(ident, &tokens_fmt.to_string()))
-                    .collect::<Vec<_>>();
-                let idents_alt = f
-                    .filter(|ident| has_formatters(ident, &tokens_alt.to_string()))
-                    .collect::<Vec<_>>();
-                display.extend(quote_spanned! { v.span() =>
-                    Self::#type_name ( #( #idents, )* .. ) => {
-                        if !f.alternate() {
-                            write!(f, #tokens_fmt, #( #idents = #idents, )*)
-                        } else {
-                            write!(f, #tokens_alt, #( #idents_alt = #idents_alt, )*)
+                if let Some(Technique::FromTrait(tr)) = current {
+                    let a = Technique::FromTrait(tr).into_token_stream2(&v.fields, v.span(), false);
+                    let b = Technique::FromTrait(tr).into_token_stream2(&v.fields, v.span(), true);
+                    display.extend(quote_spanned! { v.span() =>
+                        Self::#type_name(..) => {
+                            if !f.alternate() {
+                                #a
+                            } else {
+                                #b
+                            }
                         }
-                    },
-                });
+                    })
+                } else {
+                    let f =
+                        (0..fields.unnamed.len()).map(|i| Ident::new(&format!("_{}", i), v.span()));
+                    let idents = f
+                        .clone()
+                        .filter(|ident| has_formatters(ident, &tokens_fmt.to_string()))
+                        .collect::<Vec<_>>();
+                    let idents_alt = f
+                        .filter(|ident| has_formatters(ident, &tokens_alt.to_string()))
+                        .collect::<Vec<_>>();
+                    display.extend(quote_spanned! { v.span() =>
+                        Self::#type_name ( #( #idents, )* .. ) => {
+                            if !f.alternate() {
+                                write!(f, #tokens_fmt, #( #idents = #idents, )*)
+                            } else {
+                                write!(f, #tokens_alt, #( #idents_alt = #idents_alt, )*)
+                            }
+                        },
+                    });
+                }
             }
             (Fields::Unit, Some(tokens_fmt), Some(tokens_alt)) => {
                 use_global = false;
