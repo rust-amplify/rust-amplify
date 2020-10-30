@@ -8,38 +8,40 @@ assignees: dr-orlovsky
 ---
 
 **Checklist**
-- [ ] Make sure you are using the latest code (`git checkout master && git pull origin`)
-- [ ] Compile only with rust nightly: `rustup default nightly && rustup update nightly && cargo test --all --all-features -v`
-- [ ] Try to do `cargo update`
-- [ ] Try to remove `target` directory
+Put `x` in the boxes below:
+- [ ] I am using rust compiler version no less than 1.41.1
+- [ ] I am using the latest code (`git checkout master && git pull origin`)
+- [ ] I did `cargo update`
+- [ ] I recompiler adter removing `target` directory
 
-**Classify the bug**
+## Bug type
 Put `x` in the boxes below:
 - [ ] Build issue
 - [ ] Test failing
 - [ ] Runtime panic
 - [ ] Incorrect results
-- [ ] Unexpected/undocumented behaviour / 
+- [ ] Unexpected/undocumented behavior
 
-**Describe the problem**
-A clear and concise description of what the bug is.
+## Problem description
+A clear and concise description of what the bug is, including what was expected 
+to happen and what went wrong.
 
-**To Reproduce**
+### Reproducing
 Steps to reproduce the behavior:
 1. Operating system
 2. Rust compiler version
-3. Did you 
+3. Code snippet:
+    ```rust
+    ```
 
-**Expected behavior**
-A clear and concise description of what you expected to happen.
-
-**Logs**
-Please copy and paste content of `rustup default nightly && cargo test --all --all-features -v` in a block below right after "console" line:
+### Logs
+Please copy and paste content of `cargo test --all --all-features -v` in a block
+below right after "console" line:
 ```console
 ```
 
-**Additional context**
+## More info
 Add any other context about the problem here.
 
-**Other links**
-Please provide links and references to the affected repositories, code samples etc.
+Please provide links and references to the affected repositories, code samples 
+etc.
