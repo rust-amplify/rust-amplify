@@ -176,6 +176,11 @@ use syn::DeriveInput;
 ///         x: u8,
 ///     },
 ///
+///     #[display(inner)]
+///     Inner {
+///         a: String,
+///     },
+///
 ///     Unnamed(u16),
 ///
 ///     // NB: Use `_`-prefixed indexes for tuple values

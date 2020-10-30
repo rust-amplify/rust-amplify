@@ -97,7 +97,7 @@ impl FormattingTrait {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Eq)]
 enum Technique {
     FromTrait(FormattingTrait),
     FromMethod(Path),
@@ -344,8 +344,8 @@ fn inner_enum(input: &DeriveInput, data: &DataEnum) -> Result<TokenStream2> {
             })
             .cloned();
 
-        let format_str = current.as_ref().map(|t| t.to_fmt(v.span(), false));
-        let format_alt = current.as_ref().map(|t| t.to_fmt(v.span(), true));
+        let tokens_fmt = current.as_ref().map(|t| t.to_fmt(v.span(), false));
+        let tokens_alt = current.as_ref().map(|t| t.to_fmt(v.span(), true));
 
         fn has_formatters(ident: &Ident, s: String) -> bool {
             let m1 = format!("{}{}:", '{', ident);
@@ -353,7 +353,7 @@ fn inner_enum(input: &DeriveInput, data: &DataEnum) -> Result<TokenStream2> {
             s.contains(&m1) || s.contains(&m2)
         }
 
-        match (&v.fields, &format_str, &format_alt) {
+        match (&v.fields, &tokens_fmt, &tokens_alt) {
             (Fields::Named(_), None, _) => {
                 display.extend(quote_spanned! { v.span() =>
                     Self::#type_name { .. } => f.write_str(concat!(#type_str, " { .. }")),
@@ -369,50 +369,75 @@ fn inner_enum(input: &DeriveInput, data: &DataEnum) -> Result<TokenStream2> {
                     Self::#type_name => f.write_str(#type_str),
                 });
             }
-            (Fields::Named(fields), Some(format_str), Some(format_alt)) => {
+            (Fields::Named(fields), Some(tokens_fmt), Some(tokents_alt)) => {
                 use_global = false;
-                let f = fields.named.iter().map(|f| f.ident.as_ref().unwrap());
-                let idents = f
-                    .clone()
-                    .filter(|ident| has_formatters(ident, format_str.to_string()))
-                    .collect::<Vec<_>>();
-                let idents_alt = f
-                    .filter(|ident| has_formatters(ident, format_alt.to_string()))
-                    .collect::<Vec<_>>();
-                display.extend(quote_spanned! { v.span() =>
-                    Self::#type_name { #( #idents, )* .. } => {
-                        if !f.alternate() {
-                            write!(f, #format_str, #( #idents = #idents, )*)
-                        } else {
-                            write!(f, #format_alt, #( #idents_alt = #idents_alt, )*)
-                        }
+                if current == Some(Technique::Inner) {
+                    if fields.named.len() != 1 {
+                        err!(
+                            fields.span(),
+                            "display(inner) requires only single field in the structure"
+                        );
                     }
-                });
+                    let field = fields
+                        .named
+                        .first()
+                        .expect("we just checked that there is a single field")
+                        .ident
+                        .as_ref()
+                        .expect("named fields always have ident with the name");
+                    display.extend(quote_spanned! { v.span() =>
+                        Self::#type_name { #field, .. } => {
+                            if !f.alternate() {
+                                write!(f, #tokens_fmt, _0 = #field)
+                            } else {
+                                write!(f, #tokents_alt, _0 = #field)
+                            }
+                        }
+                    });
+                } else {
+                    let f = fields.named.iter().map(|f| f.ident.as_ref().unwrap());
+                    let idents = f
+                        .clone()
+                        .filter(|ident| has_formatters(ident, tokens_fmt.to_string()))
+                        .collect::<Vec<_>>();
+                    let idents_alt = f
+                        .filter(|ident| has_formatters(ident, tokents_alt.to_string()))
+                        .collect::<Vec<_>>();
+                    display.extend(quote_spanned! { v.span() =>
+                        Self::#type_name { #( #idents, )* .. } => {
+                            if !f.alternate() {
+                                write!(f, #tokens_fmt, #( #idents = #idents, )*)
+                            } else {
+                                write!(f, #tokents_alt, #( #idents_alt = #idents_alt, )*)
+                            }
+                        }
+                    });
+                }
             }
-            (Fields::Unnamed(fields), Some(format_str), Some(format_alt)) => {
+            (Fields::Unnamed(fields), Some(tokens_fmt), Some(tokens_alt)) => {
                 use_global = false;
                 let f = (0..fields.unnamed.len()).map(|i| Ident::new(&format!("_{}", i), v.span()));
                 let idents = f
                     .clone()
-                    .filter(|ident| has_formatters(ident, format_str.to_string()))
+                    .filter(|ident| has_formatters(ident, tokens_fmt.to_string()))
                     .collect::<Vec<_>>();
                 let idents_alt = f
-                    .filter(|ident| has_formatters(ident, format_alt.to_string()))
+                    .filter(|ident| has_formatters(ident, tokens_alt.to_string()))
                     .collect::<Vec<_>>();
                 display.extend(quote_spanned! { v.span() =>
                     Self::#type_name ( #( #idents, )* .. ) => {
                         if !f.alternate() {
-                            write!(f, #format_str, #( #idents = #idents, )*)
+                            write!(f, #tokens_fmt, #( #idents = #idents, )*)
                         } else {
-                            write!(f, #format_alt, #( #idents_alt = #idents_alt, )*)
+                            write!(f, #tokens_alt, #( #idents_alt = #idents_alt, )*)
                         }
                     },
                 });
             }
-            (Fields::Unit, Some(format_str), Some(format_alt)) => {
+            (Fields::Unit, Some(tokens_fmt), Some(tokens_alt)) => {
                 use_global = false;
                 display.extend(quote_spanned! { v.span() =>
-                    Self::#type_name => f.write_str(if !f.alternate() { #format_str } else { #format_alt }),
+                    Self::#type_name => f.write_str(if !f.alternate() { #tokens_fmt } else { #tokens_alt }),
                 });
             }
             _ => unreachable!(),
