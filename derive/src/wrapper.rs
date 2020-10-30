@@ -32,6 +32,11 @@ enum WrapperDerives {
     UpperExp,
     Index,
     IndexMut,
+    IndexRange,
+    IndexFull,
+    IndexFrom,
+    IndexTo,
+    IndexInclusive,
     Neg,
     Not,
     Add,
@@ -75,6 +80,11 @@ impl WrapperDerives {
                     "UpperExp" => Some(Self::UpperExp),
                     "Index" => Some(Self::Index),
                     "IndexMut" => Some(Self::IndexMut),
+                    "IndexRange" => Some(Self::IndexRange),
+                    "IndexFull" => Some(Self::IndexFull),
+                    "IndexFrom" => Some(Self::IndexFrom),
+                    "IndexTo" => Some(Self::IndexTo),
+                    "IndexInclusive" => Some(Self::IndexInclusive),
                     "Add" => Some(Self::Add),
                     "Neg" => Some(Self::Neg),
                     "Not" => Some(Self::Not),
@@ -161,24 +171,88 @@ impl WrapperDerives {
                     }
                 }
             },
-            Self::Index => quote! {
-                impl <_IndexType, #impl_generics_params> ::core::ops::Index<_IndexType> for #ident_name #ty_generics #where_clause
-                {
-                    type Output = <<Self as ::amplify::Wrapper>::Inner as ::core::ops::Index<_IndexType>>::Output;
+            Self::Index => {
+                quote! {
+                    impl <#impl_generics_params> ::core::ops::Index<usize> for #ident_name #ty_generics #where_clause
+                    {
+                        type Output = <<Self as ::amplify::Wrapper>::Inner as ::core::ops::Index<usize>>::Output;
 
-                    fn index(&self, index: _IndexType) -> &Self::Output {
-                        self.as_inner().index(index)
+                        fn index(&self, index: usize) -> &Self::Output {
+                            self.as_inner().index(index)
+                        }
                     }
                 }
-            },
-            Self::IndexMut => quote! {
-                impl <_IndexType, #impl_generics_params> ::core::ops::IndexMut<_IndexType> for #ident_name #ty_generics #where_clause
-                {
-                    fn index_mut(&mut self, index: _IndexType) -> &mut Self::Output {
-                        self.as_inner_mut().index_mut(index)
+            }
+            Self::IndexMut => {
+                quote! {
+                    impl <#impl_generics_params> ::core::ops::IndexMut<usize> for #ident_name #ty_generics #where_clause
+                    {
+                        fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+                            self.as_inner_mut().index_mut(index)
+                        }
                     }
                 }
-            },
+            }
+            Self::IndexRange => {
+                quote! {
+                    impl <#impl_generics_params> ::core::ops::Index<::core::ops::Range<usize>> for #ident_name #ty_generics #where_clause
+                    {
+                        type Output = <<Self as ::amplify::Wrapper>::Inner as ::core::ops::Index<::core::ops::Range<usize>>>::Output;
+
+                        fn index(&self, index: ::core::ops::Range<usize>) -> &Self::Output {
+                            self.as_inner().index(index)
+                        }
+                    }
+                }
+            }
+            Self::IndexFrom => {
+                quote! {
+                    impl <#impl_generics_params> ::core::ops::Index<::core::ops::RangeFrom<usize>> for #ident_name #ty_generics #where_clause
+                    {
+                        type Output = <<Self as ::amplify::Wrapper>::Inner as ::core::ops::Index<::core::ops::RangeFrom<usize>>>::Output;
+
+                        fn index(&self, index: ::core::ops::RangeFrom<usize>) -> &Self::Output {
+                            self.as_inner().index(index)
+                        }
+                    }
+                }
+            }
+            Self::IndexTo => {
+                quote! {
+                    impl <#impl_generics_params> ::core::ops::Index<::core::ops::RangeTo<usize>> for #ident_name #ty_generics #where_clause
+                    {
+                        type Output = <<Self as ::amplify::Wrapper>::Inner as ::core::ops::Index<::core::ops::RangeTo<usize>>>::Output;
+
+                        fn index(&self, index: ::core::ops::RangeTo<usize>) -> &Self::Output {
+                            self.as_inner().index(index)
+                        }
+                    }
+                }
+            }
+            Self::IndexInclusive => {
+                quote! {
+                    impl <#impl_generics_params> ::core::ops::Index<::core::ops::RangeInclusive<usize>> for #ident_name #ty_generics #where_clause
+                    {
+                        type Output = <<Self as ::amplify::Wrapper>::Inner as ::core::ops::Index<::core::ops::RangeInclusive<usize>>>::Output;
+
+                        fn index(&self, index: ::core::ops::RangeInclusive<usize>) -> &Self::Output {
+                            self.as_inner().index(index)
+                        }
+                    }
+                }
+            }
+            Self::IndexFull => {
+                quote! {
+                    impl <#impl_generics_params> ::core::ops::Index<::core::ops::RangeFull> for #ident_name #ty_generics #where_clause
+                    {
+                        type Output = <<Self as ::amplify::Wrapper>::Inner as ::core::ops::Index<::core::ops::RangeFull>>::Output;
+
+                        fn index(&self, index: ::core::ops::RangeFull) -> &Self::Output {
+                            self.as_inner().index(index)
+                        }
+                    }
+                }
+            }
             Self::Neg => quote! {
                 impl #impl_generics ::core::ops::Neg for #ident_name #ty_generics #where_clause
                 {

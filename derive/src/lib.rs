@@ -438,6 +438,11 @@ pub fn derive_getters(input: TokenStream) -> TokenStream {
 /// * [`Octal`]
 /// * [`Index`]
 /// * [`IndexMut`]
+/// * [`IndexRange`]
+/// * [`IndexFull`]
+/// * [`IndexFrom`]
+/// * [`IndexTo`]
+/// * [`IndexInclusive`]
 /// * [`Neg`]
 /// * [`Not`]
 /// * [`Add`]
@@ -503,6 +508,16 @@ pub fn derive_getters(input: TokenStream) -> TokenStream {
 ///
 /// let w = Wrapped::<(), u8>::default();
 /// assert_eq!(w.into_inner(), HashMap::<usize, Vec<u8>>::default());
+/// ```
+///
+/// Wrappers for indexable types
+/// ```
+/// # #[macro_use] extern crate amplify_derive;
+/// use amplify::Wrapper;
+///
+/// #[derive(Wrapper, From)]
+/// #[wrapper(IndexRange, IndexFrom, IndexTo, IndexInclusive, IndexFull)]
+/// struct StrNewtype(String);
 /// ```
 #[proc_macro_derive(Wrapper, attributes(wrap, wrapper))]
 pub fn derive_wrapper(input: TokenStream) -> TokenStream {
