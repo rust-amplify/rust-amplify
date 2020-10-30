@@ -172,22 +172,32 @@ impl WrapperDerives {
                 }
             },
             Self::Index => {
+                let where_clause = match where_clause {
+                    None => quote! { where },
+                    Some(_) => quote! { #where_clause },
+                };
                 quote! {
-                    impl <#impl_generics_params> ::core::ops::Index<usize> for #ident_name #ty_generics #where_clause
+                    impl <#impl_generics_params, _IndexType> ::core::ops::Index<_IndexType> for #ident_name #ty_generics #where_clause
+                        _IndexType: ::core::slice::SliceIndex<<Self as ::amplify::Wrapper>::Inner>
                     {
-                        type Output = <<Self as ::amplify::Wrapper>::Inner as ::core::ops::Index<usize>>::Output;
+                        type Output = <<Self as ::amplify::Wrapper>::Inner as ::core::ops::Index<_IndexType>>::Output;
 
-                        fn index(&self, index: usize) -> &Self::Output {
+                        fn index(&self, index: _IndexType) -> &Self::Output {
                             self.as_inner().index(index)
                         }
                     }
                 }
             }
             Self::IndexMut => {
+                let where_clause = match where_clause {
+                    None => quote! { where },
+                    Some(_) => quote! { #where_clause },
+                };
                 quote! {
-                    impl <#impl_generics_params> ::core::ops::IndexMut<usize> for #ident_name #ty_generics #where_clause
+                    impl <#impl_generics_params, _IndexType> ::core::ops::IndexMut<_IndexType> for #ident_name #ty_generics #where_clause
+                        _IndexType: ::core::slice::SliceIndex<<Self as ::amplify::Wrapper>::Inner>
                     {
-                        fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+                        fn index_mut(&mut self, index: _IndexType) -> &mut Self::Output {
                             self.as_inner_mut().index_mut(index)
                         }
                     }
