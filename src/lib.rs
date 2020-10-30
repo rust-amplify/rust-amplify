@@ -31,6 +31,7 @@
     warnings
 )]
 
+#[cfg(feature = "std")]
 #[macro_use]
 extern crate amplify_derive;
 #[cfg(feature = "serde")]
