@@ -5,7 +5,6 @@ Change Log
 -----
 - stringly_conversions are now separate feature
 
-
 2.0.4
 -----
 - Including alloc feature from stringly_conversions mod

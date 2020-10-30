@@ -1,6 +1,13 @@
 Change Log
 ==========
 
+2.0.7
+-----
+- Improvements to `#[display()]`: #26, #32
+- Allows `#[display(inner)]` derive for enum variants with named fields
+- Improvements to `#[derive(Display)]` struct representation: #30
+- Fixed index wrapper derivations: #27
+
 2.0.6
 -----
 - Itroduction of `#[wrapper()]` meta field for deriving from internal 

@@ -115,7 +115,7 @@ impl FormattingTrait {
     }
 }
 
-#[derive(Clone, PartialEq, Eq)]
+#[derive(Clone)]
 enum Technique {
     FromTrait(FormattingTrait),
     FromMethod(Path),
@@ -473,7 +473,7 @@ fn inner_enum(input: &DeriveInput, data: &DataEnum) -> Result<TokenStream2> {
             }
             (Fields::Named(fields), Some(tokens_fmt), Some(tokens_alt)) => {
                 use_global = false;
-                if current == Some(Technique::Inner) {
+                if let Some(Technique::Inner) = current {
                     if fields.named.len() != 1 {
                         err!(
                             fields.span(),
