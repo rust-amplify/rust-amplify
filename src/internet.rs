@@ -22,8 +22,52 @@ use std::convert::TryFrom;
 use std::fmt;
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6};
 use std::str::FromStr;
+use std::num::ParseIntError;
 #[cfg(feature = "tor")]
 use torut::onion::{OnionAddressV2, OnionAddressV3, TorPublicKeyV3, TORV3_PUBLIC_KEY_LENGTH};
+
+/// Address type do not support ONION address format and can be used only with
+/// IPv4 or IPv6 addresses
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Display, Error)]
+#[display(doc_comments)]
+pub struct NoOnionSupportError;
+
+/// Errors during address string parse process
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Display, Error, From)]
+#[display(doc_comments)]
+pub enum AddrParseError {
+    /// Wrong port number; must be a 16-bit unsigned integer number
+    #[from(ParseIntError)]
+    WrongPortNumber,
+
+    /// Can't recognize IPv4, v6 or Onion v2/v3 address in string "{_0}"
+    WrongAddrFormat(String),
+
+    /// Wrong format of socket address string "{_0}"; use
+    /// <inet_address>[:<port>]
+    WrongSocketFormat(String),
+
+    /// Wrong format of extended socket address string "{_0}"; use
+    /// <transport>://<inet_address>[:<port>]
+    WrongSocketExtFormat(String),
+
+    /// Unknown transport protocol "{_0}"
+    UnknownProtocolError(String),
+
+    /// Tor addresses are not supported; consider compiling with `tor` feature
+    NeedsTorFeature,
+}
+
+/// Errors during decoding address from uniformally-encoded byte string
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Display, Error)]
+#[display(doc_comments)]
+pub enum UniformEncodingError {
+    /// Wrong byte string length {_0}
+    WrongLength(usize),
+
+    /// Byte string contains unrecognizable uniform-encoded address data
+    InvalidFormat,
+}
 
 /// A universal address covering IPv4, IPv6 and Tor in a single byte sequence
 /// of 32 bytes.
@@ -255,18 +299,16 @@ impl fmt::Display for InetAddr {
 
 #[cfg(feature = "tor")]
 impl TryFrom<InetAddr> for IpAddr {
-    type Error = String;
+    type Error = NoOnionSupportError;
     #[inline]
     fn try_from(addr: InetAddr) -> Result<Self, Self::Error> {
         Ok(match addr {
             InetAddr::IPv4(addr) => IpAddr::V4(addr),
             InetAddr::IPv6(addr) => IpAddr::V6(addr),
             #[cfg(feature = "tor")]
-            InetAddr::Tor(_) => Err(String::from("IpAddr can't be used to store Tor v3 address"))?,
+            InetAddr::Tor(_) => Err(NoOnionSupportError)?,
             #[cfg(feature = "tor")]
-            InetAddr::TorV2(_) => {
-                Err(String::from("IpAddr can't be used to store Tor v2 address"))?
-            }
+            InetAddr::TorV2(_) => Err(NoOnionSupportError)?,
         })
     }
 }
@@ -336,7 +378,7 @@ impl_try_from_stringly_standard!(InetAddr);
 impl_into_stringly_standard!(InetAddr);
 
 impl FromStr for InetAddr {
-    type Err = String;
+    type Err = AddrParseError;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         #[cfg(feature = "tor")]
         match (
@@ -345,26 +387,24 @@ impl FromStr for InetAddr {
             OnionAddressV2::from_str(s),
         ) {
             (Ok(_), Ok(_), _) | (Ok(_), _, Ok(_)) | (_, Ok(_), Ok(_)) => {
-                Err(format!("Confusing result of parsing {}", s))
+                Err(AddrParseError::WrongAddrFormat(s.to_owned()))
             }
             (Ok(ip_addr), _, _) => Ok(Self::from(ip_addr)),
             (_, Ok(onionv3), _) => Ok(Self::from(onionv3)),
             (_, _, Ok(onionv2)) => Ok(Self::from(onionv2)),
-            _ => Err(String::from("Wrong onion address")),
+            _ => Err(AddrParseError::WrongAddrFormat(s.to_owned())),
         }
 
         #[cfg(not(feature = "tor"))]
         match IpAddr::from_str(s) {
             Ok(ip_addr) => Ok(InetAddr::from(ip_addr)),
-            _ => Err(String::from(
-                "Tor addresses are not supported; consider compiling with 'tor' feature",
-            )),
+            _ => Err(AddrParseError::NeedsTorFeature),
         }
     }
 }
 
 impl TryFrom<Vec<u8>> for InetAddr {
-    type Error = String;
+    type Error = UniformEncodingError;
     #[inline]
     fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
         InetAddr::try_from(&value[..])
@@ -388,7 +428,7 @@ impl parse_arg::ParseArgFromStr for InetAddr {
 }
 
 impl TryFrom<&[u8]> for InetAddr {
-    type Error = String;
+    type Error = UniformEncodingError;
     fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
         match value.len() {
             4 => {
@@ -407,9 +447,8 @@ impl TryFrom<&[u8]> for InetAddr {
                 buf.clone_from_slice(value);
                 InetAddr::try_from(buf)
             }
-            _ => Err(String::from(
-                "Unsupported length of the byte string to read `InetAddr` from",
-            )),
+            // "Unsupported length of the byte string to read `InetAddr` from",
+            len => Err(UniformEncodingError::WrongLength(len)),
         }
     }
 }
@@ -437,12 +476,12 @@ impl From<[u16; 8]> for InetAddr {
 
 #[cfg(feature = "tor")]
 impl TryFrom<[u8; TORV3_PUBLIC_KEY_LENGTH]> for InetAddr {
-    type Error = String;
+    type Error = UniformEncodingError;
     #[inline]
     fn try_from(value: [u8; TORV3_PUBLIC_KEY_LENGTH]) -> Result<Self, Self::Error> {
         let mut buf = [3u8; Self::UNIFORM_ADDR_LEN];
         buf[1..].copy_from_slice(&value);
-        Self::from_uniform_encoding(&buf).ok_or(s!("Wrong `InetAddr` binary encoding"))
+        Self::from_uniform_encoding(&buf).ok_or(UniformEncodingError::InvalidFormat)
     }
 }
 
@@ -457,25 +496,25 @@ impl TryFrom<[u8; TORV3_PUBLIC_KEY_LENGTH]> for InetAddr {
 #[repr(u8)]
 pub enum Transport {
     /// Normal TCP
-    TCP = 1,
+    Tcp = 1,
 
     /// Normal UDP
-    UDP = 2,
+    Udp = 2,
 
     /// Multipath TCP version
-    MTCP = 3,
+    Mtcp = 3,
 
     /// More efficient UDP version under developent by Google and consortium of
     /// other internet companies
-    QUIC = 4,
+    Quic = 4,
     /* There are other rarely used protocols. Do not see any reason to add
-     * them to the LNP/BP stack for now, but it may appear in the future,
+     * them to the crate for now, but it may appear in the future,
      * so keeping them for referencing purposes: */
     /*
-    UDPLite,
-    SCTP,
-    DCCP,
-    RUDP,
+    UdpLite,
+    Sctp,
+    Dccp,
+    Rudp,
     */
 }
 
@@ -487,10 +526,10 @@ impl Transport {
     pub fn from_uniform_encoding(data: u8) -> Option<Self> {
         use Transport::*;
         Some(match data {
-            a if a == TCP as u8 => TCP,
-            a if a == UDP as u8 => UDP,
-            a if a == MTCP as u8 => MTCP,
-            a if a == QUIC as u8 => QUIC,
+            a if a == Tcp as u8 => Tcp,
+            a if a == Udp as u8 => Udp,
+            a if a == Mtcp as u8 => Mtcp,
+            a if a == Quic as u8 => Quic,
             _ => None?,
         })
     }
@@ -505,19 +544,19 @@ impl Transport {
 impl Default for Transport {
     #[inline]
     fn default() -> Self {
-        Transport::TCP
+        Transport::Tcp
     }
 }
 
 impl FromStr for Transport {
-    type Err = String;
+    type Err = AddrParseError;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(match s.to_lowercase().as_str() {
-            "tcp" => Transport::TCP,
-            "udp" => Transport::UDP,
-            "mtcp" => Transport::MTCP,
-            "quic" => Transport::QUIC,
-            _ => Err(String::from("Unknown transport"))?,
+            "tcp" => Transport::Tcp,
+            "udp" => Transport::Udp,
+            "mtcp" => Transport::Mtcp,
+            "quic" => Transport::Quic,
+            _ => Err(AddrParseError::UnknownProtocolError(s.to_owned()))?,
         })
     }
 }
@@ -528,10 +567,10 @@ impl fmt::Display for Transport {
             f,
             "{}",
             match self {
-                Transport::TCP => "tcp",
-                Transport::UDP => "udp",
-                Transport::MTCP => "mtcp",
-                Transport::QUIC => "quic",
+                Transport::Tcp => "tcp",
+                Transport::Udp => "udp",
+                Transport::Mtcp => "mtcp",
+                Transport::Quic => "quic",
             }
         )
     }
@@ -632,7 +671,7 @@ impl fmt::Display for InetSocketAddr {
 }
 
 impl FromStr for InetSocketAddr {
-    type Err = String;
+    type Err = AddrParseError;
 
     #[allow(unreachable_code)]
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -642,34 +681,27 @@ impl FromStr for InetSocketAddr {
             return Ok(Self::new((*socket_addr.ip()).into(), socket_addr.port()));
         } else {
             #[cfg(not(feature = "tor"))]
-            return Err(format!(
-                "Can't parse internet address {}. Tor addresses are not supported",
-                s
-            ));
+            return Err(AddrParseError::NeedsTorFeature);
         }
 
         let mut vals = s.split(':');
-        let err_msg =
-            String::from("Wrong format of socket address string; use <inet_address>[:<port>]");
-        let em = |_| String::from(err_msg.clone());
-        let emi = |_| String::from(err_msg.clone());
         match (vals.next(), vals.next(), vals.next()) {
             (Some(addr), Some(port), None) => Ok(Self {
-                address: addr.parse().map_err(em)?,
-                port: port.parse().map_err(emi)?,
+                address: addr.parse()?,
+                port: u16::from_str(port)?,
             }),
             (Some(addr), None, _) => Ok(Self {
-                address: addr.parse().map_err(em)?,
+                address: addr.parse()?,
                 port: 0,
             }),
-            _ => Err(err_msg),
+            _ => Err(AddrParseError::WrongSocketFormat(s.to_owned())),
         }
     }
 }
 
 #[cfg(feature = "tor")]
 impl TryFrom<InetSocketAddr> for SocketAddr {
-    type Error = String;
+    type Error = NoOnionSupportError;
     #[inline]
     fn try_from(socket_addr: InetSocketAddr) -> Result<Self, Self::Error> {
         Ok(Self::new(
@@ -747,14 +779,14 @@ impl InetSocketAddrExt {
     /// port
     #[inline]
     pub fn tcp(address: InetAddr, port: u16) -> Self {
-        Self(Transport::TCP, InetSocketAddr::new(address, port))
+        Self(Transport::Tcp, InetSocketAddr::new(address, port))
     }
 
     /// Constructs [`InetSocketAddrExt`] for a given internet address and UDP
     /// port
     #[inline]
     pub fn udp(address: InetAddr, port: u16) -> Self {
-        Self(Transport::UDP, InetSocketAddr::new(address, port))
+        Self(Transport::Udp, InetSocketAddr::new(address, port))
     }
 
     /// Decodes byte array containing uniform encoding of some socket address,
@@ -793,18 +825,13 @@ impl fmt::Display for InetSocketAddrExt {
 }
 
 impl FromStr for InetSocketAddrExt {
-    type Err = String;
+    type Err = AddrParseError;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let mut vals = s.split("://");
-        let err_msg = String::from("Wrong format of extended socket address string; use <transport>://<inet_address>[:<port>]");
-        let em = |_| String::from(err_msg.clone());
         if let (Some(transport), Some(addr), None) = (vals.next(), vals.next(), vals.next()) {
-            Ok(Self(
-                transport.parse().map_err(em)?,
-                addr.parse().map_err(em)?,
-            ))
+            Ok(Self(transport.parse()?, addr.parse()?))
         } else {
-            Err(err_msg)
+            Err(AddrParseError::WrongSocketExtFormat(s.to_owned()))
         }
     }
 }
@@ -861,17 +888,17 @@ mod test {
 
     #[test]
     fn test_transport() {
-        assert_eq!(format!("{}", Transport::TCP), "tcp");
-        assert_eq!(format!("{}", Transport::UDP), "udp");
-        assert_eq!(format!("{}", Transport::QUIC), "quic");
-        assert_eq!(format!("{}", Transport::MTCP), "mtcp");
+        assert_eq!(format!("{}", Transport::Tcp), "tcp");
+        assert_eq!(format!("{}", Transport::Udp), "udp");
+        assert_eq!(format!("{}", Transport::Quic), "quic");
+        assert_eq!(format!("{}", Transport::Mtcp), "mtcp");
 
-        assert_eq!(Transport::from_str("tcp").unwrap(), Transport::TCP);
-        assert_eq!(Transport::from_str("Tcp").unwrap(), Transport::TCP);
-        assert_eq!(Transport::from_str("TCP").unwrap(), Transport::TCP);
-        assert_eq!(Transport::from_str("udp").unwrap(), Transport::UDP);
-        assert_eq!(Transport::from_str("quic").unwrap(), Transport::QUIC);
-        assert_eq!(Transport::from_str("mtcp").unwrap(), Transport::MTCP);
+        assert_eq!(Transport::from_str("tcp").unwrap(), Transport::Tcp);
+        assert_eq!(Transport::from_str("Tcp").unwrap(), Transport::Tcp);
+        assert_eq!(Transport::from_str("TCP").unwrap(), Transport::Tcp);
+        assert_eq!(Transport::from_str("udp").unwrap(), Transport::Udp);
+        assert_eq!(Transport::from_str("quic").unwrap(), Transport::Quic);
+        assert_eq!(Transport::from_str("mtcp").unwrap(), Transport::Mtcp);
         assert!(Transport::from_str("xtp").is_err());
     }
 

@@ -31,6 +31,8 @@
     warnings
 )]
 
+#[macro_use]
+extern crate amplify_derive;
 #[cfg(feature = "serde")]
 #[macro_use]
 extern crate serde_crate as serde;
