@@ -119,7 +119,7 @@ use syn::DeriveInput;
 ///     #[derive(Display)]
 ///     #[display(doc_comments)]
 ///     enum Variants {
-///         /// Letter A
+///         /// Letter A.
 ///         /// Multiline comments are also working
 ///         A,
 ///         /// Letter B
@@ -135,12 +135,23 @@ use syn::DeriveInput;
 ///         Named { some: String }
 ///     };
 ///
+///     assert_eq!(
+///         format!("{}", Variants::A),
+///         "Letter A. Multiline comments are also working"
+///     );
 ///     assert_eq!(format!("{}", Variants::C), "Letter C");
-///     assert_eq!(format!("{}", Variants::Letter(s!("K"))), " Letter K");
+///     assert_eq!(format!("{}", Variants::Letter(s!("K"))), "Letter K");
 ///    ```
 ///    You can also mix in this mode with other fors of display tags on a
 ///    specific options; in this case doc comments are ignored
-///
+/// 6. Support of unit structs:
+///    ```
+///     # #[macro_use] extern crate amplify_derive;
+///     /// Some unit struct
+///     #[derive(Clone, Debug, Display, Error)]     
+///     #[display(doc_comments)]
+///     pub struct UnitStruct;
+///    ```
 /// # Example
 ///
 /// Advanced use with enums:
@@ -228,11 +239,11 @@ pub fn derive_display(input: TokenStream) -> TokenStream {
 ///     ZeroDivision(u16),
 /// }
 ///
-/// assert_eq!(format!("{}", Error::Io), " I/O operation error");
-/// assert_eq!(format!("{}", Error::Overflow), " Math overflow");
+/// assert_eq!(format!("{}", Error::Io), "I/O operation error");
+/// assert_eq!(format!("{}", Error::Overflow), "Math overflow");
 /// assert_eq!(
 ///     format!("{}", Error::ZeroDivision(2)),
-///     " Zero division with 2"
+///     "Zero division with 2"
 /// );
 /// ```
 #[proc_macro_derive(Error)]

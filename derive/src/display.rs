@@ -102,7 +102,7 @@ enum Technique {
     FromTrait(FormattingTrait),
     FromMethod(Path),
     WithFormat(LitStr, Option<LitStr>),
-    DocComments,
+    DocComments(String),
     Inner,
 }
 
@@ -111,7 +111,7 @@ impl Technique {
         attrs: impl IntoIterator<Item = &'a Attribute> + Clone,
         span: Span,
     ) -> Result<Option<Self>> {
-        let res = match attrs
+        let mut res = match attrs
             .clone()
             .into_iter()
             .find(|attr| attr.path.is_ident(NAME))
@@ -128,7 +128,7 @@ impl Technique {
                         Some(Self::WithFormat(format.clone(), None))
                     }
                     Some(NestedMeta::Meta(Meta::Path(path))) if path.is_ident("doc_comments") => {
-                        Some(Self::DocComments)
+                        Some(Self::DocComments(String::new()))
                     }
                     Some(NestedMeta::Meta(Meta::Path(path))) if path.is_ident("inner") => {
                         Some(Self::Inner)
@@ -140,29 +140,29 @@ impl Technique {
                     Some(_) => err!(span, "argument must be a string literal"),
                     None => err!(span, "argument is required"),
                 };
-                match iter.next() {
+                res = match iter.next() {
                     Some(NestedMeta::Meta(Meta::NameValue(MetaNameValue {
                         path,
                         lit: Lit::Str(alt),
                         ..
-                    }))) => {
-                        if Some("alt".to_string()) == path.get_ident().map(Ident::to_string) {
-                            if let Some(Technique::WithFormat(fmt, _)) = res {
-                                res = Some(Technique::WithFormat(fmt, Some(alt.clone())));
-                            } else {
-                                err!(
-                                    span,
-                                    "alternative formatting can be given only if \
-                                     the first argument is a format string"
-                                )
+                    }))) if Some("alt".to_string()) == path.get_ident().map(Ident::to_string) => {
+                        if iter.count() > 0 {
+                            err!(span, "excessive arguments")
+                        }
+                        match res {
+                            Some(Technique::WithFormat(fmt, _)) => {
+                                Some(Technique::WithFormat(fmt, Some(alt.clone())))
                             }
-                        } else {
-                            err!(span, "unknown attribute argument")
+                            _ => err!(
+                                span,
+                                "alternative formatting can be given only if \
+                                 the first argument is a format string"
+                            ),
                         }
                     }
-                    None => (),
+                    None => res,
                     _ => err!(span, "unrecognizable second argument"),
-                }
+                };
                 res
             }
             Some(Meta::NameValue(MetaNameValue {
@@ -172,27 +172,32 @@ impl Technique {
             Some(_) => err!(span, "argument must be a string literal"),
             None => None,
         };
+
+        res.as_mut().map(|r| r.apply_docs(attrs));
+
         Ok(res)
     }
 
-    pub fn to_fmt(&self, span: Span, alt: bool) -> Option<TokenStream2> {
+    pub fn to_fmt(&self, span: Span, alt: bool) -> TokenStream2 {
         match self {
-            Self::FromTrait(fmt) => Some(fmt.into_token_stream2(span)),
-            Self::FromMethod(path) => Some(quote! {#path}),
-            Self::WithFormat(fmt, fmt_alt) => Some(if alt && fmt_alt.is_some() {
-                let alt = fmt_alt
-                    .as_ref()
-                    .expect("we just checked that there are data");
-                quote! {#alt}
-            } else {
-                quote! {#fmt}
-            }),
-            Self::DocComments => None,
+            Self::FromTrait(fmt) => fmt.into_token_stream2(span),
+            Self::FromMethod(path) => quote! {#path},
+            Self::WithFormat(fmt, fmt_alt) => {
+                if alt && fmt_alt.is_some() {
+                    let alt = fmt_alt
+                        .as_ref()
+                        .expect("we just checked that there are data");
+                    quote! {#alt}
+                } else {
+                    quote! {#fmt}
+                }
+            }
+            Self::DocComments(doc) => quote! { #doc },
             Self::Inner => {
                 if alt {
-                    Some(quote! { "{_0:#}" })
+                    quote! { "{_0:#}" }
                 } else {
-                    Some(quote! { "{_0}" })
+                    quote! { "{_0}" }
                 }
             }
         }
@@ -213,10 +218,11 @@ impl Technique {
                 };
                 Self::impl_format(fields, &format, span)
             }
-            Technique::DocComments => {
-                quote! {}
+            Technique::DocComments(doc) => {
+                let format = quote_spanned! { span => #doc };
+                Self::impl_format(fields, &format, span)
             }
-            Self::Inner => {
+            Technique::Inner => {
                 let format = if alt {
                     quote_spanned! { span => "{_0:#}" }
                 } else {
@@ -256,33 +262,25 @@ impl Technique {
             }
             Fields::Unit => {
                 quote_spanned! { span =>
-                    f.write(#format)
+                    f.write_str(#format)
                 }
             }
         }
     }
 
-    fn doc_attr(attrs: &Vec<Attribute>) -> Result<TokenStream2> {
-        attrs
-            .iter()
-            .filter(|attr| attr.path.is_ident("doc"))
-            .try_fold(TokenStream2::new(), |stream, attr| {
-                match attr.parse_meta() {
-                    Ok(Meta::NameValue(MetaNameValue { lit, .. })) => {
-                        if stream.is_empty() {
-                            Ok(quote! { #lit })
-                        } else {
-                            Ok(quote! { concat!(#stream, #lit) })
-                        }
-                    }
-                    _ => Err(attr_err!(
-                        attr.span(),
-                        NAME,
-                        "malformed doc attribute",
-                        EXAMPLE
-                    )),
+    fn apply_docs<'a>(&mut self, attrs: impl IntoIterator<Item = &'a Attribute> + Clone) {
+        if let Technique::DocComments(ref mut doc) = self {
+            for attr in attrs.into_iter().filter(|attr| attr.path.is_ident("doc")) {
+                if let Ok(Meta::NameValue(MetaNameValue {
+                    lit: Lit::Str(s), ..
+                })) = attr.parse_meta()
+                {
+                    doc.push_str(&s.value().trim());
+                    doc.push(' ');
                 }
-            })
+            }
+            *doc = doc.trim().to_owned();
+        }
     }
 }
 
@@ -336,21 +334,18 @@ fn inner_enum(input: &DeriveInput, data: &DataEnum) -> Result<TokenStream2> {
         let type_name = &v.ident;
         let type_str = format!("{}", type_name);
 
-        let local = Technique::from_attrs(&v.attrs, v.span())?;
+        let mut local = Technique::from_attrs(&v.attrs, v.span())?;
+        let mut parent = global.clone();
+        let current = local.as_mut().or(parent.as_mut());
+        let current = current
+            .map(|r| {
+                r.apply_docs(&v.attrs);
+                r
+            })
+            .cloned();
 
-        let doc = match global {
-            Some(Technique::DocComments) => {
-                use_global = false;
-                Some(Technique::doc_attr(&v.attrs)?)
-            }
-            _ => None,
-        };
-
-        let format = local
-            .clone()
-            .and_then(|t| t.to_fmt(v.span(), false))
-            .or(doc.clone());
-        let format_alt = local.and_then(|t| t.to_fmt(v.span(), true)).or(doc);
+        let format_str = current.as_ref().map(|t| t.to_fmt(v.span(), false));
+        let format_alt = current.as_ref().map(|t| t.to_fmt(v.span(), true));
 
         fn has_formatters(ident: &Ident, s: String) -> bool {
             let m1 = format!("{}{}:", '{', ident);
@@ -358,7 +353,7 @@ fn inner_enum(input: &DeriveInput, data: &DataEnum) -> Result<TokenStream2> {
             s.contains(&m1) || s.contains(&m2)
         }
 
-        match (&v.fields, &format, &format_alt) {
+        match (&v.fields, &format_str, &format_alt) {
             (Fields::Named(_), None, _) => {
                 display.extend(quote_spanned! { v.span() =>
                     Self::#type_name { .. } => f.write_str(concat!(#type_str, " { .. }")),
