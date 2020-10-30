@@ -67,6 +67,24 @@ impl FormattingTrait {
         )
     }
 
+    pub fn to_fmt(self, alt: bool) -> TokenStream2 {
+        let mut fmt = match self {
+            FormattingTrait::Debug => "{:?}",
+            FormattingTrait::Octal => "{:o}",
+            FormattingTrait::Binary => "{:b}",
+            FormattingTrait::Pointer => "{:p}",
+            FormattingTrait::LowerHex => "{:x}",
+            FormattingTrait::UpperHex => "{:X}",
+            FormattingTrait::LowerExp => "{:e}",
+            FormattingTrait::UpperExp => "{:E}",
+        }
+        .to_owned();
+        if alt {
+            fmt = fmt.replace(':', ":#");
+        }
+        quote! { #fmt }
+    }
+
     pub fn into_token_stream2(self, span: Span) -> TokenStream2 {
         match self {
             FormattingTrait::Debug => quote_spanned! { span =>
@@ -178,9 +196,9 @@ impl Technique {
         Ok(res)
     }
 
-    pub fn to_fmt(&self, span: Span, alt: bool) -> TokenStream2 {
+    pub fn to_fmt(&self, alt: bool) -> TokenStream2 {
         match self {
-            Self::FromTrait(fmt) => fmt.into_token_stream2(span),
+            Self::FromTrait(fmt) => fmt.to_fmt(alt),
             Self::FromMethod(path) => quote! {#path},
             Self::WithFormat(fmt, fmt_alt) => {
                 if alt && fmt_alt.is_some() {
@@ -284,6 +302,12 @@ impl Technique {
     }
 }
 
+fn has_formatters(ident: impl ToString, s: &str) -> bool {
+    let m1 = format!("{}{}:", '{', ident.to_string());
+    let m2 = format!("{}{}{}", '{', ident.to_string(), '}');
+    s.contains(&m1) || s.contains(&m2)
+}
+
 pub(crate) fn inner(input: DeriveInput) -> Result<TokenStream2> {
     match input.data {
         Data::Struct(ref data) => inner_struct(&input, data),
@@ -296,27 +320,111 @@ fn inner_struct(input: &DeriveInput, data: &DataStruct) -> Result<TokenStream2> 
     let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
     let ident_name = &input.ident;
 
-    let technique = Technique::from_attrs(&input.attrs, input.span())?.ok_or(Error::new(
+    let mut technique = Technique::from_attrs(&input.attrs, input.span())?.ok_or(Error::new(
         input.span(),
         format!(
             "Deriving `Display`: required attribute `{}` is missing.\n{}",
             NAME, EXAMPLE
         ),
     ))?;
+    technique.apply_docs(&input.attrs);
 
-    let stream = technique
-        .clone()
-        .into_token_stream2(&data.fields, input.span(), false);
-    let stream_alt = technique.into_token_stream2(&data.fields, input.span(), true);
+    let tokens_fmt = technique.to_fmt(false);
+    let tokens_alt = technique.to_fmt(true);
+    let str_fmt = tokens_fmt.to_string();
+    let str_alt = tokens_alt.to_string();
+
+    let display = match (&data.fields, &technique) {
+        (_, Technique::FromTrait(_)) => {
+            let a = technique
+                .clone()
+                .into_token_stream2(&data.fields, input.span(), false);
+            let b = technique
+                .clone()
+                .into_token_stream2(&data.fields, input.span(), true);
+            quote_spanned! { input.span() =>
+                if !f.alternate() {
+                    #a
+                } else {
+                    #b
+                }
+            }
+        }
+        (Fields::Named(fields), Technique::Inner) => {
+            if fields.named.len() != 1 {
+                err!(
+                    fields.span(),
+                    "display(inner) requires only single field in the structure"
+                );
+            }
+            let field = fields
+                .named
+                .first()
+                .expect("we just checked that there is a single field")
+                .ident
+                .as_ref()
+                .expect("named fields always have ident with the name");
+            quote_spanned! { field.span() =>
+                if !f.alternate() {
+                    write!(f, #tokens_fmt, _0 = self.#field)
+                } else {
+                    write!(f, #tokens_alt, _0 = self.#field)
+                }
+            }
+        }
+        (Fields::Named(fields), _) => {
+            let f = fields.named.iter().map(|f| f.ident.as_ref().unwrap());
+            let idents = f
+                .clone()
+                .filter(|ident| has_formatters(ident, &str_fmt))
+                .collect::<Vec<_>>();
+            let idents_alt = f
+                .filter(|ident| has_formatters(ident, &str_alt))
+                .collect::<Vec<_>>();
+            quote_spanned! { fields.span() =>
+                if !f.alternate() {
+                    write!(f, #tokens_fmt, #( #idents = self.#idents, )*)
+                } else {
+                    write!(f, #tokens_alt, #( #idents_alt = self.#idents_alt, )*)
+                }
+            }
+        }
+        (Fields::Unnamed(fields), _) => {
+            let f = (0..fields.unnamed.len()).map(|i| Index::from(i));
+            let idents = f
+                .clone()
+                .filter(|ident| has_formatters(format!("_{}", ident.index), &str_fmt));
+            let nums = idents
+                .clone()
+                .map(|ident| Ident::new(&format!("_{}", ident.index), fields.span()))
+                .collect::<Vec<_>>();
+            let idents = idents.collect::<Vec<_>>();
+            let idents_alt =
+                f.filter(|ident| has_formatters(format!("_{}", ident.index), &str_alt));
+            let nums_alt = idents_alt
+                .clone()
+                .map(|ident| Ident::new(&format!("_{}", ident.index), fields.span()))
+                .collect::<Vec<_>>();
+            let idents_alt = idents_alt.collect::<Vec<_>>();
+            quote_spanned! { fields.span() =>
+                if !f.alternate() {
+                    write!(f, #tokens_fmt, #( #nums = self.#idents, )*)
+                } else {
+                    write!(f, #tokens_alt, #( #nums_alt = self.#idents_alt, )*)
+                }
+            }
+        }
+        (Fields::Unit, _) => {
+            quote_spanned! { data.fields.span() =>
+                f.write_str(if !f.alternate() { #tokens_fmt } else { #tokens_alt })
+            }
+        }
+    };
 
     Ok(quote! {
         impl #impl_generics ::std::fmt::Display for #ident_name #ty_generics #where_clause {
             fn fmt(&self, mut f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-                if !f.alternate() {
-                    #stream
-                } else {
-                    #stream_alt
-                }
+                #display
             }
         }
     })
@@ -344,14 +452,8 @@ fn inner_enum(input: &DeriveInput, data: &DataEnum) -> Result<TokenStream2> {
             })
             .cloned();
 
-        let tokens_fmt = current.as_ref().map(|t| t.to_fmt(v.span(), false));
-        let tokens_alt = current.as_ref().map(|t| t.to_fmt(v.span(), true));
-
-        fn has_formatters(ident: &Ident, s: String) -> bool {
-            let m1 = format!("{}{}:", '{', ident);
-            let m2 = format!("{}{}{}", '{', ident, '}');
-            s.contains(&m1) || s.contains(&m2)
-        }
+        let tokens_fmt = current.as_ref().map(|t| t.to_fmt(false));
+        let tokens_alt = current.as_ref().map(|t| t.to_fmt(true));
 
         match (&v.fields, &tokens_fmt, &tokens_alt) {
             (Fields::Named(_), None, _) => {
@@ -369,7 +471,7 @@ fn inner_enum(input: &DeriveInput, data: &DataEnum) -> Result<TokenStream2> {
                     Self::#type_name => f.write_str(#type_str),
                 });
             }
-            (Fields::Named(fields), Some(tokens_fmt), Some(tokents_alt)) => {
+            (Fields::Named(fields), Some(tokens_fmt), Some(tokens_alt)) => {
                 use_global = false;
                 if current == Some(Technique::Inner) {
                     if fields.named.len() != 1 {
@@ -390,7 +492,7 @@ fn inner_enum(input: &DeriveInput, data: &DataEnum) -> Result<TokenStream2> {
                             if !f.alternate() {
                                 write!(f, #tokens_fmt, _0 = #field)
                             } else {
-                                write!(f, #tokents_alt, _0 = #field)
+                                write!(f, #tokens_alt, _0 = #field)
                             }
                         }
                     });
@@ -398,17 +500,17 @@ fn inner_enum(input: &DeriveInput, data: &DataEnum) -> Result<TokenStream2> {
                     let f = fields.named.iter().map(|f| f.ident.as_ref().unwrap());
                     let idents = f
                         .clone()
-                        .filter(|ident| has_formatters(ident, tokens_fmt.to_string()))
+                        .filter(|ident| has_formatters(ident, &tokens_fmt.to_string()))
                         .collect::<Vec<_>>();
                     let idents_alt = f
-                        .filter(|ident| has_formatters(ident, tokents_alt.to_string()))
+                        .filter(|ident| has_formatters(ident, &tokens_alt.to_string()))
                         .collect::<Vec<_>>();
                     display.extend(quote_spanned! { v.span() =>
                         Self::#type_name { #( #idents, )* .. } => {
                             if !f.alternate() {
                                 write!(f, #tokens_fmt, #( #idents = #idents, )*)
                             } else {
-                                write!(f, #tokents_alt, #( #idents_alt = #idents_alt, )*)
+                                write!(f, #tokens_alt, #( #idents_alt = #idents_alt, )*)
                             }
                         }
                     });
@@ -419,10 +521,10 @@ fn inner_enum(input: &DeriveInput, data: &DataEnum) -> Result<TokenStream2> {
                 let f = (0..fields.unnamed.len()).map(|i| Ident::new(&format!("_{}", i), v.span()));
                 let idents = f
                     .clone()
-                    .filter(|ident| has_formatters(ident, tokens_fmt.to_string()))
+                    .filter(|ident| has_formatters(ident, &tokens_fmt.to_string()))
                     .collect::<Vec<_>>();
                 let idents_alt = f
-                    .filter(|ident| has_formatters(ident, tokens_alt.to_string()))
+                    .filter(|ident| has_formatters(ident, &tokens_alt.to_string()))
                     .collect::<Vec<_>>();
                 display.extend(quote_spanned! { v.span() =>
                     Self::#type_name ( #( #idents, )* .. ) => {
@@ -492,7 +594,7 @@ fn inner_union(input: &DeriveInput, data: &DataUnion) -> Result<TokenStream2> {
 
         let format = Technique::from_attrs(&field.attrs, field.span())?
             .or(global.clone())
-            .map(|t| (t.to_fmt(field.span(), false), t.to_fmt(field.span(), true)));
+            .map(|t| (t.to_fmt(false), t.to_fmt(true)));
 
         match format {
             None => {
