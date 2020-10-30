@@ -111,13 +111,19 @@ pub enum InetAddr {
     /// IP address of V6 standard
     IPv6(Ipv6Addr),
 
-    /// Tor address of V2 standard
-    #[cfg(feature = "tor")]
-    Tor(TorPublicKeyV3),
-
     /// Tor address of V3 standard
     #[cfg(feature = "tor")]
     TorV2(OnionAddressV2),
+
+    /// Tor address of V2 standard
+    #[cfg(feature = "tor")]
+    Tor(TorPublicKeyV3),
+}
+
+impl std::hash::Hash for InetAddr {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        state.write(self.to_string().as_bytes())
+    }
 }
 
 impl InetAddr {
@@ -486,7 +492,7 @@ impl TryFrom<[u8; TORV3_PUBLIC_KEY_LENGTH]> for InetAddr {
 }
 
 /// Transport protocols that may be part of `TransportAddr`
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[cfg_attr(
     feature = "serde",
     derive(Serialize, Deserialize),
@@ -580,7 +586,7 @@ impl fmt::Display for Transport {
 /// and a port number (without protocol specification, i.e. TCP/UDP etc). If you
 /// need to include transport-level protocol information into the socket
 /// details, pls check [`InetSocketAddrExt`]
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Default)]
 #[cfg_attr(
     all(feature = "serde", feature = "serde_str_helpers"),
     derive(Serialize, Deserialize),
@@ -742,7 +748,7 @@ impl From<SocketAddrV6> for InetSocketAddr {
 
 /// Internet socket address of [`InetSocketAddr`] type, extended with a
 /// transport-level protocol information (see [`Transport`])
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Default)]
 #[cfg_attr(
     all(feature = "serde", feature = "serde_str_helpers"),
     derive(Serialize, Deserialize),
