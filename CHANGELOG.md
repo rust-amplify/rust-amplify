@@ -1,6 +1,11 @@
 Change Log
 ==========
 
+2.2.0
+-----
+- Updating aplify_derive dependency
+- Implementation of Hash derive for internet address types
+
 2.1.0
 -----
 - Internet address-specific error types (#31)

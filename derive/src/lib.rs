@@ -186,8 +186,8 @@ use syn::DeriveInput;
 ///
 ///     Unnamed(u16),
 ///
-///     // NB: Use `_`-prefixed indexes for tuple values
-///     #[display("Custom{_0}")]
+///     // NB: Use indexes for tuple values
+///     #[display("Custom{0}")]
 ///     UnnamedCustom(String),
 /// }
 ///
@@ -210,11 +210,11 @@ use syn::DeriveInput;
 /// ```
 /// # #[macro_use] extern crate amplify_derive;
 /// #[derive(Clone, Copy, Debug, Display)]
-/// #[display("{_0}")]
+/// #[display("{0}")]
 /// struct Tuple(u8);
 ///
 /// #[derive(Clone, Copy, Debug, Display)]
-/// #[display(inner)] // `inner` is synonym to "{_0}"
+/// #[display(inner)] // `inner` is synonym to "{0}"
 /// struct Tuple2(u8);
 ///
 /// assert_eq!(format!("{}", Tuple(5)), format!("{}", Tuple2(5)))

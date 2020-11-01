@@ -192,6 +192,7 @@ impl Technique {
         };
 
         res.as_mut().map(|r| r.apply_docs(attrs));
+        res.as_mut().map(|r| r.fix_fmt());
 
         Ok(res)
     }
@@ -298,6 +299,37 @@ impl Technique {
                 }
             }
             *doc = doc.trim().to_owned();
+        }
+    }
+
+    fn fix_fmt(&mut self) {
+        fn fix(s: &String) -> String {
+            s.replace("{0", "{_0")
+                .replace("{1", "{_1")
+                .replace("{2", "{_2")
+                .replace("{3", "{_3")
+                .replace("{4", "{_4")
+                .replace("{5", "{_5")
+                .replace("{6", "{_6")
+                .replace("{7", "{_7")
+                .replace("{8", "{_8")
+                .replace("{9", "{_9")
+        }
+
+        if let Self::WithFormat(fmt, x) = self {
+            *self = Self::WithFormat(
+                LitStr::new(&fix(&fmt.value()), Span::call_site()),
+                x.clone(),
+            );
+        }
+        if let Self::WithFormat(x, Some(fmt)) = self {
+            *self = Self::WithFormat(
+                x.clone(),
+                Some(LitStr::new(&fix(&fmt.value()), Span::call_site())),
+            );
+        }
+        if let Self::DocComments(fmt) = self {
+            *self = Self::DocComments(fix(fmt))
         }
     }
 }

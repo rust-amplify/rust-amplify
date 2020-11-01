@@ -1,6 +1,13 @@
 Change Log
 ==========
 
+2.2.0
+-----
+- Support for {0}-style indexes in derive(Display)
+- Auto From<T> for String implementation for Error derive
+- Fixed problem with display(Debug) for enums
+
+
 2.1.0
 -----
 - Multiple display derivation improvements
