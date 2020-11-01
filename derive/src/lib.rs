@@ -92,6 +92,10 @@ use syn::DeriveInput;
 ///             s!("Integer representation")
 ///         }
 ///     }
+///     assert_eq!(
+///         format!("{}", Int { uint: 2 }),
+///         s!("Integer representation")
+///     );
 ///    ```
 ///    Formatting function must return [`String`] and take a single `self`
 ///    argument (if you need formatting with streamed output, use one of

@@ -200,7 +200,7 @@ impl Technique {
     pub fn to_fmt(&self, alt: bool) -> TokenStream2 {
         match self {
             Self::FromTrait(fmt) => fmt.to_fmt(alt),
-            Self::FromMethod(path) => quote! {#path},
+            Self::FromMethod(_) => quote! { "{}" },
             Self::WithFormat(fmt, fmt_alt) => {
                 if alt && fmt_alt.is_some() {
                     let alt = fmt_alt
@@ -367,7 +367,7 @@ fn inner_struct(input: &DeriveInput, data: &DataStruct) -> Result<TokenStream2> 
     let str_alt = tokens_alt.to_string();
 
     let display = match (&data.fields, &technique) {
-        (_, Technique::FromTrait(_)) => {
+        (_, Technique::FromTrait(_)) | (_, Technique::FromMethod(_)) => {
             let a = technique
                 .clone()
                 .into_token_stream2(&data.fields, input.span(), false);
