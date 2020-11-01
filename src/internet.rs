@@ -40,18 +40,18 @@ pub enum AddrParseError {
     #[from(ParseIntError)]
     WrongPortNumber,
 
-    /// Can't recognize IPv4, v6 or Onion v2/v3 address in string "{0}"
+    /// Can't recognize IPv4, v6 or Onion v2/v3 address in string "{_0}"
     WrongAddrFormat(String),
 
-    /// Wrong format of socket address string "{0}"; use
+    /// Wrong format of socket address string "{_0}"; use
     /// <inet_address>[:<port>]
     WrongSocketFormat(String),
 
-    /// Wrong format of extended socket address string "{0}"; use
+    /// Wrong format of extended socket address string "{_0}"; use
     /// <transport>://<inet_address>[:<port>]
     WrongSocketExtFormat(String),
 
-    /// Unknown transport protocol "{0}"
+    /// Unknown transport protocol "{_0}"
     UnknownProtocolError(String),
 
     /// Tor addresses are not supported; consider compiling with `tor` feature
@@ -62,7 +62,7 @@ pub enum AddrParseError {
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Display, Error)]
 #[display(doc_comments)]
 pub enum UniformEncodingError {
-    /// Wrong byte string length {0}
+    /// Wrong byte string length {_0}
     WrongLength(usize),
 
     /// Byte string contains unrecognizable uniform-encoded address data

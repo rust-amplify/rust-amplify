@@ -477,12 +477,20 @@ fn inner_enum(input: &DeriveInput, data: &DataEnum) -> Result<TokenStream2> {
         let mut local = Technique::from_attrs(&v.attrs, v.span())?;
         let mut parent = global.clone();
         let current = local.as_mut().or(parent.as_mut());
-        let current = current
+        let mut current = current
             .map(|r| {
                 r.apply_docs(&v.attrs);
                 r
             })
             .cloned();
+
+        if let Some(Technique::DocComments(_)) = current {
+            current.as_mut().map(|t| {
+                *t = Technique::DocComments(String::new());
+                t.apply_docs(&v.attrs);
+                t.fix_fmt();
+            });
+        }
 
         let tokens_fmt = current.as_ref().map(|t| t.to_fmt(false));
         let tokens_alt = current.as_ref().map(|t| t.to_fmt(true));

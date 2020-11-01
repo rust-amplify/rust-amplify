@@ -119,6 +119,7 @@ use syn::DeriveInput;
 ///     # #[macro_use] extern crate amplify_derive;
 ///     #[macro_use] extern crate amplify;
 ///
+///     /// Example enum with doc comments converted into display
 ///     #[derive(Display)]
 ///     #[display(doc_comments)]
 ///     enum Variants {
@@ -130,7 +131,7 @@ use syn::DeriveInput;
 ///         /// This comment is ignored
 ///         #[display("Letter C")]
 ///         C,
-///         /// Letter {_0}
+///         /// Letter {0}
 ///         Letter(String),
 ///         /// You can omit parameters and just have a normal doc comment
 ///         Number(u8),
@@ -243,7 +244,7 @@ pub fn derive_display(input: TokenStream) -> TokenStream {
 ///     Io,
 ///     /// Math overflow
 ///     Overflow,
-///     /// Zero division with {_0}
+///     /// Zero division with {0}
 ///     ZeroDivision(u16),
 /// }
 ///
