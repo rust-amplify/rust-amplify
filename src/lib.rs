@@ -50,11 +50,13 @@ mod wrapper;
 
 mod as_any;
 mod bipolar;
+mod dumb_default;
 #[cfg(feature = "std")]
 pub mod internet;
-mod strategy;
+pub mod strategy;
 
 pub use crate::as_any::AsAny;
 pub use crate::bipolar::Bipolar;
 pub use crate::strategy::Holder;
 pub use crate::wrapper::Wrapper;
+pub use crate::dumb_default::DumbDefault;

@@ -11,7 +11,7 @@ dependencies = [
 
 [[package]]
 name = "amplify"
-version = "2.2.1"
+version = "2.3.0"
 dependencies = [
  "amplify_derive 2.2.1",
  "ed25519-dalek",
