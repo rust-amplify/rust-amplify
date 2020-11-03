@@ -92,6 +92,18 @@ use syn::DeriveInput;
 ///             s!("Integer representation")
 ///         }
 ///     }
+///
+///     pub trait ToSpecialString {
+///         fn to_special_string(&self) -> String {
+///             s!("Special string")
+///         }
+///     }
+///
+///     #[derive(Display)]
+///     #[display(Some::print)]
+///     struct Some { uint: u32, int: i32 };
+///     impl ToSpecialString for Some {}
+///
 ///     assert_eq!(
 ///         format!("{}", Int { uint: 2 }),
 ///         s!("Integer representation")

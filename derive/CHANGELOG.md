@@ -1,6 +1,11 @@
 Change Log
 ==========
 
+2.3.0
+-----
+- Using amplify 2.3.0
+- Deriving `Wrapper` does not require `use amplify::Wrapper`
+
 2.2.0
 -----
 - Support for {0}-style indexes in derive(Display)

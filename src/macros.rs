@@ -49,6 +49,42 @@ macro_rules! none {
     };
 }
 
+/// This macro allows more semantically-clear code (which can be used especially
+/// with structure initialization), indicating that instead of type value we are
+/// generating zero values (int types or byte slices filled with zeros)
+#[macro_export]
+macro_rules! zero {
+    () => {
+        Default::default()
+    };
+}
+
+/// This macro allows more semantically-clear code (which can be used especially
+/// with structure initialization), indicating that instead of type value we are
+/// generating empty collection types
+#[macro_export]
+macro_rules! empty {
+    () => {
+        Default::default()
+    };
+}
+
+/// Shorthand for `Default::default()`
+#[macro_export]
+macro_rules! default {
+    () => {
+        Default::default()
+    };
+}
+
+/// Shorthand for `DumbDefault::dumb_default()`
+#[macro_export]
+macro_rules! dumb {
+    () => {
+        DumbDefault::dumb_default()
+    };
+}
+
 /// Macro for creating [`HashMap`] in the same manner as `vec!` is used for
 /// [`Vec`]:
 /// ```

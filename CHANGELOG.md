@@ -1,6 +1,13 @@
 Change Log
 ==========
 
+2.3.0
+-----
+- `DumbDefault` type
+- New semantic macros (`default!` and `dumb_default!`)
+- Serde helper traits for serialization into YAML, JSON and TOML in display
+  derives
+
 2.2.0
 -----
 - Updating aplify_derive dependency
