@@ -20,6 +20,9 @@ parse_arg = { version = "~0.1.4", optional = true }
 # This strange naming is a workaround for not being able to define required features for a dependency
 # See https://github.com/rust-lang/api-guidelines/issues/180 for the explanation and references.
 serde_crate = { package = "serde", version = "~1.0.111", features = ["derive"], optional = true }
+serde_json = { version = "~1.0.55", optional = true }
+serde_yaml = { version = "~0.8.13", optional = true }
+toml = { version = "~0.5.6", optional = true }
 stringly_conversions = { version = "~0.1.1", optional = true, features = ["alloc"] }
 
 [lib]
@@ -29,6 +32,7 @@ path = "src/lib.rs"
 [features]
 all = ["serde", "std", "tor", "parse_arg", "stringly_conversions"]
 serde = ["serde_crate", "torut/serialize", "std",
+         "serde_yaml", "serde_json", "toml",
          "stringly_conversions",
          "stringly_conversions/alloc",
          "stringly_conversions/serde_str_helpers"]
