@@ -11,7 +11,7 @@ dependencies = [
 
 [[package]]
 name = "amplify"
-version = "2.3.0"
+version = "2.3.1"
 dependencies = [
  "amplify_derive 2.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "ed25519-dalek",

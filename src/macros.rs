@@ -81,7 +81,7 @@ macro_rules! default {
 #[macro_export]
 macro_rules! dumb {
     () => {
-        DumbDefault::dumb_default()
+        $crate::DumbDefault::dumb_default()
     };
 }
 

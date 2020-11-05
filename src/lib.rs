@@ -54,6 +54,7 @@ mod dumb_default;
 #[cfg(feature = "std")]
 pub mod internet;
 pub mod strategy;
+#[cfg(feature = "serde")]
 mod to_serde_string;
 
 pub use crate::as_any::AsAny;
@@ -61,4 +62,5 @@ pub use crate::bipolar::Bipolar;
 pub use crate::strategy::Holder;
 pub use crate::wrapper::Wrapper;
 pub use crate::dumb_default::DumbDefault;
+#[cfg(feature = "serde")]
 pub use crate::to_serde_string::{ToYamlString, ToJsonString, ToTomlString};

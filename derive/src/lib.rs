@@ -100,7 +100,7 @@ use syn::DeriveInput;
 ///     }
 ///
 ///     #[derive(Display)]
-///     #[display(Some::print)]
+///     #[display(Some::to_special_string)]
 ///     struct Some { uint: u32, int: i32 };
 ///     impl ToSpecialString for Some {}
 ///
