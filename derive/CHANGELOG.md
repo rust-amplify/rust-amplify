@@ -1,6 +1,10 @@
 Change Log
 ==========
 
+2.3.1
+-----
+- Fixing display derive bug for enums using display with some external function
+
 2.3.0
 -----
 - Using amplify 2.3.0

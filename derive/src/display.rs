@@ -226,7 +226,7 @@ impl Technique {
         match self {
             Technique::FromTrait(fmt) => fmt.into_token_stream2(span),
             Technique::FromMethod(path) => quote_spanned! { span =>
-                f.write_str(& #path (&self))
+                f.write_str(& #path (self))
             },
             Technique::WithFormat(fmt, fmt_alt) => {
                 let format = if alt && fmt_alt.is_some() {
@@ -484,7 +484,12 @@ fn inner_enum(input: &DeriveInput, data: &DataEnum) -> Result<TokenStream2> {
             })
             .cloned();
 
+        if local.is_some() {
+            use_global = false;
+        }
+
         if let Some(Technique::DocComments(_)) = current {
+            use_global = false;
             current.as_mut().map(|t| {
                 *t = Technique::DocComments(String::new());
                 t.apply_docs(&v.attrs);
@@ -512,7 +517,6 @@ fn inner_enum(input: &DeriveInput, data: &DataEnum) -> Result<TokenStream2> {
                 });
             }
             (Fields::Named(fields), Some(tokens_fmt), Some(tokens_alt)) => {
-                use_global = false;
                 if let Some(Technique::Inner) = current {
                     if fields.named.len() != 1 {
                         err!(
@@ -569,7 +573,6 @@ fn inner_enum(input: &DeriveInput, data: &DataEnum) -> Result<TokenStream2> {
                 }
             }
             (Fields::Unnamed(fields), Some(tokens_fmt), Some(tokens_alt)) => {
-                use_global = false;
                 if let Some(Technique::FromTrait(tr)) = current {
                     let a = Technique::FromTrait(tr).into_token_stream2(&v.fields, v.span(), false);
                     let b = Technique::FromTrait(tr).into_token_stream2(&v.fields, v.span(), true);
@@ -604,7 +607,6 @@ fn inner_enum(input: &DeriveInput, data: &DataEnum) -> Result<TokenStream2> {
                 }
             }
             (Fields::Unit, Some(tokens_fmt), Some(tokens_alt)) => {
-                use_global = false;
                 display.extend(quote_spanned! { v.span() =>
                     Self::#type_name => f.write_str(if !f.alternate() { #tokens_fmt } else { #tokens_alt }),
                 });

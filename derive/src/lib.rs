@@ -108,6 +108,12 @@ use syn::DeriveInput;
 ///         format!("{}", Int { uint: 2 }),
 ///         s!("Integer representation")
 ///     );
+///
+///     #[derive(Display)]
+///     #[display(some_fmt)]
+///     enum Enum { Once(u8), Twice };
+///     fn some_fmt(_: &Enum) -> String { s!("Some") }
+///     assert_eq!(format!("{}", Enum::Once(3)), s!("Some"))
 ///    ```
 ///    Formatting function must return [`String`] and take a single `self`
 ///    argument (if you need formatting with streamed output, use one of
