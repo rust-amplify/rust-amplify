@@ -23,7 +23,8 @@
 #![no_std]
 
 extern crate alloc;
-use alloc::borrow::Cow;
+use alloc::borrow::{Borrow, Cow};
+use alloc::string::String;
 use core::ops::Deref;
 
 /// This is a helper for deserializing using `TryFrom` more efficiently.
@@ -78,6 +79,25 @@ impl<'a> From<DeserBorrowStr<'a>> for Cow<'a, str> {
     }
 }
 
+// Useful in cases conversion is conditional (saves allocation if not needed)
+impl<'a> From<DeserBorrowStr<'a>> for String {
+    fn from(value: DeserBorrowStr<'a>) -> Self {
+        value.0.into_owned()
+    }
+}
+
+impl<'a> Borrow<str> for DeserBorrowStr<'a> {
+    fn borrow(&self) -> &str {
+        &*self
+    }
+}
+
+impl<'a> AsRef<str> for DeserBorrowStr<'a> {
+    fn as_ref(&self) -> &str {
+        &*self
+    }
+}
+
 impl<'a> Deref for DeserBorrowStr<'a> {
     type Target = str;
 
@@ -89,8 +109,8 @@ impl<'a> Deref for DeserBorrowStr<'a> {
 #[cfg(test)]
 mod tests {
     use super::DeserBorrowStr;
-    use alloc::borrow::Cow;
-    use alloc::string::ToString;
+    use alloc::borrow::{Borrow, Cow, ToOwned};
+    use alloc::string::String;
     use core::convert::TryFrom;
     use core::fmt;
 
@@ -128,15 +148,41 @@ mod tests {
     }
 
     #[test]
-    fn conversions() {
+    fn conversions_cow() {
         // I have no clue why Rust fails to infer the type.
         let before_conversion = <Cow<'_, str>>::Borrowed("foo");
         let after_conversion = Cow::from(DeserBorrowStr::from(before_conversion.clone()));
         assert_eq!(after_conversion, before_conversion);
 
-        let before_conversion = <Cow<'_, str>>::Owned("foo".to_string());
+        let before_conversion = <Cow<'_, str>>::Owned("foo".to_owned());
         let after_conversion = Cow::from(DeserBorrowStr::from(before_conversion.clone()));
         assert_eq!(after_conversion, before_conversion);
+    }
+
+    #[test]
+    fn conversions_string() {
+        // I have no clue why Rust fails to infer the type.
+        let before_conversion = <Cow<'_, str>>::Borrowed("foo");
+        let after_conversion = String::from(DeserBorrowStr::from(before_conversion.clone()));
+        assert_eq!(&*after_conversion, &*before_conversion);
+
+        let before_conversion = <Cow<'_, str>>::Owned("foo".to_owned());
+        let after_conversion = String::from(DeserBorrowStr::from(before_conversion.clone()));
+        assert_eq!(&*after_conversion, &*before_conversion);
+    }
+
+    #[test]
+    fn conversions_refs() {
+        // I have no clue why Rust fails to infer the type.
+        let borrowed = DeserBorrowStr::from(<Cow<'_, str>>::Borrowed("foo"));
+        assert_eq!(borrowed.as_ref(), "foo");
+        let borrowed: &str = borrowed.borrow();
+        assert_eq!(borrowed, "foo");
+
+        let owned = DeserBorrowStr::from(<Cow<'_, str>>::Owned("foo".to_owned()));
+        assert_eq!(owned.as_ref(), "foo");
+        let borrowed: &str = owned.borrow();
+        assert_eq!(borrowed, "foo");
     }
 
     #[test]
