@@ -34,28 +34,8 @@ extern crate quote;
 #[macro_use]
 extern crate syn;
 
-/// Macro producing [`Result::Err`] with [`syn::Error`] containing span
-/// information from `$attr` (first) argument and formatted string describing
-/// concrete error (description is taken from `$msg` second macro argument) and
-/// providing an example `$example` (third macro argument) of how the macro
-/// should be used.
-macro_rules! attr_err {
-    ($attr:expr, $msg:tt) => {
-        attr_err!($attr.span(), NAME, $msg, EXAMPLE);
-    };
-    ($name:expr, $msg:tt, $example:tt) => {
-        attr_err!(::syn::export::Span::call_site(), $name, $msg, $example);
-    };
-    ($attr:expr, $name:expr, $msg:tt, $example:tt) => {
-        ::syn::Error::new(
-            $attr.span(),
-            format!(
-                "Attribute `#[{}]`: {}\nExample use: {}",
-                $name, $msg, $example
-            ),
-        );
-    };
-}
+#[macro_use]
+mod util;
 
 mod as_any;
 mod display;
@@ -547,7 +527,7 @@ pub fn derive_getters(input: TokenStream) -> TokenStream {
 /// #[wrapper(Index, IndexRange, IndexFrom, IndexTo, IndexInclusive, IndexFull)]
 /// struct VecNewtype(Vec<u8>);
 /// ```
-#[proc_macro_derive(Wrapper, attributes(wrap, wrapper))]
+#[proc_macro_derive(Wrapper, attributes(wrap, wrapper, amplify_crate))]
 pub fn derive_wrapper(input: TokenStream) -> TokenStream {
     let derive_input = parse_macro_input!(input as DeriveInput);
     wrapper::inner(derive_input)
