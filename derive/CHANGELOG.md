@@ -1,6 +1,13 @@
 Change Log
 ==========
 
+2.4.0
+-----
+- Wrapper supports wrapping Debug
+- Wrapper supports wrapping usize-based Index and IndexMut
+- Support for custom amplify crate naming in Wrapper derive macro
+- Auto implementation `From<Wrapped> for Inner` in wrapper derive
+
 2.3.1
 -----
 - Fixing display derive bug for enums using display with some external function

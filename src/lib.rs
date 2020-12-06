@@ -66,4 +66,5 @@ pub use crate::wrapper::Wrapper;
 pub use crate::dumb_default::DumbDefault;
 #[cfg(feature = "serde")]
 pub use crate::to_serde_string::{ToYamlString, ToJsonString, ToTomlString};
+#[cfg(feature = "std")]
 pub use crate::io_error::IoError;

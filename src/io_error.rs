@@ -22,8 +22,9 @@ use crate::Wrapper;
 /// Copyable & cloneable I/O error type represented by the error kind function
 ///
 /// # Example
-/// ```
-/// #[macro_use] extern crate amplify_derive;
+/// ```compile_fail
+/// #[macro_use]
+/// extern crate amplify_derive;
 /// use amplify::IoError;
 ///
 /// #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, From, Debug, Display, Error)]
