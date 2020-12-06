@@ -705,6 +705,7 @@ pub(crate) fn inner(input: DeriveInput) -> Result<TokenStream2> {
         impl #impl_generics ::core::convert::From<#ident_name #ty_generics> for <#ident_name #impl_generics as #amplify_crate::Wrapper>::Inner #where_clause {
             #[inline]
             fn from(wrapped: #ident_name #ty_generics) -> Self {
+                use #amplify_crate::Wrapper;
                 wrapped.into_inner()
             }
         }
