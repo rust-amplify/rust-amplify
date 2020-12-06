@@ -23,6 +23,7 @@ use std::fmt;
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6};
 use std::str::FromStr;
 use std::num::ParseIntError;
+use std::cmp::Ordering;
 #[cfg(feature = "tor")]
 use torut::onion::{OnionAddressV2, OnionAddressV3, TorPublicKeyV3, TORV3_PUBLIC_KEY_LENGTH};
 
@@ -104,6 +105,7 @@ pub enum UniformEncodingError {
     derive(Serialize, Deserialize),
     serde(crate = "serde_crate")
 )]
+#[non_exhaustive] // Required since we use feature-gated enum variants
 pub enum InetAddr {
     /// IP address of V4 standard
     IPv4(Ipv4Addr),
@@ -118,6 +120,37 @@ pub enum InetAddr {
     /// Tor address of V2 standard
     #[cfg(feature = "tor")]
     Tor(TorPublicKeyV3),
+}
+
+impl PartialOrd for InetAddr {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        match (self, other) {
+            (InetAddr::IPv4(addr1), InetAddr::IPv4(addr2)) => addr1.partial_cmp(addr2),
+            (InetAddr::IPv6(addr1), InetAddr::IPv6(addr2)) => addr1.partial_cmp(addr2),
+            #[cfg(feature = "tor")]
+            (InetAddr::TorV2(addr1), InetAddr::TorV2(addr2)) => {
+                addr1.get_raw_bytes().partial_cmp(&addr2.get_raw_bytes())
+            }
+            #[cfg(feature = "tor")]
+            (InetAddr::Tor(addr1), InetAddr::Tor(addr2)) => addr1.partial_cmp(addr2),
+            (InetAddr::IPv4(_), _) => Some(Ordering::Greater),
+            (_, InetAddr::IPv4(_)) => Some(Ordering::Less),
+            #[cfg(feature = "tor")]
+            (InetAddr::IPv6(_), _) => Some(Ordering::Greater),
+            #[cfg(feature = "tor")]
+            (_, InetAddr::IPv6(_)) => Some(Ordering::Less),
+            #[cfg(feature = "tor")]
+            (InetAddr::TorV2(_), _) => Some(Ordering::Greater),
+            #[cfg(feature = "tor")]
+            (_, InetAddr::TorV2(_)) => Some(Ordering::Less),
+        }
+    }
+}
+
+impl Ord for InetAddr {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.partial_cmp(other).unwrap_or(Ordering::Equal)
+    }
 }
 
 impl std::hash::Hash for InetAddr {
@@ -586,7 +619,7 @@ impl fmt::Display for Transport {
 /// and a port number (without protocol specification, i.e. TCP/UDP etc). If you
 /// need to include transport-level protocol information into the socket
 /// details, pls check [`InetSocketAddrExt`]
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Default)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 #[cfg_attr(
     all(feature = "serde", feature = "serde_str_helpers"),
     derive(Serialize, Deserialize),
@@ -748,7 +781,7 @@ impl From<SocketAddrV6> for InetSocketAddr {
 
 /// Internet socket address of [`InetSocketAddr`] type, extended with a
 /// transport-level protocol information (see [`Transport`])
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Default)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 #[cfg_attr(
     all(feature = "serde", feature = "serde_str_helpers"),
     derive(Serialize, Deserialize),
