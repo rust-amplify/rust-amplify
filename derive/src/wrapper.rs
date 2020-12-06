@@ -25,6 +25,7 @@ const EXAMPLE: &'static str = r#"#[wrapper(LowerHex, Add)]"#;
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
 enum WrapperDerives {
     FromStr,
+    Debug,
     Octal,
     LowerHex,
     UpperHex,
@@ -73,6 +74,7 @@ impl WrapperDerives {
             |segment| {
                 Ok(match segment.ident.to_string().as_str() {
                     "FromStr" => Some(Self::FromStr),
+                    "Debug" => Some(Self::Debug),
                     "Octal" => Some(Self::Octal),
                     "LowerHex" => Some(Self::LowerHex),
                     "UpperHex" => Some(Self::UpperHex),
@@ -130,6 +132,15 @@ impl WrapperDerives {
                         Ok(Self::from_inner(
                             <Self as ::amplify::Wrapper>::Inner::from_str(s)?,
                         ))
+                    }
+                }
+            },
+            Self::Debug => quote! {
+                impl #impl_generics ::std::fmt::Debug for #ident_name #ty_generics #where_clause
+                {
+                    #[inline]
+                    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+                        ::std::fmt::Debug::fmt(self.as_inner(), f)
                     }
                 }
             },

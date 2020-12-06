@@ -519,10 +519,12 @@ pub fn derive_getters(input: TokenStream) -> TokenStream {
 /// ```
 /// # #[macro_use] extern crate amplify_derive;
 /// # use std::collections::HashMap;
+/// # use std::fmt::Debug;
 /// use std::marker::PhantomData;
 /// use amplify::Wrapper;
 ///
-/// #[derive(Clone, Wrapper, Default, From, Debug)]
+/// #[derive(Clone, Wrapper, Default, From)]
+/// #[wrapper(Debug)]
 /// struct Wrapped<T, U>(
 ///     #[wrap]
 ///     #[from]
@@ -530,7 +532,7 @@ pub fn derive_getters(input: TokenStream) -> TokenStream {
 ///     PhantomData<T>,
 /// )
 /// where
-///     U: Sized + Clone;
+///     U: Sized + Clone + Debug;
 ///
 /// let w = Wrapped::<(), u8>::default();
 /// assert_eq!(w.into_inner(), HashMap::<usize, Vec<u8>>::default());
