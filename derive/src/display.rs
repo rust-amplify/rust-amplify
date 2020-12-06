@@ -24,12 +24,6 @@ use syn::{
 const NAME: &'static str = "display";
 const EXAMPLE: &'static str = r#"#[display("format {} string" | Trait | Type::function)]"#;
 
-macro_rules! err {
-    ( $span:expr, $msg:literal ) => {
-        Err(attr_err!($span, NAME, $msg, EXAMPLE))?
-    };
-}
-
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
 enum FormattingTrait {
     Debug,

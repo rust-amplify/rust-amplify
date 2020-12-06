@@ -1,6 +1,12 @@
 Change Log
 ==========
 
+2.4.0
+-----
+- Ordering for Internet types
+- Efficient (clonable/copyable) representation of ::std::io::Error with IoError
+  type
+
 2.3.0
 -----
 - `DumbDefault` type
