@@ -544,8 +544,8 @@ pub fn derive_getters(input: TokenStream) -> TokenStream {
 /// use amplify::Wrapper;
 ///
 /// #[derive(Wrapper, From)]
-/// #[wrapper(IndexRange, IndexFrom, IndexTo, IndexInclusive, IndexFull)]
-/// struct StrNewtype(String);
+/// #[wrapper(Index, IndexRange, IndexFrom, IndexTo, IndexInclusive, IndexFull)]
+/// struct VecNewtype(Vec<u8>);
 /// ```
 #[proc_macro_derive(Wrapper, attributes(wrap, wrapper))]
 pub fn derive_wrapper(input: TokenStream) -> TokenStream {

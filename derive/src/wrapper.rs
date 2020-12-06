@@ -199,13 +199,12 @@ impl WrapperDerives {
                     Some(_) => quote! { #where_clause },
                 };
                 quote! {
-                    impl <#impl_generics_params, _IndexType> ::core::ops::Index<_IndexType> for #ident_name #ty_generics #where_clause
-                        _IndexType: ::core::slice::SliceIndex<<Self as ::amplify::Wrapper>::Inner>
+                    impl <#impl_generics_params> ::core::ops::Index<usize> for #ident_name #ty_generics #where_clause
                     {
-                        type Output = <<Self as ::amplify::Wrapper>::Inner as ::core::ops::Index<_IndexType>>::Output;
+                        type Output = <<Self as ::amplify::Wrapper>::Inner as ::core::ops::Index<usize>>::Output;
 
                         #[inline]
-                        fn index(&self, index: _IndexType) -> &Self::Output {
+                        fn index(&self, index: usize) -> &Self::Output {
                             use ::amplify::Wrapper;
                             self.as_inner().index(index)
                         }
@@ -218,11 +217,10 @@ impl WrapperDerives {
                     Some(_) => quote! { #where_clause },
                 };
                 quote! {
-                    impl <#impl_generics_params, _IndexType> ::core::ops::IndexMut<_IndexType> for #ident_name #ty_generics #where_clause
-                        _IndexType: ::core::slice::SliceIndex<<Self as ::amplify::Wrapper>::Inner>
+                    impl <#impl_generics_params> ::core::ops::IndexMut<usize> for #ident_name #ty_generics #where_clause
                     {
                         #[inline]
-                        fn index_mut(&mut self, index: _IndexType) -> &mut Self::Output {
+                        fn index_mut(&mut self, index: usize) -> &mut Self::Output {
                             use ::amplify::Wrapper;
                             self.as_inner_mut().index_mut(index)
                         }
