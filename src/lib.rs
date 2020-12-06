@@ -53,6 +53,8 @@ mod bipolar;
 mod dumb_default;
 #[cfg(feature = "std")]
 pub mod internet;
+#[cfg(feature = "std")]
+mod io_error;
 pub mod strategy;
 #[cfg(feature = "serde")]
 mod to_serde_string;
@@ -64,3 +66,4 @@ pub use crate::wrapper::Wrapper;
 pub use crate::dumb_default::DumbDefault;
 #[cfg(feature = "serde")]
 pub use crate::to_serde_string::{ToYamlString, ToJsonString, ToTomlString};
+pub use crate::io_error::IoError;
