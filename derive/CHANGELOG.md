@@ -1,6 +1,14 @@
 Change Log
 ==========
 
+2.4.2
+-----
+- Fixing Wrapper::From automatic derive problem
+
+2.4.1
+-----
+- Fix for missed Wrapper use in derive generated code
+
 2.4.0
 -----
 - Wrapper supports wrapping Debug
