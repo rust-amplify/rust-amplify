@@ -44,7 +44,7 @@ mod from;
 mod getters;
 mod wrapper;
 
-use syn::export::TokenStream;
+use proc_macro::TokenStream;
 use syn::DeriveInput;
 
 /// # Usage

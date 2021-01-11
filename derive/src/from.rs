@@ -14,7 +14,7 @@
 // along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
-use syn::export::{Span, TokenStream2};
+use proc_macro2::{Span, TokenStream as TokenStream2};
 use syn::punctuated::Punctuated;
 use syn::spanned::Spanned;
 use syn::{

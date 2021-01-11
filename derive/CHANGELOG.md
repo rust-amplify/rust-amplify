@@ -1,6 +1,10 @@
 Change Log
 ==========
 
+2.4.3
+-----
+- Fixed breaking change in `syn` violating semantic versioning
+
 2.4.2
 -----
 - Fixing Wrapper::From automatic derive problem
