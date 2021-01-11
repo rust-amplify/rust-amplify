@@ -13,6 +13,7 @@ jobs:
   features:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         feature: [ serde, std, tor, parse_arg, vendored_openssl, stringly_conversions ]
     steps:

@@ -33,6 +33,7 @@
 extern crate quote;
 #[macro_use]
 extern crate syn;
+extern crate proc_macro;
 
 #[macro_use]
 mod util;
