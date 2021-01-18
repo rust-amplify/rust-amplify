@@ -15,7 +15,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        feature: [ serde, std, tor, parse_arg, vendored_openssl, stringly_conversions ]
+        feature: [ serde, std, parse_arg, stringly_conversions ]
     steps:
       - uses: actions/checkout@v2
       - name: Install rust stable
