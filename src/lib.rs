@@ -35,10 +35,8 @@
 #[macro_use]
 extern crate amplify_derive;
 #[cfg(feature = "serde")]
-#[macro_use]
 extern crate serde_crate as serde;
 #[cfg(feature = "stringly_conversions")]
-#[cfg_attr(feature = "std", macro_use)]
 pub extern crate stringly_conversions;
 #[cfg(feature = "stringly_conversions")]
 pub use stringly_conversions::*;
@@ -51,8 +49,6 @@ mod wrapper;
 mod as_any;
 mod bipolar;
 mod dumb_default;
-#[cfg(feature = "std")]
-pub mod internet;
 #[cfg(feature = "std")]
 mod io_error;
 pub mod strategy;

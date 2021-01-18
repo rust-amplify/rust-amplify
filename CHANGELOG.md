@@ -1,6 +1,12 @@
 Change Log
 ==========
 
+3.0.0
+-----
+- Internet addresses moved to separate external `inet2_addr` crate in
+  <https://github.com/internet2-org/rust-internet2>. This allows to get rid of
+  complex dependencies (Tor, Ed25519) and vendored SSL support
+
 2.4.0
 -----
 - Ordering for Internet types
