@@ -462,7 +462,11 @@ fn inner_enum(input: &DeriveInput, data: &DataEnum) -> Result<TokenStream2> {
     let mut display = TokenStream2::new();
 
     let global = Technique::from_attrs(&input.attrs, input.span())?;
-    let mut use_global = true;
+    let mut use_global = if let Some(Technique::Inner) = global {
+        false
+    } else {
+        true
+    };
 
     for v in &data.variants {
         let type_name = &v.ident;
@@ -601,9 +605,15 @@ fn inner_enum(input: &DeriveInput, data: &DataEnum) -> Result<TokenStream2> {
                 }
             }
             (Fields::Unit, Some(tokens_fmt), Some(tokens_alt)) => {
-                display.extend(quote_spanned! { v.span() =>
-                    Self::#type_name => f.write_str(if !f.alternate() { #tokens_fmt } else { #tokens_alt }),
-                });
+                if let Some(Technique::Inner) = current {
+                    display.extend(quote_spanned! { v.span() =>
+                        Self::#type_name => f.write_str(#type_str),
+                    });
+                } else {
+                    display.extend(quote_spanned! { v.span() =>
+                        Self::#type_name => f.write_str(if !f.alternate() { #tokens_fmt } else { #tokens_alt }),
+                    });
+                }
             }
             _ => unreachable!(),
         }
