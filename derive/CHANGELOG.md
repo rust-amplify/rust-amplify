@@ -1,6 +1,11 @@
 Change Log
 ==========
 
+2.4.4
+-----
+- Fixed display derivation with enums using inner representation specified at
+  the enum (topmost) level
+
 2.4.3
 -----
 - Fixed breaking change in `syn` violating semantic versioning

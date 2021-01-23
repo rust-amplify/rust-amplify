@@ -223,6 +223,29 @@ use syn::DeriveInput;
 ///
 /// assert_eq!(format!("{}", Tuple(5)), format!("{}", Tuple2(5)))
 /// ```
+///
+/// Using inner enum variant representation, defaulting to the variant name
+/// if the variant does not have inner data:
+/// ```
+/// # #[macro_use] extern crate amplify_derive;
+/// use std::net::{IpAddr, Ipv4Addr};
+///
+/// #[derive(Clone, Copy, Debug, Display)]
+/// #[display(inner)] // `inner` is synonym to "{0}"
+/// enum Variants {
+///     First,
+///     Second,
+///     WithData(u8),
+///     WithComplexData(IpAddr),
+/// };
+///
+/// assert_eq!(Variants::First.to_string(), "First");
+/// assert_eq!(Variants::WithData(5).to_string(), "5");
+/// assert_eq!(
+///     Variants::WithComplexData(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1))).to_string(),
+///     "127.0.0.1"
+/// );
+/// ```
 #[proc_macro_derive(Display, attributes(display))]
 pub fn derive_display(input: TokenStream) -> TokenStream {
     let derive_input = parse_macro_input!(input as DeriveInput);
