@@ -24,7 +24,7 @@ use syn::spanned::Spanned;
 
 /// Structure representing internal structure of collected instances of a proc
 /// macro attribute having some specific name (accessible via [`Attr::name()`]).
-#[derive(Clone, Eq, PartialEq, Debug)]
+#[derive(Clone)]
 pub enum Attr {
     /// Attribute of `#[attr]` or `#[attr = value]` form, which, aside from the
     /// case where `value` is a string literal, may have only a single
@@ -53,7 +53,7 @@ pub enum Attr {
 /// corresponding cases of `None`,
 /// `Some(`[`AttrArgValue::Lit`]`(`[`Lit::Str`]`(`[`LitStr`]`)))`, and
 /// `Some(`[`AttrArgValue::Type`]`(`[`Type::Path`]`(`[`Path`]`)))`.
-#[derive(Clone, Eq, PartialEq, Hash, Debug)]
+#[derive(Clone)]
 pub struct SingularAttr {
     /// Optional attribute argument path part; for instance in
     /// `#[my(name = value)]` or in `#[name = value]` this is a `name` part
@@ -72,7 +72,7 @@ pub struct SingularAttr {
 /// will have a `name` field set to `attr`, `literal` field set to
 /// `Lit::LitStr(LitStr("string literal"))`, `args` will be an empty `HashSet`
 /// and `paths` will be represented by an empty vector.
-#[derive(Clone, Eq, PartialEq, Debug)]
+#[derive(Clone)]
 pub struct ParametrizedAttr {
     /// Attribute name - `attr` part of `#[attr(...)]`
     pub name: Ident,
@@ -98,7 +98,7 @@ pub struct ParametrizedAttr {
 /// Value for attribute or attribute argument, i.e. for `#[attr = value]` and
 /// `#[attr(arg = value)]` this is the `value` part of the attribute. Can be
 /// either a single literal or a single valid rust type name
-#[derive(Clone, Eq, PartialEq, Hash, Debug)]
+#[derive(Clone)]
 pub enum ArgValue {
     /// Attribute value represented by a literal
     Lit(Lit),
@@ -108,7 +108,7 @@ pub enum ArgValue {
 }
 
 /// Structure requirements for parametrized attribute
-#[derive(Clone, Eq, PartialEq, Debug)]
+#[derive(Clone)]
 pub struct AttrReq {
     /// Specifies all named arguments and which requirements they must meet
     pub args: HashMap<Ident, ValueReq<ArgValue>>,
@@ -128,10 +128,10 @@ pub struct AttrReq {
 }
 
 /// Requirements for attribute or named argument value presence
-#[derive(Clone, Eq, PartialEq, Hash, Debug)]
+#[derive(Clone)]
 pub enum ValueReq<T>
 where
-    T: Clone + Eq + PartialEq + Hash + Debug,
+    T: Clone,
 {
     /// Argument or an attribute must explicitly hold a value
     Required,
@@ -147,10 +147,10 @@ where
     Prohibited,
 }
 
-#[derive(Clone, Eq, PartialEq, Hash, Debug)]
+#[derive(Clone)]
 pub enum ListReq<T>
 where
-    T: Clone + Eq + PartialEq + Hash + Debug,
+    T: Clone,
 {
     NoneOrMore,
     OneOrMore,
@@ -240,7 +240,7 @@ impl SingularAttr {
             .path
             .get_ident()
             .cloned()
-            .ok_or(Error::ArgNameMustBeIdent(attr.path.clone()))?;
+            .ok_or(Error::ArgNameMustBeIdent)?;
         match attr.parse_meta()? {
             // `#[attr::path]` - unreachable: filtered in the code above
             Meta::Path(_) => unreachable!(),
@@ -335,7 +335,7 @@ impl ParametrizedAttr {
             .path
             .get_ident()
             .cloned()
-            .ok_or(Error::ArgNameMustBeIdent(attr.path.clone()))?;
+            .ok_or(Error::ArgNameMustBeIdent)?;
         match attr.parse_meta()? {
             // `#[ident(...)]`
             Meta::List(MetaList { nested, .. }) => nested
@@ -421,15 +421,15 @@ impl ParametrizedAttr {
                     .clone()
                     .get_ident()
                     .cloned()
-                    .ok_or(Error::ArgNameMustBeIdent(path))?;
+                    .ok_or(Error::ArgNameMustBeIdent)?;
                 if self.args.insert(id.clone(), ArgValue::Lit(lit)).is_some() {
                     return Err(Error::ArgNameMustBeUnique(id.clone()));
                 }
             }
 
             // `#[ident(arg(...), ...)]`
-            NestedMeta::Meta(Meta::List(list)) => {
-                return Err(Error::NestedListsNotSupported(self.name.clone(), list))
+            NestedMeta::Meta(Meta::List(_)) => {
+                return Err(Error::NestedListsNotSupported(self.name.clone()))
             }
         }
         Ok(())

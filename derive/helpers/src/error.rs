@@ -14,7 +14,6 @@
 // If not, see <https://opensource.org/licenses/MIT>.
 
 use std::fmt::{Display, Formatter, self};
-use syn::{Path, MetaList};
 use proc_macro2::Ident;
 
 /// Errors representing inconsistency in proc macro attribute structure
@@ -49,7 +48,7 @@ pub enum Error {
 
     /// Attribute or attribute argument name (in form of `#[attr(arg = ...)]`)
     /// must be an identifier (like `arg`) and not a path (like `std::io`)
-    ArgNameMustBeIdent(Path),
+    ArgNameMustBeIdent,
 
     /// The same argument name is used multiple times within parametrized
     /// attribute (like in `#[attr(name1 = value1, name1 = value2)]`)
@@ -73,7 +72,7 @@ pub enum Error {
 
     /// Lists nested within attribute arguments, like `#[attr(arg(...))]`
     /// are not supported
-    NestedListsNotSupported(Ident, MetaList),
+    NestedListsNotSupported(Ident),
 }
 
 impl From<syn::Error> for Error {
@@ -123,10 +122,9 @@ impl Display for Error {
                 "attribute argument name must be unique while multiple instances of `{}` were found",
                 name
             ),
-            Error::ArgNameMustBeIdent(path) => write!(
+            Error::ArgNameMustBeIdent => write!(
                 f,
-                "attribute arguments must be identifiers, not paths `{:?}`",
-                path
+                "attribute arguments must be identifiers, not paths",
             ),
             Error::ArgValueRequired(name) => write!(
                 f,
@@ -146,11 +144,10 @@ impl Display for Error {
                     name = name
                 )
             }
-            Error::NestedListsNotSupported(name, list) => write!(
+            Error::NestedListsNotSupported(name) => write!(
                 f,
-                "attribute `{name}` must be in `{name} = ...` form and not in a form of nested list `{list:?}`",
+                "attribute `{name}` must be in `{name} = ...` form and a nested list",
                 name = name,
-                list = list
             ),
         }
     }
