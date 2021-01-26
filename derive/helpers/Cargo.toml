@@ -1,0 +1,21 @@
+[package]
+name = "amplify_derive_helpers"
+version = "0.1.0"
+description = "Amplifying Rust language capabilities: helper functions for creating proc macro libraries"
+authors = ["Dr. Maxim Orlovsky <orlovsky@pandoracore.com>"]
+keywords = ["generics", "derive", "wrap", "patterns"]
+categories = ["data-structures", "rust-patterns", ""]
+repository = "https://github.com/LNP-BP/rust-amplify"
+homepage = "https://github.com/LNP-BP"
+license = "MIT"
+readme = "README.md"
+edition = "2018"
+include = [
+    "**/*.rs",
+    "Cargo.toml",
+]
+
+[dependencies]
+quote = "1.0.7"
+syn = "1.0.58"
+proc-macro2 = "1.0.23"

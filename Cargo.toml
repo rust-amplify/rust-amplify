@@ -40,5 +40,5 @@ default = ["std"]
 std = []
 
 [workspace]
-members = [".", "derive", "serde_str_helpers", "stringly_conversions"]
+members = [".", "derive", "derive/helpers", "serde_str_helpers", "stringly_conversions"]
 default-members = ["."]
