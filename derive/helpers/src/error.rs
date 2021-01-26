@@ -20,6 +20,20 @@ use proc_macro2::Ident;
 /// Errors representing inconsistency in proc macro attribute structure
 #[derive(Clone, Eq, PartialEq, Hash, Debug)]
 pub enum Error {
+    Parse(String),
+
+    /// Names of two merged attributes must match each other
+    NamesDontMatch(Ident, Ident),
+
+    /// Singular argument (of form `#[attr = ...]`) has multiple occurrences
+    /// each assigned value. This is meaningless.
+    MultipleSingularValues(Ident),
+
+    /// Multiple literal non-string values are given for a parametrized
+    /// attribute in form of `#[attr(literal1, literal2)]`. This is
+    /// meaningless.
+    MultipleLiteralValues(Ident),
+
     /// Attribute must be in a singular form (`#[attr]` or `#[attr = ...]`)
     SingularAttrRequired(Ident),
 
@@ -36,6 +50,10 @@ pub enum Error {
     /// Attribute or attribute argument name (in form of `#[attr(arg = ...)]`)
     /// must be an identifier (like `arg`) and not a path (like `std::io`)
     ArgNameMustBeIdent(Path),
+
+    /// The same argument name is used multiple times within parametrized
+    /// attribute (like in `#[attr(name1 = value1, name1 = value2)]`)
+    ArgNameMustBeUnique(Ident),
 
     /// Attribute or attribute argument must has a value:
     /// `#[attr(arg = value)]`
@@ -58,9 +76,32 @@ pub enum Error {
     NestedListsNotSupported(Ident, MetaList),
 }
 
+impl From<syn::Error> for Error {
+    fn from(err: syn::Error) -> Self {
+        Error::Parse(err.to_string())
+    }
+}
+
 impl Display for Error {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
+            Error::Parse(err) => write!(f, "attribute parse error: {}", err),
+            Error::NamesDontMatch(name1, name2) => write!(
+                f,
+                "Names of two merged attributes (`{}` and `{}`) must match",
+                name1,
+                name2
+            ),
+            Error::MultipleSingularValues(name) => write!(
+                f,
+                "Multiple values assigned to `{}` attribute",
+                name
+            ),
+            Error::MultipleLiteralValues(name) => write!(
+                f,
+                "Multiple literal values provided for `{}` attribute",
+                name
+            ),
             Error::SingularAttrRequired(name) => write!(
                 f,
                 "Attribute `{}` must be in a singular form (`#[attr]` or `#[attr = ...]`)",
@@ -71,8 +112,17 @@ impl Display for Error {
                 "Attribute `{}` must be in a parametrized form (`#[attr(...)]`)",
                 name
             ),
-            Error::ArgMustBePath => f.write_str("attribute argument must be a path identifier"),
-            Error::ArgNameRequired => f.write_str("attribute argument name is required"),
+            Error::ArgMustBePath => f.write_str(
+                "attribute argument must be a path identifier"
+            ),
+            Error::ArgNameRequired => f.write_str(
+                "attribute argument name is required"
+            ),
+            Error::ArgNameMustBeUnique(name) => write!(
+                f,
+                "attribute argument name must be unique while multiple instances of `{}` were found",
+                name
+            ),
             Error::ArgNameMustBeIdent(path) => write!(
                 f,
                 "attribute arguments must be identifiers, not paths `{:?}`",
@@ -96,7 +146,12 @@ impl Display for Error {
                     name = name
                 )
             }
-            Error::NestedListsNotSupported(name, list) => write!(f, "attribute `{name}` must be in `{name} = ...` form and not in a form of nested list `{list:?}`", name = name, list = list),
+            Error::NestedListsNotSupported(name, list) => write!(
+                f,
+                "attribute `{name}` must be in `{name} = ...` form and not in a form of nested list `{list:?}`",
+                name = name,
+                list = list
+            ),
         }
     }
 }

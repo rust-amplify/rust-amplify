@@ -16,10 +16,11 @@
 use std::hash::Hash;
 use std::fmt::{Debug};
 use std::collections::HashMap;
-use syn::{Type, Path, Attribute, Meta, MetaList, MetaNameValue, NestedMeta, Lit, LitInt};
+use syn::{Type, Path, Attribute, Meta, MetaList, MetaNameValue, NestedMeta, Lit, LitInt, LitStr};
 use proc_macro2::{Ident, Span};
 
 use crate::Error;
+use syn::spanned::Spanned;
 
 /// Structure representing internal structure of collected instances of a proc
 /// macro attribute having some specific name (accessible via [`Attr::name()`]).
@@ -211,30 +212,12 @@ impl Attr {
         self.value()?.type_value()
     }
 
-    pub fn from_attribute(attr: Attribute) -> Result<Self, Error> {
-        let ident = attr
-            .path
-            .get_ident()
-            .cloned()
-            .ok_or(Error::ArgNameMustBeIdent(attr.path.clone()))?;
-        return match attr.parse_meta()? {
-            // `#[attr::path]`
-            // Probably unreachable since it is filtered at the level of
-            // ident computation above
-            Meta::Path(_) => Ok(Attr::Singular(SingularAttr::with_name(ident))),
-            // `#[ident = lit]`
-            Meta::NameValue(MetaNameValue { lit, .. }) => {
-                Ok(Attr::Singular(SingularAttr::with_named_literal(ident, lit)))
-            }
-            // `#[ident(...)]`
-            Meta::List(MetaList { nested, .. }) => nested
-                .into_iter()
-                .map(ParametrizedAttr::with_nested)
-                .fold(Ok(ParametrizedAttr::with_name(ident)), |res, arg| {
-                    res.and_then(|attr| arg.and_then(|arg| attr.merged(arg)))
-                })
-                .map(|attr| Attr::Parametrized(attr)),
-        };
+    pub fn with_attribute(attr: &Attribute) -> Result<Self, Error> {
+        SingularAttr::with_attribute(attr)
+            .map(|singular| Attr::Singular(singular))
+            .or_else(|_| {
+                ParametrizedAttr::with_attribute(attr).map(|param| Attr::Parametrized(param))
+            })
     }
 }
 
@@ -252,9 +235,30 @@ impl SingularAttr {
         }
     }
 
+    pub fn with_attribute(attr: &Attribute) -> Result<Self, Error> {
+        let ident = attr
+            .path
+            .get_ident()
+            .cloned()
+            .ok_or(Error::ArgNameMustBeIdent(attr.path.clone()))?;
+        match attr.parse_meta()? {
+            // `#[attr::path]` - unreachable: filtered in the code above
+            Meta::Path(_) => unreachable!(),
+            // `#[ident = lit]`
+            Meta::NameValue(MetaNameValue { lit, .. }) => {
+                Ok(SingularAttr::with_named_literal(ident, lit))
+            }
+            // `#[ident(...)]`
+            Meta::List(_) => Err(Error::SingularAttrRequired(ident)),
+        }
+    }
+
     #[inline]
     pub fn value(&self) -> Result<ArgValue, Error> {
-        self.value.ok_or(Error::ArgValueRequired(self.name.clone()))
+        self.value
+            .as_ref()
+            .cloned()
+            .ok_or(Error::ArgValueRequired(self.name.clone()))
     }
 
     #[inline]
@@ -267,15 +271,41 @@ impl SingularAttr {
         self.value()?.type_value()
     }
 
-    pub fn merge(&mut self, attr: &Attribute) -> Result<(), Error> {
-        // TODO: Implement
+    pub fn merge(&mut self, other: Self) -> Result<(), Error> {
+        if self.name != other.name {
+            return Err(Error::NamesDontMatch(self.name.clone(), other.name.clone()));
+        }
+        match (&self.value, &other.value) {
+            (_, None) => {}
+            (None, Some(_)) => self.value = other.value,
+            (Some(_), Some(_)) => return Err(Error::MultipleSingularValues(self.name.clone())),
+        }
+        Ok(())
     }
 
-    pub fn check<T>(&self, req: ValueReq<T>) -> Result<(), Error>
+    #[inline]
+    pub fn merged(mut self, other: Self) -> Result<Self, Error> {
+        self.merge(other)?;
+        Ok(self)
+    }
+
+    #[inline]
+    pub fn enrich(&mut self, attr: &Attribute) -> Result<(), Error> {
+        self.merge(SingularAttr::with_attribute(attr)?)
+    }
+
+    #[inline]
+    pub fn enriched(mut self, attr: &Attribute) -> Result<Self, Error> {
+        self.enrich(attr)?;
+        Ok(self)
+    }
+
+    pub fn check<T>(&self, _req: ValueReq<T>) -> Result<(), Error>
     where
         T: Clone + Eq + PartialEq + Hash + Debug,
     {
         // TODO: Implement
+        Ok(())
     }
 
     #[inline]
@@ -300,34 +330,120 @@ impl ParametrizedAttr {
         }
     }
 
-    pub fn with_nested(nested: NestedMeta) -> Result<Self, Error> {
-        /*for arg in nested {
-            match arg {
-                // `#[ident("literal")]`
-                // here we concatenate all literals
-                NestedMeta::Lit(lit) => {
-                    let new = SingularAttr::with_name(lit);
+    pub fn with_attribute(attr: &Attribute) -> Result<Self, Error> {
+        let ident = attr
+            .path
+            .get_ident()
+            .cloned()
+            .ok_or(Error::ArgNameMustBeIdent(attr.path.clone()))?;
+        match attr.parse_meta()? {
+            // `#[ident(...)]`
+            Meta::List(MetaList { nested, .. }) => nested
+                .into_iter()
+                .fold(Ok(ParametrizedAttr::with_name(ident)), |res, nested| {
+                    res.and_then(|attr| attr.fused(nested))
+                }),
+            _ => Err(Error::ParametrizedAttrRequired(ident)),
+        }
+    }
+
+    pub fn merge(&mut self, other: Self) -> Result<(), Error> {
+        if self.name != other.name {
+            return Err(Error::NamesDontMatch(self.name.clone(), other.name.clone()));
+        }
+        self.args.extend(other.args);
+        self.paths.extend(other.paths);
+        self.integers.extend(other.integers);
+        let span = self.literal.span();
+        match (&mut self.literal, &other.literal) {
+            (_, None) => {}
+            (None, Some(_)) => self.literal = other.literal,
+            (Some(Lit::Str(str1)), Some(Lit::Str(str2))) => {
+                let mut joined = str1.value();
+                joined.push_str(&str2.value());
+                *str1 = LitStr::new(&joined, span);
+            }
+            (Some(_), Some(_)) => return Err(Error::MultipleLiteralValues(self.name.clone())),
+        }
+        Ok(())
+    }
+
+    #[inline]
+    pub fn merged(mut self, other: Self) -> Result<Self, Error> {
+        self.merge(other)?;
+        Ok(self)
+    }
+
+    #[inline]
+    pub fn enrich(&mut self, attr: &Attribute) -> Result<(), Error> {
+        self.merge(ParametrizedAttr::with_attribute(attr)?)
+    }
+
+    #[inline]
+    pub fn enriched(mut self, attr: &Attribute) -> Result<Self, Error> {
+        self.enrich(attr)?;
+        Ok(self)
+    }
+
+    #[inline]
+    pub fn fuse(&mut self, nested: NestedMeta) -> Result<(), Error> {
+        match nested {
+            // `#[ident("literal", ...)]`
+            NestedMeta::Lit(Lit::Str(str2)) => {
+                let span = self.literal.span();
+                match self.literal {
+                    None => self.literal = Some(Lit::Str(str2)),
+                    Some(Lit::Str(ref mut str1)) => {
+                        let mut joined = str1.value();
+                        joined.push_str(&str2.value());
+                        *str1 = LitStr::new(&joined, span);
+                    }
+                    Some(_) => return Err(Error::MultipleLiteralValues(self.name.clone())),
                 }
-                NestedMeta::Meta(meta) => match meta {
-                    // `#[ident(arg::path, ...)]`
-                    Meta::Path(_) => {}
+            }
 
-                    // `#[ident(arg(...), ...)]`
-                    Meta::List(list) => return Err(Error::NestedListsNotSupported(ident, list)),
+            // `#[ident(3, ...)]`
+            NestedMeta::Lit(Lit::Int(litint)) => self.integers.push(litint),
 
-                    // `#[ident("literal", ...)]`
-                    Meta::NameValue(_) => {}
-                },
-            };
-        }*/
+            // `#[ident(other_literal, ...)]`
+            NestedMeta::Lit(lit) => self
+                .literal
+                .as_mut()
+                .map(|l| *l = lit)
+                .ok_or(Error::MultipleLiteralValues(self.name.clone()))?,
+
+            // `#[ident(arg::path, ...)]`
+            NestedMeta::Meta(Meta::Path(path)) => self.paths.push(path),
+
+            // `#[ident(name = value, ...)]`
+            NestedMeta::Meta(Meta::NameValue(MetaNameValue { path, lit, .. })) => {
+                let id = path
+                    .clone()
+                    .get_ident()
+                    .cloned()
+                    .ok_or(Error::ArgNameMustBeIdent(path))?;
+                if self.args.insert(id.clone(), ArgValue::Lit(lit)).is_some() {
+                    return Err(Error::ArgNameMustBeUnique(id.clone()));
+                }
+            }
+
+            // `#[ident(arg(...), ...)]`
+            NestedMeta::Meta(Meta::List(list)) => {
+                return Err(Error::NestedListsNotSupported(self.name.clone(), list))
+            }
+        }
+        Ok(())
     }
 
-    pub fn merge(&mut self, attr: &Attribute) -> Result<(), Error> {
-        // TODO: Implement
+    #[inline]
+    pub fn fused(mut self, nested: NestedMeta) -> Result<Self, Error> {
+        self.fuse(nested)?;
+        Ok(self)
     }
 
-    pub fn check(&self, req: AttrReq) -> Result<(), Error> {
+    pub fn check(&self, _req: AttrReq) -> Result<(), Error> {
         // TODO: Implement
+        Ok(())
     }
 
     #[inline]
@@ -349,7 +465,7 @@ impl ArgValue {
     #[inline]
     pub fn type_value(&self) -> Result<Type, Error> {
         match self {
-            ArgValue::Lit(lit) => Err(Error::ArgValueMustBeType),
+            ArgValue::Lit(_) => Err(Error::ArgValueMustBeType),
             ArgValue::Type(ty) => Ok(ty.clone()),
         }
     }
@@ -357,9 +473,6 @@ impl ArgValue {
 
 #[doc(hide)]
 pub trait ExtractAttr {
-    #[doc(hide)]
-    fn filter_named(self, name: &str) -> Self;
-
     #[doc(hide)]
     fn singular_attr<T>(self, name: &str, req: ValueReq<T>) -> Result<SingularAttr, Error>
     where
@@ -373,12 +486,6 @@ impl<'a, T> ExtractAttr for T
 where
     T: IntoIterator<Item = &'a Attribute>,
 {
-    /// Filters iterator leaving only attributes with string representation of
-    /// its identity-based name matching `name` argument.
-    fn filter_named(self, name: &str) -> Self {
-        self.into_iter().filter(|attr| attr.path.is_ident(name))
-    }
-
     /// Returns a [`SingularAttr`] which structure must fulfill the provided
     /// requirements - or fails with a [`Error`] otherwise. For more information
     /// check [`ValueReq`] requirements info.
@@ -387,8 +494,8 @@ where
         V: Clone + Eq + PartialEq + Hash + Debug,
     {
         let mut attr = SingularAttr::with_name(Ident::new(name, Span::call_site()));
-        for entries in self.filter_named(name) {
-            attr.merge(entries);
+        for entries in self.into_iter().filter(|attr| attr.path.is_ident(name)) {
+            attr.enrich(entries)?;
         }
         attr.checked(req)
     }
@@ -398,8 +505,8 @@ where
     /// check [`AttrReq`] requirements info.
     fn parametrized_attr(self, name: &str, req: AttrReq) -> Result<ParametrizedAttr, Error> {
         let mut attr = ParametrizedAttr::with_name(Ident::new(name, Span::call_site()));
-        for entries in self.filter_named(name) {
-            attr.merge(entries);
+        for entries in self.into_iter().filter(|attr| attr.path.is_ident(name)) {
+            attr.enrich(entries)?;
         }
         attr.checked(req)
     }

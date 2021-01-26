@@ -30,7 +30,7 @@
     non_snake_case,
     unused_mut,
     unused_imports,
-    missing_docs,
+    // missing_docs,
     dead_code,
     warnings
 )]
@@ -38,4 +38,4 @@
 mod attr;
 mod error;
 pub use error::Error;
-pub use attr::{};
+pub use attr::{Attr, ArgValue, SingularAttr, ParametrizedAttr, ExtractAttr, AttrReq, ListReq, LitReq};
