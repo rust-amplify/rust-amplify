@@ -79,7 +79,7 @@ pub struct ParametrizedAttr {
 
     /// All attribute arguments that have form of `#[attr(ident = "literal")]`
     /// or `#[attr(ident = TypeName)]` mapped to their name identifiers
-    pub args: HashMap<Ident, ArgValue>,
+    pub args: HashMap<String, ArgValue>,
 
     /// All attribute arguments that are paths or identifiers without any
     /// specific value, like `#[attr(std::io::Error, crate, super::SomeType)]`.
@@ -111,7 +111,7 @@ pub enum ArgValue {
 #[derive(Clone)]
 pub struct AttrReq {
     /// Specifies all named arguments and which requirements they must meet
-    pub args: HashMap<Ident, ValueReq<ArgValue>>,
+    pub args: HashMap<String, ValueReq<ArgValue>>,
 
     /// Specifies whether path arguments are allowed and with which
     /// requirements.
@@ -347,6 +347,20 @@ impl ParametrizedAttr {
         }
     }
 
+    pub fn arg_literal_value(&self, name: &str) -> Result<Lit, Error> {
+        self.args
+            .get(name)
+            .ok_or(Error::NamedArgRequired(name.to_owned()))?
+            .literal_value()
+    }
+
+    pub fn has_verbatim(&self, verbatim: &str) -> bool {
+        self.paths
+            .iter()
+            .find(|path| path.is_ident(verbatim))
+            .is_some()
+    }
+
     pub fn merge(&mut self, other: Self) -> Result<(), Error> {
         if self.name != other.name {
             return Err(Error::NamesDontMatch(self.name.clone(), other.name.clone()));
@@ -422,7 +436,11 @@ impl ParametrizedAttr {
                     .get_ident()
                     .cloned()
                     .ok_or(Error::ArgNameMustBeIdent)?;
-                if self.args.insert(id.clone(), ArgValue::Lit(lit)).is_some() {
+                if self
+                    .args
+                    .insert(id.to_string(), ArgValue::Lit(lit))
+                    .is_some()
+                {
                     return Err(Error::ArgNameMustBeUnique(id.clone()));
                 }
             }
@@ -474,12 +492,17 @@ impl ArgValue {
 #[doc(hide)]
 pub trait ExtractAttr {
     #[doc(hide)]
-    fn singular_attr<T>(self, name: &str, req: ValueReq<T>) -> Result<SingularAttr, Error>
-    where
-        T: Clone + Eq + PartialEq + Hash + Debug;
+    fn singular_attr<T>(
+        self,
+        name: &str,
+        // req: ValueReq<ArgValue>,
+    ) -> Result<Option<SingularAttr>, Error>;
 
     #[doc(hide)]
-    fn parametrized_attr(self, name: &str, req: AttrReq) -> Result<ParametrizedAttr, Error>;
+    fn parametrized_attr(
+        self,
+        name: &str, /* , req: AttrReq */
+    ) -> Result<Option<ParametrizedAttr>, Error>;
 }
 
 impl<'a, T> ExtractAttr for T
@@ -489,25 +512,68 @@ where
     /// Returns a [`SingularAttr`] which structure must fulfill the provided
     /// requirements - or fails with a [`Error`] otherwise. For more information
     /// check [`ValueReq`] requirements info.
-    fn singular_attr<V>(self, name: &str, req: ValueReq<V>) -> Result<SingularAttr, Error>
-    where
-        V: Clone + Eq + PartialEq + Hash + Debug,
-    {
+    fn singular_attr<V>(
+        self,
+        name: &str,
+        // req: ValueReq<ArgValue>,
+    ) -> Result<Option<SingularAttr>, Error> {
         let mut attr = SingularAttr::with_name(Ident::new(name, Span::call_site()));
-        for entries in self.into_iter().filter(|attr| attr.path.is_ident(name)) {
+
+        let filtered = self
+            .into_iter()
+            .filter(|attr| attr.path.is_ident(name))
+            .collect::<Vec<_>>();
+
+        if filtered.is_empty() {
+            return Ok(None);
+        }
+
+        /*
+        if filtered.is_empty() {
+            return match req {
+                ValueReq::Required => Err(),
+                ValueReq::Default(default) => {
+                    attr.value = Some(default);
+                    Ok(Some(attr))
+                }
+                ValueReq::Optional => Ok(None),
+                ValueReq::Prohibited => Ok(None),
+            };
+        }
+         */
+
+        for entries in filtered {
             attr.enrich(entries)?;
         }
-        attr.checked(req)
+
+        // Some(attr.checked(req)).transpose()
+        Ok(Some(attr))
     }
 
     /// Returns a [`ParametrizedAttr`] which structure must fulfill the provided
     /// requirements - or fails with a [`Error`] otherwise. For more information
     /// check [`AttrReq`] requirements info.
-    fn parametrized_attr(self, name: &str, req: AttrReq) -> Result<ParametrizedAttr, Error> {
+    fn parametrized_attr(
+        self,
+        name: &str,
+        // req: AttrReq,
+    ) -> Result<Option<ParametrizedAttr>, Error> {
         let mut attr = ParametrizedAttr::with_name(Ident::new(name, Span::call_site()));
-        for entries in self.into_iter().filter(|attr| attr.path.is_ident(name)) {
+
+        let filtered = self
+            .into_iter()
+            .filter(|attr| attr.path.is_ident(name))
+            .collect::<Vec<_>>();
+
+        if filtered.is_empty() {
+            return Ok(None);
+        }
+
+        for entries in filtered {
             attr.enrich(entries)?;
         }
-        attr.checked(req)
+
+        // Some(attr.checked(req)).transpose()
+        Ok(Some(attr))
     }
 }

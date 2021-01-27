@@ -1,10 +1,10 @@
 [package]
 name = "amplify_derive_helpers"
-version = "0.0.1"
+version = "0.0.4"
 description = "Amplifying Rust language capabilities: helper functions for creating proc macro libraries"
 authors = ["Dr. Maxim Orlovsky <orlovsky@pandoracore.com>"]
 keywords = ["generics", "derive", "wrap", "patterns"]
-categories = ["data-structures", "rust-patterns", ""]
+categories = ["development-tools::procedural-macro-helpers", "rust-patterns"]
 repository = "https://github.com/LNP-BP/rust-amplify"
 homepage = "https://github.com/LNP-BP"
 license = "MIT"

@@ -70,6 +70,9 @@ pub enum Error {
     /// have a single value
     ParametrizedAttrHasNoValue(Ident),
 
+    /// Attribute named argument must be present
+    NamedArgRequired(String),
+
     /// Lists nested within attribute arguments, like `#[attr(arg(...))]`
     /// are not supported
     NestedListsNotSupported(Ident),
@@ -137,6 +140,11 @@ impl Display for Error {
             Error::ArgValueMustBeType => {
                 f.write_str("attribute value for must be a valid type name")
             }
+            Error::NamedArgRequired(name) => write!(
+                f,
+                "attribute must has argument with name `{}`",
+                name
+            ),
             Error::ParametrizedAttrHasNoValue(name) => {
                 write!(
                     f,
