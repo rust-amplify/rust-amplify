@@ -44,4 +44,49 @@ pub trait Wrapper {
 
     /// Unwraps the wrapper returning the inner type
     fn into_inner(self) -> Self::Inner;
+
+    /// Copies the wrapped type
+    fn copy(&self) -> Self
+    where
+        Self: Sized,
+        Self::Inner: Copy,
+    {
+        Self::from_inner(*self.as_inner())
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
+    struct TestWrapper(u8);
+
+    impl Wrapper for TestWrapper {
+        type Inner = u8;
+
+        fn from_inner(inner: Self::Inner) -> Self {
+            Self(inner)
+        }
+
+        fn as_inner(&self) -> &Self::Inner {
+            &self.0
+        }
+
+        fn as_inner_mut(&mut self) -> &mut Self::Inner {
+            &mut self.0
+        }
+
+        fn into_inner(self) -> Self::Inner {
+            self.0
+        }
+    }
+
+    #[test]
+    fn test_copy() {
+        let item = TestWrapper::from_inner(5);
+        let copy = item.copy();
+        assert_eq!(item, copy);
+        assert_eq!(copy.into_inner(), 5)
+    }
 }

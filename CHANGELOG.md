@@ -1,6 +1,10 @@
 Change Log
 ==========
 
+3.1.0
+-----
+- Wrapper::copy()
+
 3.0.0
 -----
 - Internet addresses moved to separate external `inet2_addr` crate in
