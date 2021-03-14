@@ -51,6 +51,8 @@ mod bipolar;
 mod dumb_default;
 #[cfg(feature = "std")]
 mod io_error;
+#[cfg(feature = "c_raw")]
+mod raw;
 pub mod strategy;
 #[cfg(feature = "serde")]
 mod to_serde_string;
