@@ -34,6 +34,7 @@ enum WrapperDerives {
     UpperHex,
     LowerExp,
     UpperExp,
+    BorrowSlice,
     Index,
     IndexMut,
     IndexRange,
@@ -84,6 +85,7 @@ impl WrapperDerives {
                     "UpperHex" => Some(Self::UpperHex),
                     "LowerExp" => Some(Self::LowerExp),
                     "UpperExp" => Some(Self::UpperExp),
+                    "BorrowSlice" => Some(Self::BorrowSlice),
                     "Index" => Some(Self::Index),
                     "IndexMut" => Some(Self::IndexMut),
                     "IndexRange" => Some(Self::IndexRange),
@@ -208,6 +210,16 @@ impl WrapperDerives {
                     fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
                         use #amplify_crate::Wrapper;
                         ::std::fmt::UpperExp::fmt(Wrapper::as_inner(self), f)
+                    }
+                }
+            },
+            Self::BorrowSlice => quote! {
+                impl #impl_generics ::core::borrow::Borrow<[u8]> for #ident_name #ty_generics #where_clause
+                {
+                    #[inline]
+                    fn borrow(&self) -> &[u8] {
+                        use #amplify_crate::Wrapper;
+                        Borrow::<u8>::borrow(Wrapper::as_inner(self))
                     }
                 }
             },
