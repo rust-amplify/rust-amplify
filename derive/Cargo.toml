@@ -1,6 +1,6 @@
 [package]
 name = "amplify_derive"
-version = "2.4.5"
+version = "2.5.0"
 description = "Amplifying Rust language capabilities: derive macros for the 'amplify' library"
 authors = ["Dr. Maxim Orlovsky <orlovsky@pandoracore.com>", "Elichai Turkel <elichai.turkel@gmail.com>"]
 keywords = ["generics", "derive", "wrap", "patterns"]
