@@ -18,7 +18,7 @@ path = "src/lib.rs"
 
 [dependencies]
 libc = { version = "0.2", optional = true }
-amplify_derive = { version = "2.4", path = "./derive" }
+amplify_derive = { version = "2.5", path = "./derive" }
 parse_arg = { version = "0.1.4", optional = true }
 # This strange naming is a workaround for not being able to define required features for a dependency
 # See https://github.com/rust-lang/api-guidelines/issues/180 for the explanation and references.
