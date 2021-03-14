@@ -219,7 +219,7 @@ impl WrapperDerives {
                     #[inline]
                     fn borrow(&self) -> &[u8] {
                         use #amplify_crate::Wrapper;
-                        Borrow::<u8>::borrow(Wrapper::as_inner(self))
+                        Borrow::<[u8]>::borrow(Wrapper::as_inner(self))
                     }
                 }
             },
