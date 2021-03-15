@@ -137,7 +137,7 @@ impl WrapperDerives {
                     fn from_str(s: &str) -> Result<Self, Self::Err> {
                         use ::std::str::FromStr;
                         use #amplify_crate::Wrapper;
-                        Ok(Self::from_inner(
+                        Ok(Wrapper::from_inner(
                             <Self as #amplify_crate::Wrapper>::Inner::from_str(s)?,
                         ))
                     }
@@ -219,7 +219,7 @@ impl WrapperDerives {
                     #[inline]
                     fn borrow(&self) -> &[u8] {
                         use #amplify_crate::Wrapper;
-                        Borrow::<[u8]>::borrow(Wrapper::as_inner(self))
+                        ::core::borrow::Borrow::<[u8]>::borrow(Wrapper::as_inner(self))
                     }
                 }
             },
@@ -335,7 +335,7 @@ impl WrapperDerives {
                     #[inline]
                     fn neg(self) -> Self {
                         use #amplify_crate::Wrapper;
-                        Self::from_inner(::core::ops::Neg::neg(Wrapper::into_inner(self)))
+                        Wrapper::from_inner(::core::ops::Neg::neg(Wrapper::into_inner(self)))
                     }
                 }
             },
@@ -347,7 +347,7 @@ impl WrapperDerives {
                     #[inline]
                     fn not(self) -> Self {
                         use #amplify_crate::Wrapper;
-                        Self::from_inner(::core::ops::Not::not(Wrapper::into_inner(self)))
+                        Wrapper::from_inner(::core::ops::Not::not(Wrapper::into_inner(self)))
                     }
                 }
             },
@@ -359,7 +359,7 @@ impl WrapperDerives {
                     #[inline]
                     fn add(self, rhs: Self) -> Self {
                         use #amplify_crate::Wrapper;
-                        Self::from_inner(::core::ops::Add::add(Wrapper::into_inner(self), rhs.into_inner()))
+                        Wrapper::from_inner(::core::ops::Add::add(Wrapper::into_inner(self), rhs.into_inner()))
                     }
                 }
             },
@@ -371,7 +371,7 @@ impl WrapperDerives {
                     #[inline]
                     fn sub(self, rhs: Self) -> Self {
                         use #amplify_crate::Wrapper;
-                        Self::from_inner(::core::ops::Sub::sub(Wrapper::into_inner(self), rhs.into_inner()))
+                        Wrapper::from_inner(::core::ops::Sub::sub(Wrapper::into_inner(self), rhs.into_inner()))
                     }
                 }
             },
@@ -383,7 +383,7 @@ impl WrapperDerives {
                     #[inline]
                     fn mul(self, rhs: Self) -> Self {
                         use #amplify_crate::Wrapper;
-                        Self::from_inner(::core::ops::Mul::mul(Wrapper::into_inner(self), rhs.into_inner()))
+                        Wrapper::from_inner(::core::ops::Mul::mul(Wrapper::into_inner(self), rhs.into_inner()))
                     }
                 }
             },
@@ -395,7 +395,7 @@ impl WrapperDerives {
                     #[inline]
                     fn div(self, rhs: Self) -> Self {
                         use #amplify_crate::Wrapper;
-                        Self::from_inner(::core::ops::Div::div(Wrapper::into_inner(self), rhs.into_inner()))
+                        Wrapper::from_inner(::core::ops::Div::div(Wrapper::into_inner(self), rhs.into_inner()))
                     }
                 }
             },
@@ -407,7 +407,7 @@ impl WrapperDerives {
                     #[inline]
                     fn rem(self, rhs: Self) -> Self {
                         use #amplify_crate::Wrapper;
-                        Self::from_inner(::core::ops::Rem::rem(Wrapper::into_inner(self), rhs.into_inner()))
+                        Wrapper::from_inner(::core::ops::Rem::rem(Wrapper::into_inner(self), rhs.into_inner()))
                     }
                 }
             },
@@ -419,7 +419,7 @@ impl WrapperDerives {
                     #[inline]
                     fn shl(self, rhs: Self) -> Self {
                         use #amplify_crate::Wrapper;
-                        Self::from_inner(::core::ops::Shl::shl(Wrapper::into_inner(self), rhs.into_inner()))
+                        Wrapper::from_inner(::core::ops::Shl::shl(Wrapper::into_inner(self), rhs.into_inner()))
                     }
                 }
             },
@@ -431,7 +431,7 @@ impl WrapperDerives {
                     #[inline]
                     fn shr(self, rhs: Self) -> Self {
                         use #amplify_crate::Wrapper;
-                        Self::from_inner(::core::ops::Shr::shr(Wrapper::into_inner(self), rhs.into_inner()))
+                        Wrapper::from_inner(::core::ops::Shr::shr(Wrapper::into_inner(self), rhs.into_inner()))
                     }
                 }
             },
@@ -443,7 +443,7 @@ impl WrapperDerives {
                     #[inline]
                     fn bitand(self, rhs: Self) -> Self {
                         use #amplify_crate::Wrapper;
-                        Self::from_inner(::core::ops::BitAnd::bitand(Wrapper::into_inner(self), rhs.into_inner()))
+                        Wrapper::from_inner(::core::ops::BitAnd::bitand(Wrapper::into_inner(self), rhs.into_inner()))
                     }
                 }
             },
@@ -455,7 +455,7 @@ impl WrapperDerives {
                     #[inline]
                     fn bitor(self, rhs: Self) -> Self {
                         use #amplify_crate::Wrapper;
-                        Self::from_inner(::core::ops::BitOr::bitor(Wrapper::into_inner(self), rhs.into_inner()))
+                        Wrapper::from_inner(::core::ops::BitOr::bitor(Wrapper::into_inner(self), rhs.into_inner()))
                     }
                 }
             },
@@ -467,7 +467,7 @@ impl WrapperDerives {
                     #[inline]
                     fn bitxor(self, rhs: Self) -> Self {
                         use #amplify_crate::Wrapper;
-                        Self::from_inner(::core::ops::BitXor::bitxor(Wrapper::into_inner(self), rhs.into_inner()))
+                        Wrapper::from_inner(::core::ops::BitXor::bitxor(Wrapper::into_inner(self), rhs.into_inner()))
                     }
                 }
             },
