@@ -16,6 +16,7 @@
 use proc_macro2::TokenStream as TokenStream2;
 use syn::spanned::Spanned;
 use syn::{Data, DeriveInput, Error, Fields, Result};
+use quote::ToTokens;
 
 pub(crate) fn inner(input: DeriveInput) -> Result<TokenStream2> {
     let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
@@ -36,9 +37,27 @@ pub(crate) fn inner(input: DeriveInput) -> Result<TokenStream2> {
 
     let recurse = match data.fields {
         Fields::Named(ref fields) => fields.named.iter().map(|f| {
-            let name = &f.ident;
+            let name = f.ident.as_ref().expect("named field always has a name");
+            let doc = f
+                .attrs
+                .iter()
+                .find(|a| {
+                    a.path
+                        .segments
+                        .first()
+                        .map(|p| p.ident.to_string() == "doc")
+                        .unwrap_or(false)
+                })
+                .map(|doc| doc.into_token_stream())
+                .unwrap_or_else(|| {
+                    let doc = format!("Method for accessing [`{}::{}`] field", ident_name, name);
+                    quote! {
+                        #[doc = #doc]
+                    }
+                });
             let ty = &f.ty;
             quote_spanned! { f.span() =>
+                #doc
                 #[inline]
                 pub fn #name(&self) -> &#ty {
                     &self.#name

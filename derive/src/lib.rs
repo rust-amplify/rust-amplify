@@ -423,6 +423,7 @@ pub fn derive_as_any(input: TokenStream) -> TokenStream {
 /// # #[macro_use] extern crate amplify_derive;
 /// #[derive(Getters, Default)]
 /// struct One {
+///     /// Doc comments are assigned to the getter methods
 ///     a: Vec<u8>,
 ///     pub b: bool,
 ///     pub(self) c: u8,
