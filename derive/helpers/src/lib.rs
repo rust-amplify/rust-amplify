@@ -20,7 +20,7 @@
 //!
 //! `#[name]` - single form
 //! `#[name = "literal"]` - optional single value
-//! `#[name = TypeName]`
+//! `#[name = TypeName]` - path value
 //! `#[name("literal", TypeName)]` - list of arguments
 
 #![recursion_limit = "256"]

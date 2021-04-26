@@ -18,12 +18,12 @@ use std::fmt::{Debug};
 use std::collections::HashMap;
 use syn::{Type, Path, Attribute, Meta, MetaList, MetaNameValue, NestedMeta, Lit, LitInt, LitStr};
 use proc_macro2::{Ident, Span};
-
-use crate::Error;
 use syn::spanned::Spanned;
 
-/// Structure representing internal structure of collected instances of a proc
-/// macro attribute having some specific name (accessible via [`Attr::name()`]).
+use crate::Error;
+
+/// Internal structure representation of a proc macro attribute collected
+/// instances having some specific name (accessible via [`Attr::name()`]).
 #[derive(Clone)]
 pub enum Attr {
     /// Attribute of `#[attr]` or `#[attr = value]` form, which, aside from the
@@ -143,35 +143,73 @@ where
     /// Argument or an attribute may or may not hold a value
     Optional,
 
-    /// Argument or an attribute must not a value
+    /// Argument or an attribute must not hold a value
     Prohibited,
 }
 
+/// Requirements for a [`ParametrizedAttr`] elements
 #[derive(Clone)]
 pub enum ListReq<T>
 where
     T: Clone,
 {
+    /// Element may not be present or may be present multiple times
     NoneOrMore,
+
+    /// Element must be present at least once, or may have multiple occurrences
     OneOrMore,
+
+    /// Element must be present exact amount of times
     Default(T),
+
+    /// Element must not be present
     Deny,
 }
 
+/// Constrains for literal value type
 #[derive(Clone, Copy, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
 pub enum LitReq {
+    /// Literal must be a string
     StringLiteral,
+
+    /// Literal must be a byte string
     ByteLiteral,
+
+    /// Literal must be a character
     CharLiteral,
+
+    /// Literal must be an integer
     IntLiteral,
+
+    /// Literal must be a float
     FloatLiteral,
+
+    /// Literal must be a boolean
     BoolLiteral,
+
+    /// Literal must be a verbatim form
     Verbatim,
 }
 
 impl Attr {
+    /// Constructor parsing [`Attribute`] value and returning either
+    /// [`SingularAttr`] or [`ParametrizedAttr`] packed in form of [`Attr`]
+    /// array.
+    ///
+    /// If the attribute does not match either of forms, a [`Error`] is
+    /// returned. Currently, only single type of error may occur in practice:
+    /// - [`Error::ArgNameMustBeIdent`], which happens if the attribute name is
+    ///   not an [`Ident`] but is a complex path value
+    pub fn with_attribute(attr: &Attribute) -> Result<Self, Error> {
+        SingularAttr::with_attribute(attr)
+            .map(|singular| Attr::Singular(singular))
+            .or_else(|_| {
+                ParametrizedAttr::with_attribute(attr).map(|param| Attr::Parametrized(param))
+            })
+    }
+
     #[inline]
-    pub fn singular_or_err(self) -> Result<SingularAttr, Error> {
+    pub fn try_singular(self) -> Result<SingularAttr, Error> {
         match self {
             Attr::Singular(attr) => Ok(attr),
             Attr::Parametrized(attr) => Err(Error::SingularAttrRequired(attr.name)),
@@ -179,7 +217,7 @@ impl Attr {
     }
 
     #[inline]
-    pub fn parametrized_or_err(self) -> Result<ParametrizedAttr, Error> {
+    pub fn try_parametrized(self) -> Result<ParametrizedAttr, Error> {
         match self {
             Attr::Singular(attr) => Err(Error::ParametrizedAttrRequired(attr.name)),
             Attr::Parametrized(attr) => Ok(attr),
@@ -210,14 +248,6 @@ impl Attr {
     #[inline]
     pub fn type_value(&self) -> Result<Type, Error> {
         self.value()?.type_value()
-    }
-
-    pub fn with_attribute(attr: &Attribute) -> Result<Self, Error> {
-        SingularAttr::with_attribute(attr)
-            .map(|singular| Attr::Singular(singular))
-            .or_else(|_| {
-                ParametrizedAttr::with_attribute(attr).map(|param| Attr::Parametrized(param))
-            })
     }
 }
 
