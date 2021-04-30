@@ -10,7 +10,7 @@ homepage = "https://github.com/LNP-BP"
 license = "MIT"
 readme = "README.md"
 edition = "2018"
-exclude = [".github", "derive", "serde_str_helpers", "stringly_conversions"]
+exclude = [".github", "derive", "syn", "serde_str_helpers", "stringly_conversions"]
 
 [lib]
 name = "amplify"
@@ -40,5 +40,5 @@ default = ["std"]
 std = []
 
 [workspace]
-members = [".", "derive", "serde_str_helpers", "stringly_conversions"]
+members = [".", "derive", "syn", "serde_str_helpers", "stringly_conversions"]
 default-members = ["."]
