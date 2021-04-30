@@ -27,7 +27,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "amplify_derive_helpers"
+name = "amplify_syn"
 version = "0.0.4"
 dependencies = [
  "proc-macro2",

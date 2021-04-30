@@ -1,7 +1,7 @@
 [package]
-name = "amplify_derive_helpers"
+name = "amplify_syn"
 version = "0.0.4"
-description = "Amplifying Rust language capabilities: helper functions for creating proc macro libraries"
+description = "Amplifying syn capabilities: helper functions for creating proc macro libraries"
 authors = ["Dr. Maxim Orlovsky <orlovsky@pandoracore.com>"]
 keywords = ["generics", "derive", "wrap", "patterns"]
 categories = ["development-tools::procedural-macro-helpers", "rust-patterns"]
