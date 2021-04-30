@@ -708,12 +708,12 @@ impl ArgValue {
     }
 }
 
-#[doc(hide)]
+#[doc(hidden)]
 pub trait ExtractAttr {
-    #[doc(hide)]
+    #[doc(hidden)]
     fn singular_attr(self, name: &str, req: ValueReq) -> Result<Option<SingularAttr>, Error>;
 
-    #[doc(hide)]
+    #[doc(hidden)]
     fn parametrized_attr(self, name: &str, req: AttrReq)
         -> Result<Option<ParametrizedAttr>, Error>;
 }
