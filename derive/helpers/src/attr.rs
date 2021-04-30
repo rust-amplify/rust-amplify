@@ -101,7 +101,7 @@ pub struct ParametrizedAttr {
 #[derive(Clone)]
 pub enum ArgValue {
     /// Attribute value represented by a literal
-    Lit(Lit),
+    Literal(Lit),
 
     /// Attribute value represented by a type name
     Type(Type),
@@ -111,34 +111,38 @@ pub enum ArgValue {
 #[derive(Clone)]
 pub struct AttrReq {
     /// Specifies all named arguments and which requirements they must meet
-    pub args: HashMap<String, ValueReq<ArgValue>>,
+    pub args: HashMap<String, ValueReq>,
 
     /// Specifies whether path arguments are allowed and with which
     /// requirements.
-    pub paths: ListReq<Path>,
+    pub paths: ListOccurrences<Path>,
 
     /// Whether integer literals are allowed as an attribute argument and, if
     /// yes, with which requirements
-    pub integers: ListReq<LitInt>,
+    pub integers: ListOccurrences<LitInt>,
 
     /// Which other literals are allowed and which requirements should apply.
     ///
     /// NB: Non-string and non-integer literals may be always present only once.
-    pub literal: (LitReq, ValueReq<Lit>),
+    pub literal: (LiteralConstraints, ValueOccurrences),
 }
 
 /// Requirements for attribute or named argument value presence
 #[derive(Clone)]
-pub enum ValueReq<T>
-where
-    T: Clone,
-{
+pub struct ValueReq {
+    pub constraints: ValueConstraints,
+    pub occurrences: ValueOccurrences,
+}
+
+/// Requirements for attribute or named argument value presence
+#[derive(Clone)]
+pub enum ValueOccurrences {
     /// Argument or an attribute must explicitly hold a value
     Required,
 
     /// Argument or an attribute must hold a value; if the value is not present
-    /// it will be substituted for the default value provided as a `T` field.
-    Default(T),
+    /// it will be substituted for the default value provided as the inner field
+    Default(ArgValue),
 
     /// Argument or an attribute may or may not hold a value
     Optional,
@@ -147,9 +151,23 @@ where
     Prohibited,
 }
 
+impl ValueOccurrences {
+    pub fn check(self, value: &mut Option<ArgValue>, attr: Ident) -> Result<(), Error> {
+        match (self, value) {
+            (ValueOccurrences::Required, None) => Err(Error::SingularAttrRequired(attr)),
+            (ValueOccurrences::Prohibited, Some(_)) => Err(Error::AttrMustNotHaveValue(attr)),
+            (ValueOccurrences::Default(ref val), v) if v.is_none() => {
+                *v = Some(val.clone());
+                Ok(())
+            }
+            _ => Ok(()),
+        }
+    }
+}
+
 /// Requirements for a [`ParametrizedAttr`] elements
 #[derive(Clone)]
-pub enum ListReq<T>
+pub enum ListOccurrences<T>
 where
     T: Clone,
 {
@@ -166,13 +184,40 @@ where
     Deny,
 }
 
+/// Constrains for attribute value type
+#[derive(Clone, Copy, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
+pub enum ValueConstraints {
+    /// The value must be a literal matching given literal constraints (see
+    /// [`ConstrainedLit`])
+    Literal(LiteralConstraints),
+
+    /// The value must be of a native rust type with matching given type
+    /// constraints (see [`ConstrainedType`])
+    Type(TypeConstraints),
+}
+
+impl ValueConstraints {
+    pub fn check(self, value: &ArgValue, attr: Ident) -> Result<(), Error> {
+        match (self, value) {
+            (ValueConstraints::Literal(lit), ArgValue::Literal(ref value)) => {
+                lit.check(value, attr)
+            }
+            (ValueConstraints::Type(ty), ArgValue::Type(ref value)) => ty.check(value, attr),
+            _ => Err(Error::AttrValueTypeMimatch(attr)),
+        }
+    }
+}
+
 /// Constrains for literal value type
 #[derive(Clone, Copy, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
-pub enum LitReq {
+pub enum LiteralConstraints {
     /// Literal must be a string
     StringLiteral,
 
     /// Literal must be a byte string
+    ByteStrLiteral,
+
+    /// Literal must be a byte (in form of `b'f'`)
     ByteLiteral,
 
     /// Literal must be a character
@@ -189,6 +234,97 @@ pub enum LitReq {
 
     /// Literal must be a verbatim form
     Verbatim,
+}
+
+impl LiteralConstraints {
+    pub fn check(self, lit: &Lit, attr: Ident) -> Result<(), Error> {
+        match (self, lit) {
+            (LiteralConstraints::BoolLiteral, Lit::Bool(_))
+            | (LiteralConstraints::ByteLiteral, Lit::Byte(_))
+            | (LiteralConstraints::ByteStrLiteral, Lit::ByteStr(_))
+            | (LiteralConstraints::CharLiteral, Lit::Char(_))
+            | (LiteralConstraints::FloatLiteral, Lit::Float(_))
+            | (LiteralConstraints::IntLiteral, Lit::Int(_))
+            | (LiteralConstraints::StringLiteral, Lit::Str(_))
+            | (LiteralConstraints::Verbatim, Lit::Verbatim(_)) => Ok(()),
+            _ => Err(Error::AttrValueTypeMimatch(attr)),
+        }
+    }
+}
+
+/// Constrains for the possible types that a Rust value could have.
+#[derive(Clone, Copy, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
+pub enum TypeConstraints {
+    /// A fixed size array type: `[T; n]`.
+    Array,
+
+    /// A bare function type: `fn(usize) -> bool`.
+    BareFn,
+
+    /// A type contained within invisible delimiters.
+    Group,
+
+    /// An `impl Bound1 + Bound2 + Bound3` type where `Bound` is a trait or
+    /// a lifetime.
+    ImplTrait,
+
+    /// Indication that a type should be inferred by the compiler: `_`.
+    Infer,
+
+    /// A macro in the type position.
+    Macro,
+
+    /// The never type: `!`.
+    Never,
+
+    /// A parenthesized type equivalent to the inner type.
+    Paren,
+
+    /// A path like `std::slice::Iter`, optionally qualified with a
+    /// self-type as in `<Vec<T> as SomeTrait>::Associated`.
+    Path,
+
+    /// A raw pointer type: `*const T` or `*mut T`.
+    Ptr,
+
+    /// A reference type: `&'a T` or `&'a mut T`.
+    Reference,
+
+    /// A dynamically sized slice type: `[T]`.
+    Slice,
+
+    /// A trait object type `Bound1 + Bound2 + Bound3` where `Bound` is a
+    /// trait or a lifetime.
+    TraitObject,
+
+    /// A tuple type: `(A, B, C, String)`.
+    Tuple,
+
+    /// Tokens in type position not interpreted by Syn.
+    Verbatim,
+}
+
+impl TypeConstraints {
+    pub fn check(self, ty: &Type, attr: Ident) -> Result<(), Error> {
+        match (self, ty) {
+            (TypeConstraints::Verbatim, Type::Verbatim(_))
+            | (TypeConstraints::Array, Type::Array(_))
+            | (TypeConstraints::BareFn, Type::BareFn(_))
+            | (TypeConstraints::Group, Type::Group(_))
+            | (TypeConstraints::ImplTrait, Type::ImplTrait(_))
+            | (TypeConstraints::Infer, Type::Infer(_))
+            | (TypeConstraints::Macro, Type::Macro(_))
+            | (TypeConstraints::Never, Type::Never(_))
+            | (TypeConstraints::Paren, Type::Paren(_))
+            | (TypeConstraints::Path, Type::Path(_))
+            | (TypeConstraints::Ptr, Type::Ptr(_))
+            | (TypeConstraints::Reference, Type::Reference(_))
+            | (TypeConstraints::Slice, Type::Slice(_))
+            | (TypeConstraints::TraitObject, Type::TraitObject(_))
+            | (TypeConstraints::Tuple, Type::Tuple(_)) => Ok(()),
+            _ => Err(Error::AttrValueTypeMimatch(attr)),
+        }
+    }
 }
 
 impl Attr {
@@ -261,7 +397,7 @@ impl SingularAttr {
     pub fn with_named_literal(name: Ident, lit: Lit) -> Self {
         Self {
             name,
-            value: Some(ArgValue::Lit(lit)),
+            value: Some(ArgValue::Literal(lit)),
         }
     }
 
@@ -330,19 +466,16 @@ impl SingularAttr {
         Ok(self)
     }
 
-    pub fn check<T>(&self, _req: ValueReq<T>) -> Result<(), Error>
-    where
-        T: Clone + Eq + PartialEq + Hash + Debug,
-    {
-        // TODO: Implement
+    pub fn check(&mut self, req: ValueReq) -> Result<(), Error> {
+        req.occurrences.check(&mut self.value, self.name.clone())?;
+        if let Some(ref value) = self.value {
+            req.constraints.check(value, self.name.clone())?;
+        }
         Ok(())
     }
 
     #[inline]
-    pub fn checked<T>(self, req: ValueReq<T>) -> Result<Self, Error>
-    where
-        T: Clone + Eq + PartialEq + Hash + Debug,
-    {
+    pub fn checked(mut self, req: ValueReq) -> Result<Self, Error> {
         self.check(req)?;
         Ok(self)
     }
@@ -468,7 +601,7 @@ impl ParametrizedAttr {
                     .ok_or(Error::ArgNameMustBeIdent)?;
                 if self
                     .args
-                    .insert(id.to_string(), ArgValue::Lit(lit))
+                    .insert(id.to_string(), ArgValue::Literal(lit))
                     .is_some()
                 {
                     return Err(Error::ArgNameMustBeUnique(id.clone()));
@@ -489,13 +622,69 @@ impl ParametrizedAttr {
         Ok(self)
     }
 
-    pub fn check(&self, _req: AttrReq) -> Result<(), Error> {
-        // TODO: Implement
+    pub fn check(&mut self, req: AttrReq) -> Result<(), Error> {
+        match (req.paths, self.paths.len()) {
+            (ListOccurrences::Deny, x) if x > 0 => {
+                return Err(Error::AttrMustNotHavePaths(self.name.clone()))
+            }
+            (ListOccurrences::OneOrMore, 0) => {
+                return Err(Error::AttrMustHavePath(self.name.clone()))
+            }
+            (ListOccurrences::Default(path), 0) => self.paths.push(path),
+            _ => {}
+        }
+
+        match (req.integers, self.integers.len()) {
+            (ListOccurrences::Deny, x) if x > 0 => {
+                return Err(Error::AttrMustNotHavePaths(self.name.clone()))
+            }
+            (ListOccurrences::OneOrMore, 0) => {
+                return Err(Error::AttrMustHavePath(self.name.clone()))
+            }
+            (ListOccurrences::Default(int), 0) => self.integers.push(int),
+            _ => {}
+        }
+
+        match (req.literal.1, self.literal.as_ref()) {
+            (ValueOccurrences::Prohibited, Some(_)) => {
+                return Err(Error::AttrMustNotHaveLiteral(self.name.clone()))
+            }
+            (ValueOccurrences::Required, None) => {
+                return Err(Error::AttrMustHaveLiteral(self.name.clone()))
+            }
+            (ValueOccurrences::Default(lit), None) => {
+                self.literal = Some(lit.literal_value().expect(&format!(
+                    "Argument default value for {} attribute must be a literal",
+                    self.name
+                )));
+            }
+            _ => {}
+        }
+
+        if let Some(ref mut lit) = self.literal {
+            req.literal.0.check(&lit, self.name.clone())?;
+        }
+
+        for (name, req) in req.args {
+            match (self.args.get(&name), req.occurrences) {
+                (None, ValueOccurrences::Default(default)) => {
+                    self.args.insert(name, default);
+                }
+                (None, occ) => {
+                    occ.check(&mut None, self.name.clone())?;
+                }
+                (Some(val), occ) => {
+                    occ.check(&mut Some(val.clone()), self.name.clone())?;
+                    req.constraints.check(val, self.name.clone())?;
+                }
+            }
+        }
+
         Ok(())
     }
 
     #[inline]
-    pub fn checked(self, req: AttrReq) -> Result<Self, Error> {
+    pub fn checked(mut self, req: AttrReq) -> Result<Self, Error> {
         self.check(req)?;
         Ok(self)
     }
@@ -505,7 +694,7 @@ impl ArgValue {
     #[inline]
     pub fn literal_value(&self) -> Result<Lit, Error> {
         match self {
-            ArgValue::Lit(lit) => Ok(lit.clone()),
+            ArgValue::Literal(lit) => Ok(lit.clone()),
             ArgValue::Type(_) => Err(Error::ArgValueMustBeLiteral),
         }
     }
@@ -513,7 +702,7 @@ impl ArgValue {
     #[inline]
     pub fn type_value(&self) -> Result<Type, Error> {
         match self {
-            ArgValue::Lit(_) => Err(Error::ArgValueMustBeType),
+            ArgValue::Literal(_) => Err(Error::ArgValueMustBeType),
             ArgValue::Type(ty) => Ok(ty.clone()),
         }
     }
@@ -522,17 +711,11 @@ impl ArgValue {
 #[doc(hide)]
 pub trait ExtractAttr {
     #[doc(hide)]
-    fn singular_attr<T>(
-        self,
-        name: &str,
-        // req: ValueReq<ArgValue>,
-    ) -> Result<Option<SingularAttr>, Error>;
+    fn singular_attr(self, name: &str, req: ValueReq) -> Result<Option<SingularAttr>, Error>;
 
     #[doc(hide)]
-    fn parametrized_attr(
-        self,
-        name: &str, /* , req: AttrReq */
-    ) -> Result<Option<ParametrizedAttr>, Error>;
+    fn parametrized_attr(self, name: &str, req: AttrReq)
+        -> Result<Option<ParametrizedAttr>, Error>;
 }
 
 impl<'a, T> ExtractAttr for T
@@ -542,11 +725,7 @@ where
     /// Returns a [`SingularAttr`] which structure must fulfill the provided
     /// requirements - or fails with a [`Error`] otherwise. For more information
     /// check [`ValueReq`] requirements info.
-    fn singular_attr<V>(
-        self,
-        name: &str,
-        // req: ValueReq<ArgValue>,
-    ) -> Result<Option<SingularAttr>, Error> {
+    fn singular_attr(self, name: &str, req: ValueReq) -> Result<Option<SingularAttr>, Error> {
         let mut attr = SingularAttr::with_name(Ident::new(name, Span::call_site()));
 
         let filtered = self
@@ -558,26 +737,11 @@ where
             return Ok(None);
         }
 
-        /*
-        if filtered.is_empty() {
-            return match req {
-                ValueReq::Required => Err(),
-                ValueReq::Default(default) => {
-                    attr.value = Some(default);
-                    Ok(Some(attr))
-                }
-                ValueReq::Optional => Ok(None),
-                ValueReq::Prohibited => Ok(None),
-            };
-        }
-         */
-
         for entries in filtered {
             attr.enrich(entries)?;
         }
 
-        // Some(attr.checked(req)).transpose()
-        Ok(Some(attr))
+        Some(attr.checked(req)).transpose()
     }
 
     /// Returns a [`ParametrizedAttr`] which structure must fulfill the provided
@@ -586,7 +750,7 @@ where
     fn parametrized_attr(
         self,
         name: &str,
-        // req: AttrReq,
+        req: AttrReq,
     ) -> Result<Option<ParametrizedAttr>, Error> {
         let mut attr = ParametrizedAttr::with_name(Ident::new(name, Span::call_site()));
 
@@ -603,7 +767,6 @@ where
             attr.enrich(entries)?;
         }
 
-        // Some(attr.checked(req)).transpose()
-        Ok(Some(attr))
+        Some(attr.checked(req)).transpose()
     }
 }

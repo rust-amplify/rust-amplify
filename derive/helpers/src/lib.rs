@@ -39,5 +39,6 @@ mod attr;
 mod error;
 pub use error::Error;
 pub use attr::{
-    Attr, ArgValue, SingularAttr, ParametrizedAttr, ExtractAttr, AttrReq, ListReq, LitReq, ValueReq,
+    Attr, ArgValue, SingularAttr, ParametrizedAttr, ExtractAttr, AttrReq, ListOccurrences,
+    LiteralConstraints, ValueReq, TypeConstraints, ValueConstraints, ValueOccurrences,
 };

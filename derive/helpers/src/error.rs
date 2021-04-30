@@ -36,6 +36,25 @@ pub enum Error {
     /// Attribute must be in a singular form (`#[attr]` or `#[attr = ...]`)
     SingularAttrRequired(Ident),
 
+    /// Attribute value type mismatch
+    AttrValueTypeMimatch(Ident),
+
+    /// Attribute `{0}` must not have a value
+    AttrMustNotHaveValue(Ident),
+
+    /// Attribute `{0}` does not allow path arguments
+    AttrMustNotHavePaths(Ident),
+
+    /// Attribute `{0}` must has a path argument (like `some::Type` in
+    /// `#[{0}(some::Type)`)
+    AttrMustHavePath(Ident),
+
+    /// Attribute `{0}` does not allow literal arguments
+    AttrMustNotHaveLiteral(Ident),
+
+    /// Attribute `{0}` must has a literal argument
+    AttrMustHaveLiteral(Ident),
+
     /// Attribute must be in a parametrized form (`#[attr(...)]`)
     ParametrizedAttrRequired(Ident),
 
@@ -112,6 +131,36 @@ impl Display for Error {
             Error::ParametrizedAttrRequired(name) => write!(
                 f,
                 "Attribute `{}` must be in a parametrized form (`#[attr(...)]`)",
+                name
+            ),
+            Error::AttrValueTypeMimatch(name) => write!(
+                f,
+                "Attribute `{}` value type mismatch",
+                name
+            ),
+            Error::AttrMustNotHaveValue(name) => write!(
+                f,
+                "Attribute `{}` must not have a value",
+                name
+            ),
+            Error::AttrMustNotHavePaths(name) => write!(
+                f,
+                "Attribute `{}` does not allow path arguments",
+                name
+            ),
+            Error::AttrMustHavePath(name) => write!(
+                f,
+                "Attribute `{name}` must has a path argument (like `some::Type` in `#[{name}(some::Type)`)",
+                name = name
+            ),
+            Error::AttrMustNotHaveLiteral(name) => write!(
+                f,
+                "Attribute `{}` does not allow literal arguments",
+                name
+            ),
+            Error::AttrMustHaveLiteral(name) => write!(
+                f,
+                "Attribute `{}` must has a literal argument",
                 name
             ),
             Error::ArgMustBePath => f.write_str(
