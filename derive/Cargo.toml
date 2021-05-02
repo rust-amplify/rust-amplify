@@ -24,6 +24,7 @@ path = "src/lib.rs"
 quote = "1.0.7"
 syn = "1.0.58"
 proc-macro2 = "1.0.23"
+amplify_syn = { version = "0.1.0", path = "../syn" }
 
 [dev-dependencies]
 amplify = { path = ".." }

@@ -17,10 +17,34 @@ use proc_macro2::TokenStream as TokenStream2;
 use syn::spanned::Spanned;
 use syn::{Data, DeriveInput, Error, Fields, Result};
 use quote::ToTokens;
+use amplify_syn::{ParametrizedAttr};
 
 pub(crate) fn inner(input: DeriveInput) -> Result<TokenStream2> {
     let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
     let ident_name = &input.ident;
+
+    let attribute = ParametrizedAttr::with("getter", &input.attrs)?;
+    println!("Args: ");
+    attribute
+        .args
+        .iter()
+        .for_each(|(name, val)| println!("\t{}: {}", name, val.to_token_stream()));
+    println!("Paths: ");
+    attribute
+        .paths
+        .iter()
+        .for_each(|path| println!("\t{}", quote! { #path }));
+    /*
+    attribute.check(AttrReq::with(
+        vec![(
+            "prefix",
+            ValueOccurrences::Optional,
+            ValueConstraints::Literal(LiteralConstraints::StringLiteral),
+        )],
+        vec!["all", "as_copy", "as_clone", "as_ref", "as_mut"],
+        Vec::default(),
+        Vec::default(),
+    ))?*/
 
     let data = match input.data {
         Data::Struct(ref data) => data,
