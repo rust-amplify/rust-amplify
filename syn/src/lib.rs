@@ -23,20 +23,23 @@
 //! `#[name = TypeName]` - path value
 //! `#[name("literal", TypeName)]` - list of arguments
 
-#![recursion_limit = "256"]
 #![deny(
     non_upper_case_globals,
     non_camel_case_types,
     non_snake_case,
     unused_mut,
     unused_imports,
-    // missing_docs,
+    missing_docs,
     dead_code,
     warnings
 )]
 
+#[macro_use]
+extern crate quote;
+
 mod attr;
 mod error;
+
 pub use error::Error;
 pub use attr::{
     Attr, ArgValue, SingularAttr, ParametrizedAttr, ExtractAttr, AttrReq, ListOccurrences,

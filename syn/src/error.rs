@@ -17,9 +17,10 @@ use std::fmt::{Display, Formatter, self};
 use proc_macro2::Span;
 
 /// Errors representing inconsistency in proc macro attribute structure
-#[derive(Clone, Eq, PartialEq, PartialOrd, Ord, Hash, Debug)]
+#[derive(Clone, Debug)]
 pub enum Error {
-    Parse(String),
+    /// Parse error from a `syn` crate
+    Parse(syn::Error),
 
     /// Names of two merged attributes must match each other
     NamesDontMatch(String, String),
@@ -99,7 +100,7 @@ pub enum Error {
 
 impl From<syn::Error> for Error {
     fn from(err: syn::Error) -> Self {
-        Error::Parse(err.to_string())
+        Error::Parse(err)
     }
 }
 
@@ -216,4 +217,31 @@ impl Display for Error {
     }
 }
 
-impl std::error::Error for Error {}
+impl std::error::Error for Error {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            Error::Parse(err) => Some(err),
+            Error::NamesDontMatch(_, _)
+            | Error::MultipleSingularValues(_)
+            | Error::MultipleLiteralValues(_)
+            | Error::SingularAttrRequired(_)
+            | Error::AttrValueTypeMimatch(_)
+            | Error::AttrMustNotHaveValue(_)
+            | Error::AttrMustNotHavePaths(_)
+            | Error::AttrMustHavePath(_)
+            | Error::AttrMustNotHaveLiteral(_)
+            | Error::AttrMustHaveLiteral(_)
+            | Error::ParametrizedAttrRequired(_)
+            | Error::ArgMustBePath
+            | Error::ArgNameRequired
+            | Error::ArgNameMustBeIdent
+            | Error::ArgNameMustBeUnique(_)
+            | Error::ArgValueRequired(_)
+            | Error::ArgValueMustBeLiteral
+            | Error::ArgValueMustBeType
+            | Error::ParametrizedAttrHasNoValue(_)
+            | Error::NamedArgRequired(_)
+            | Error::NestedListsNotSupported(_) => None,
+        }
+    }
+}

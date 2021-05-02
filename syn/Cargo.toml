@@ -16,5 +16,6 @@ include = [
 ]
 
 [dependencies]
-syn = "1.0.60"
-proc-macro2 = "1.0.23"
+syn = "1"
+proc-macro2 = "1"
+quote = "1"
