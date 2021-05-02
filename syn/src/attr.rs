@@ -17,10 +17,11 @@ use std::hash::Hash;
 use std::fmt::{Debug};
 use std::collections::HashMap;
 use syn::{Type, Path, Attribute, Meta, MetaList, MetaNameValue, NestedMeta, Lit, LitInt, LitStr};
-use proc_macro2::{Ident, Span};
 use syn::spanned::Spanned;
 
 use crate::Error;
+use proc_macro2::TokenStream;
+use syn::__private::ToTokens;
 
 /// Internal structure representation of a proc macro attribute collected
 /// instances having some specific name (accessible via [`Attr::name()`]).
@@ -57,7 +58,7 @@ pub enum Attr {
 pub struct SingularAttr {
     /// Optional attribute argument path part; for instance in
     /// `#[my(name = value)]` or in `#[name = value]` this is a `name` part
-    pub name: Ident,
+    pub name: String,
 
     /// Optional attribute argument value part; for instance in
     /// `#[name = value]` this is a `value` part
@@ -75,7 +76,7 @@ pub struct SingularAttr {
 #[derive(Clone)]
 pub struct ParametrizedAttr {
     /// Attribute name - `attr` part of `#[attr(...)]`
-    pub name: Ident,
+    pub name: String,
 
     /// All attribute arguments that have form of `#[attr(ident = "literal")]`
     /// or `#[attr(ident = TypeName)]` mapped to their name identifiers
@@ -107,6 +108,32 @@ pub enum ArgValue {
     Type(Type),
 }
 
+impl ArgValue {
+    #[inline]
+    pub fn to_token_stream(&self) -> TokenStream {
+        match self {
+            ArgValue::Literal(lit) => lit.to_token_stream(),
+            ArgValue::Type(ty) => ty.to_token_stream(),
+        }
+    }
+
+    #[inline]
+    pub fn literal_value(&self) -> Result<Lit, Error> {
+        match self {
+            ArgValue::Literal(lit) => Ok(lit.clone()),
+            ArgValue::Type(_) => Err(Error::ArgValueMustBeLiteral),
+        }
+    }
+
+    #[inline]
+    pub fn type_value(&self) -> Result<Type, Error> {
+        match self {
+            ArgValue::Literal(_) => Err(Error::ArgValueMustBeType),
+            ArgValue::Type(ty) => Ok(ty.clone()),
+        }
+    }
+}
+
 /// Structure requirements for parametrized attribute
 #[derive(Clone)]
 pub struct AttrReq {
@@ -126,6 +153,12 @@ pub struct AttrReq {
     /// NB: Non-string and non-integer literals may be always present only once.
     pub literal: (LiteralConstraints, ValueOccurrences),
 }
+
+/*
+impl AttrReq {
+    pub fn with(args: Vec<(String, ValueOccurrences, ValueConstraints)>, paths: Vec<>)
+}
+ */
 
 /// Requirements for attribute or named argument value presence
 #[derive(Clone)]
@@ -152,7 +185,8 @@ pub enum ValueOccurrences {
 }
 
 impl ValueOccurrences {
-    pub fn check(self, value: &mut Option<ArgValue>, attr: Ident) -> Result<(), Error> {
+    pub fn check(self, value: &mut Option<ArgValue>, attr: String) -> Result<(), Error> {
+        let attr = attr.to_string();
         match (self, value) {
             (ValueOccurrences::Required, None) => Err(Error::SingularAttrRequired(attr)),
             (ValueOccurrences::Prohibited, Some(_)) => Err(Error::AttrMustNotHaveValue(attr)),
@@ -191,13 +225,13 @@ pub enum ValueConstraints {
     /// [`ConstrainedLit`])
     Literal(LiteralConstraints),
 
-    /// The value must be of a native rust type with matching given type
-    /// constraints (see [`ConstrainedType`])
+    /// The value must be of a native rust type matching given type constraints
+    /// (see [`ConstrainedType`])
     Type(TypeConstraints),
 }
 
 impl ValueConstraints {
-    pub fn check(self, value: &ArgValue, attr: Ident) -> Result<(), Error> {
+    pub fn check(self, value: &ArgValue, attr: String) -> Result<(), Error> {
         match (self, value) {
             (ValueConstraints::Literal(lit), ArgValue::Literal(ref value)) => {
                 lit.check(value, attr)
@@ -237,7 +271,7 @@ pub enum LiteralConstraints {
 }
 
 impl LiteralConstraints {
-    pub fn check(self, lit: &Lit, attr: Ident) -> Result<(), Error> {
+    pub fn check(self, lit: &Lit, attr: String) -> Result<(), Error> {
         match (self, lit) {
             (LiteralConstraints::BoolLiteral, Lit::Bool(_))
             | (LiteralConstraints::ByteLiteral, Lit::Byte(_))
@@ -305,7 +339,7 @@ pub enum TypeConstraints {
 }
 
 impl TypeConstraints {
-    pub fn check(self, ty: &Type, attr: Ident) -> Result<(), Error> {
+    pub fn check(self, ty: &Type, attr: String) -> Result<(), Error> {
         match (self, ty) {
             (TypeConstraints::Verbatim, Type::Verbatim(_))
             | (TypeConstraints::Array, Type::Array(_))
@@ -328,19 +362,25 @@ impl TypeConstraints {
 }
 
 impl Attr {
+    pub fn with(name: &str, attrs: &Vec<Attribute>) -> Result<Self, Error> {
+        SingularAttr::with(name, attrs)
+            .map(|singular| Attr::Singular(singular))
+            .or_else(|_| ParametrizedAttr::with(name, attrs).map(|param| Attr::Parametrized(param)))
+    }
+
     /// Constructor parsing [`Attribute`] value and returning either
     /// [`SingularAttr`] or [`ParametrizedAttr`] packed in form of [`Attr`]
-    /// array.
+    /// enum.
     ///
     /// If the attribute does not match either of forms, a [`Error`] is
     /// returned. Currently, only single type of error may occur in practice:
     /// - [`Error::ArgNameMustBeIdent`], which happens if the attribute name is
     ///   not an [`Ident`] but is a complex path value
-    pub fn with_attribute(attr: &Attribute) -> Result<Self, Error> {
-        SingularAttr::with_attribute(attr)
+    pub fn from_attribute(attr: &Attribute) -> Result<Self, Error> {
+        SingularAttr::from_attribute(attr)
             .map(|singular| Attr::Singular(singular))
             .or_else(|_| {
-                ParametrizedAttr::with_attribute(attr).map(|param| Attr::Parametrized(param))
+                ParametrizedAttr::from_attribute(attr).map(|param| Attr::Parametrized(param))
             })
     }
 
@@ -361,7 +401,7 @@ impl Attr {
     }
 
     #[inline]
-    pub fn name(&self) -> Ident {
+    pub fn name(&self) -> String {
         match self {
             Attr::Singular(attr) => attr.name.clone(),
             Attr::Parametrized(attr) => attr.name.clone(),
@@ -389,24 +429,41 @@ impl Attr {
 
 impl SingularAttr {
     #[inline]
-    pub fn with_name(name: Ident) -> Self {
-        Self { name, value: None }
+    pub fn new(name: impl ToString) -> Self {
+        Self {
+            name: name.to_string(),
+            value: None,
+        }
+    }
+
+    pub fn with(name: impl ToString, attrs: &Vec<Attribute>) -> Result<Self, Error> {
+        let name = name.to_string();
+        let mut filtered_attrs = attrs.iter().filter(|attr| attr.path.is_ident(&name));
+        let res = if let Some(attr) = filtered_attrs.next() {
+            SingularAttr::from_attribute(attr)
+        } else {
+            return Err(Error::SingularAttrRequired(name));
+        };
+        if filtered_attrs.count() > 0 {
+            return Err(Error::SingularAttrRequired(name));
+        }
+        res
     }
 
     #[inline]
-    pub fn with_named_literal(name: Ident, lit: Lit) -> Self {
+    pub fn with_named_literal(name: impl ToString, lit: Lit) -> Self {
         Self {
-            name,
+            name: name.to_string(),
             value: Some(ArgValue::Literal(lit)),
         }
     }
 
-    pub fn with_attribute(attr: &Attribute) -> Result<Self, Error> {
+    pub fn from_attribute(attr: &Attribute) -> Result<Self, Error> {
         let ident = attr
             .path
             .get_ident()
-            .cloned()
-            .ok_or(Error::ArgNameMustBeIdent)?;
+            .ok_or(Error::ArgNameMustBeIdent)?
+            .to_string();
         match attr.parse_meta()? {
             // `#[attr::path]` - unreachable: filtered in the code above
             Meta::Path(_) => unreachable!(),
@@ -457,7 +514,7 @@ impl SingularAttr {
 
     #[inline]
     pub fn enrich(&mut self, attr: &Attribute) -> Result<(), Error> {
-        self.merge(SingularAttr::with_attribute(attr)?)
+        self.merge(SingularAttr::from_attribute(attr)?)
     }
 
     #[inline]
@@ -483,9 +540,9 @@ impl SingularAttr {
 
 impl ParametrizedAttr {
     #[inline]
-    pub fn with_name(name: Ident) -> Self {
+    pub fn new(name: impl ToString) -> Self {
         Self {
-            name,
+            name: name.to_string(),
             args: Default::default(),
             paths: vec![],
             integers: vec![],
@@ -493,20 +550,36 @@ impl ParametrizedAttr {
         }
     }
 
-    pub fn with_attribute(attr: &Attribute) -> Result<Self, Error> {
-        let ident = attr
+    pub fn with(name: impl ToString + AsRef<str>, attrs: &Vec<Attribute>) -> Result<Self, Error> {
+        let mut me = ParametrizedAttr::new(name.to_string());
+        for attr in attrs.iter().filter(|attr| attr.path.is_ident(&name)) {
+            match attr.parse_meta()? {
+                // `#[ident(...)]`
+                Meta::List(MetaList { nested, .. }) => {
+                    for meta in nested {
+                        me.fuse(meta)?;
+                    }
+                }
+                _ => return Err(Error::ParametrizedAttrRequired(name.to_string())),
+            }
+        }
+        Ok(me)
+    }
+
+    pub fn from_attribute(attr: &Attribute) -> Result<Self, Error> {
+        let name = attr
             .path
             .get_ident()
-            .cloned()
-            .ok_or(Error::ArgNameMustBeIdent)?;
+            .ok_or(Error::ArgNameMustBeIdent)?
+            .to_string();
         match attr.parse_meta()? {
             // `#[ident(...)]`
             Meta::List(MetaList { nested, .. }) => nested
                 .into_iter()
-                .fold(Ok(ParametrizedAttr::with_name(ident)), |res, nested| {
+                .fold(Ok(ParametrizedAttr::new(name)), |res, nested| {
                     res.and_then(|attr| attr.fused(nested))
                 }),
-            _ => Err(Error::ParametrizedAttrRequired(ident)),
+            _ => Err(Error::ParametrizedAttrRequired(name)),
         }
     }
 
@@ -553,7 +626,7 @@ impl ParametrizedAttr {
 
     #[inline]
     pub fn enrich(&mut self, attr: &Attribute) -> Result<(), Error> {
-        self.merge(ParametrizedAttr::with_attribute(attr)?)
+        self.merge(ParametrizedAttr::from_attribute(attr)?)
     }
 
     #[inline]
@@ -589,7 +662,7 @@ impl ParametrizedAttr {
                 .map(|l| *l = lit)
                 .ok_or(Error::MultipleLiteralValues(self.name.clone()))?,
 
-            // `#[ident(arg::path, ...)]`
+            // `#[ident(arg::path)]`
             NestedMeta::Meta(Meta::Path(path)) => self.paths.push(path),
 
             // `#[ident(name = value, ...)]`
@@ -597,14 +670,14 @@ impl ParametrizedAttr {
                 let id = path
                     .clone()
                     .get_ident()
-                    .cloned()
-                    .ok_or(Error::ArgNameMustBeIdent)?;
+                    .ok_or(Error::ArgNameMustBeIdent)?
+                    .to_string();
                 if self
                     .args
-                    .insert(id.to_string(), ArgValue::Literal(lit))
+                    .insert(id.clone(), ArgValue::Literal(lit))
                     .is_some()
                 {
-                    return Err(Error::ArgNameMustBeUnique(id.clone()));
+                    return Err(Error::ArgNameMustBeUnique(id));
                 }
             }
 
@@ -690,32 +763,21 @@ impl ParametrizedAttr {
     }
 }
 
-impl ArgValue {
-    #[inline]
-    pub fn literal_value(&self) -> Result<Lit, Error> {
-        match self {
-            ArgValue::Literal(lit) => Ok(lit.clone()),
-            ArgValue::Type(_) => Err(Error::ArgValueMustBeLiteral),
-        }
-    }
-
-    #[inline]
-    pub fn type_value(&self) -> Result<Type, Error> {
-        match self {
-            ArgValue::Literal(_) => Err(Error::ArgValueMustBeType),
-            ArgValue::Type(ty) => Ok(ty.clone()),
-        }
-    }
-}
-
 #[doc(hidden)]
 pub trait ExtractAttr {
     #[doc(hidden)]
-    fn singular_attr(self, name: &str, req: ValueReq) -> Result<Option<SingularAttr>, Error>;
+    fn singular_attr(
+        self,
+        name: impl ToString + AsRef<str>,
+        req: ValueReq,
+    ) -> Result<Option<SingularAttr>, Error>;
 
     #[doc(hidden)]
-    fn parametrized_attr(self, name: &str, req: AttrReq)
-        -> Result<Option<ParametrizedAttr>, Error>;
+    fn parametrized_attr(
+        self,
+        name: impl ToString + AsRef<str>,
+        req: AttrReq,
+    ) -> Result<Option<ParametrizedAttr>, Error>;
 }
 
 impl<'a, T> ExtractAttr for T
@@ -725,12 +787,16 @@ where
     /// Returns a [`SingularAttr`] which structure must fulfill the provided
     /// requirements - or fails with a [`Error`] otherwise. For more information
     /// check [`ValueReq`] requirements info.
-    fn singular_attr(self, name: &str, req: ValueReq) -> Result<Option<SingularAttr>, Error> {
-        let mut attr = SingularAttr::with_name(Ident::new(name, Span::call_site()));
+    fn singular_attr(
+        self,
+        name: impl ToString + AsRef<str>,
+        req: ValueReq,
+    ) -> Result<Option<SingularAttr>, Error> {
+        let mut attr = SingularAttr::new(name.to_string());
 
         let filtered = self
             .into_iter()
-            .filter(|attr| attr.path.is_ident(name))
+            .filter(|attr| attr.path.is_ident(&name))
             .collect::<Vec<_>>();
 
         if filtered.is_empty() {
@@ -749,14 +815,14 @@ where
     /// check [`AttrReq`] requirements info.
     fn parametrized_attr(
         self,
-        name: &str,
+        name: impl ToString + AsRef<str>,
         req: AttrReq,
     ) -> Result<Option<ParametrizedAttr>, Error> {
-        let mut attr = ParametrizedAttr::with_name(Ident::new(name, Span::call_site()));
+        let mut attr = ParametrizedAttr::new(name.to_string());
 
         let filtered = self
             .into_iter()
-            .filter(|attr| attr.path.is_ident(name))
+            .filter(|attr| attr.path.is_ident(&name))
             .collect::<Vec<_>>();
 
         if filtered.is_empty() {

@@ -14,49 +14,49 @@
 // If not, see <https://opensource.org/licenses/MIT>.
 
 use std::fmt::{Display, Formatter, self};
-use proc_macro2::Ident;
+use proc_macro2::Span;
 
 /// Errors representing inconsistency in proc macro attribute structure
-#[derive(Clone, Eq, PartialEq, Hash, Debug)]
+#[derive(Clone, Eq, PartialEq, PartialOrd, Ord, Hash, Debug)]
 pub enum Error {
     Parse(String),
 
     /// Names of two merged attributes must match each other
-    NamesDontMatch(Ident, Ident),
+    NamesDontMatch(String, String),
 
     /// Singular argument (of form `#[attr = ...]`) has multiple occurrences
     /// each assigned value. This is meaningless.
-    MultipleSingularValues(Ident),
+    MultipleSingularValues(String),
 
     /// Multiple literal non-string values are given for a parametrized
     /// attribute in form of `#[attr(literal1, literal2)]`. This is
     /// meaningless.
-    MultipleLiteralValues(Ident),
+    MultipleLiteralValues(String),
 
     /// Attribute must be in a singular form (`#[attr]` or `#[attr = ...]`)
-    SingularAttrRequired(Ident),
+    SingularAttrRequired(String),
 
     /// Attribute value type mismatch
-    AttrValueTypeMimatch(Ident),
+    AttrValueTypeMimatch(String),
 
     /// Attribute `{0}` must not have a value
-    AttrMustNotHaveValue(Ident),
+    AttrMustNotHaveValue(String),
 
     /// Attribute `{0}` does not allow path arguments
-    AttrMustNotHavePaths(Ident),
+    AttrMustNotHavePaths(String),
 
     /// Attribute `{0}` must has a path argument (like `some::Type` in
     /// `#[{0}(some::Type)`)
-    AttrMustHavePath(Ident),
+    AttrMustHavePath(String),
 
     /// Attribute `{0}` does not allow literal arguments
-    AttrMustNotHaveLiteral(Ident),
+    AttrMustNotHaveLiteral(String),
 
     /// Attribute `{0}` must has a literal argument
-    AttrMustHaveLiteral(Ident),
+    AttrMustHaveLiteral(String),
 
     /// Attribute must be in a parametrized form (`#[attr(...)]`)
-    ParametrizedAttrRequired(Ident),
+    ParametrizedAttrRequired(String),
 
     /// Attribute argument must be a path identifier like `#[attr(std::io)]`
     /// or `#[attr = std::io]`
@@ -71,11 +71,11 @@ pub enum Error {
 
     /// The same argument name is used multiple times within parametrized
     /// attribute (like in `#[attr(name1 = value1, name1 = value2)]`)
-    ArgNameMustBeUnique(Ident),
+    ArgNameMustBeUnique(String),
 
     /// Attribute or attribute argument must has a value:
     /// `#[attr(arg = value)]`
-    ArgValueRequired(Ident),
+    ArgValueRequired(String),
 
     /// Parametrized attribute argument must have a literal value (string,
     /// integer etc): `#[attr(arg = "value")]` or `#[arg = 4]`
@@ -87,19 +87,25 @@ pub enum Error {
 
     /// Parametrized attribute (in form of `#[attr(...)]`) does not
     /// have a single value
-    ParametrizedAttrHasNoValue(Ident),
+    ParametrizedAttrHasNoValue(String),
 
     /// Attribute named argument must be present
     NamedArgRequired(String),
 
     /// Lists nested within attribute arguments, like `#[attr(arg(...))]`
     /// are not supported
-    NestedListsNotSupported(Ident),
+    NestedListsNotSupported(String),
 }
 
 impl From<syn::Error> for Error {
     fn from(err: syn::Error) -> Self {
         Error::Parse(err.to_string())
+    }
+}
+
+impl From<Error> for syn::Error {
+    fn from(err: Error) -> Self {
+        syn::Error::new(Span::call_site(), err.to_string())
     }
 }
 
