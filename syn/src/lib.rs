@@ -21,7 +21,7 @@
 //! `#[name]` - single form
 //! `#[name = "literal"]` - optional single value
 //! `#[name = TypeName]` - path value
-//! `#[name("literal", TypeName)]` - list of arguments
+//! `#[name("literal", TypeName, arg = value)]` - list of arguments
 
 #![deny(
     non_upper_case_globals,
@@ -38,10 +38,13 @@
 extern crate quote;
 
 mod attr;
+mod cls;
 mod error;
+mod req;
+mod val;
 
 pub use error::Error;
-pub use attr::{
-    Attr, ArgValue, SingularAttr, ParametrizedAttr, ExtractAttr, AttrReq, ListReq, LiteralClass,
-    ArgReq, TypeClass, ValueClass, ValueReq,
-};
+pub use attr::{Attr, SingularAttr, ParametrizedAttr, ExtractAttr};
+pub use cls::{LiteralClass, ValueClass, TypeClass};
+pub use req::{ValueReq, ListReq, AttrReq, ArgReq};
+pub use val::ArgValue;
