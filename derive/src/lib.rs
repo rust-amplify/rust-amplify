@@ -482,12 +482,13 @@ pub fn derive_as_any(input: TokenStream) -> TokenStream {
 /// ```
 /// # #[macro_use] extern crate amplify_derive;
 /// #[derive(Getters, Default)]
-/// #[getter(as_copy, prefix = "get_")]
+/// #[getter(as_mut, prefix = "get_")]
 /// struct One {
 ///     /// Doc comments are assigned to the getter methods
 ///     #[getter(all, base_name = "bytes")]
 ///     vec: Vec<u8>,
 ///
+///     #[getter(as_copy)]
 ///     pub flag: bool,
 ///
 ///     #[getter(skip)]
@@ -499,6 +500,7 @@ pub fn derive_as_any(input: TokenStream) -> TokenStream {
 /// *one.get_bytes_mut() = vec![0, 1, 2];
 /// assert_eq!(one.get_bytes(), vec![0, 1, 2]);
 /// assert_eq!(one.get_flag(), bool::default());
+/// assert_eq!(one.get_flag_mut(), &mut bool::default());
 /// assert_eq!(one.b, one.get_b());
 /// // method does not exist: assert_eq!(one.get_field(), u8::default());
 /// ```

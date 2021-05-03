@@ -59,9 +59,9 @@ struct GetterDerive {
     pub skip: bool,
     pub copy: bool,
     pub base: Option<LitStr>,
-    pub main: LitStr,
-    pub as_ref: LitStr,
-    pub as_mut: LitStr,
+    pub main: Option<LitStr>,
+    pub as_ref: Option<LitStr>,
+    pub as_mut: Option<LitStr>,
 }
 
 impl GetterDerive {
@@ -110,13 +110,23 @@ impl GetterDerive {
             ));
         }
 
+        // If we are not provided with any options, default to deriving borrows
+        if !(attr.args.contains_key("as_clone")
+            || attr.args.contains_key("as_copy")
+            || attr.args.contains_key("as_ref")
+            || attr.args.contains_key("as_mut"))
+        {
+            attr.args
+                .insert("as_ref".to_owned(), ArgValue::from("_ref"));
+        }
+
         Ok(GetterDerive {
             prefix: attr
                 .args
                 .get("prefix")
                 .map(|a| a.clone().try_into())
                 .transpose()?
-                .expect("amplify_syn is broken"),
+                .unwrap_or(LitStr::new("", Span::call_site())),
             skip: attr
                 .args
                 .get("skip")
@@ -135,20 +145,17 @@ impl GetterDerive {
                 .get("as_copy")
                 .or(attr.args.get("as_clone"))
                 .map(|a| a.clone().try_into())
-                .transpose()?
-                .expect("amplify_syn is broken"),
+                .transpose()?,
             as_ref: attr
                 .args
                 .get("as_ref")
                 .map(|a| a.clone().try_into())
-                .transpose()?
-                .expect("amplify_syn is broken"),
+                .transpose()?,
             as_mut: attr
                 .args
                 .get("as_mut")
                 .map(|a| a.clone().try_into())
-                .transpose()?
-                .expect("amplify_syn is broken"),
+                .transpose()?,
         })
     }
 }
@@ -161,14 +168,6 @@ enum GetterMethod {
 }
 
 impl GetterMethod {
-    fn all(copy: bool) -> [GetterMethod; 3] {
-        [
-            GetterMethod::Main { copy },
-            GetterMethod::AsRef,
-            GetterMethod::AsMut,
-        ]
-    }
-
     fn doc_phrase(&self) -> &'static str {
         match self {
             GetterMethod::Main { copy: true } => "returning copy of",
@@ -200,6 +199,20 @@ impl GetterMethod {
 }
 
 impl GetterDerive {
+    pub fn all_methods(&self) -> Vec<GetterMethod> {
+        let mut methods = Vec::with_capacity(3);
+        if self.main.is_some() {
+            methods.push(GetterMethod::Main { copy: self.copy });
+        }
+        if self.as_ref.is_some() {
+            methods.push(GetterMethod::AsRef);
+        }
+        if self.as_mut.is_some() {
+            methods.push(GetterMethod::AsMut);
+        }
+        methods
+    }
+
     pub fn getter_fn_ident(
         &self,
         method: GetterMethod,
@@ -220,7 +233,9 @@ impl GetterDerive {
             GetterMethod::Main { .. } => &self.main,
             GetterMethod::AsRef => &self.as_ref,
             GetterMethod::AsMut => &self.as_mut,
-        };
+        }
+        .clone()
+        .expect("Internal inconsistency in getter derivation macro implementation");
 
         let s = format!("{}{}{}", self.prefix.value(), base_string, name_lit.value());
 
@@ -297,7 +312,7 @@ fn derive_field_methods(
     let mut local_param = ParametrizedAttr::with("getter", &field.attrs)?;
 
     // First, test individual attribute
-    let _ = GetterDerive::try_from(&mut local_param, true)?;
+    let _ = GetterDerive::try_from(&mut local_param, false)?;
     // Second, combine global and local together
     let getter = GetterDerive::try_from(&mut global_param.clone().merged(local_param)?, false)?;
 
@@ -310,9 +325,9 @@ fn derive_field_methods(
     let doc = field.attrs.iter().find(|a| a.path.is_ident("doc"));
 
     let mut res = Vec::with_capacity(3);
-    for method in &GetterMethod::all(getter.copy) {
-        let fn_name = getter.getter_fn_ident(*method, field_name, field.span())?;
-        let fn_doc = getter.getter_fn_doc(*method, struct_name, field_name, index, doc);
+    for method in getter.all_methods() {
+        let fn_name = getter.getter_fn_ident(method, field_name, field.span())?;
+        let fn_doc = getter.getter_fn_doc(method, struct_name, field_name, index, doc);
         let ret_prefix = method.ret_prefix();
         let ret_suffix = method.ret_suffix();
 

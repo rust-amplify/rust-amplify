@@ -634,7 +634,7 @@ impl ParametrizedAttr {
         for (name, req) in &req.arg_req {
             if let Some(pos) = self.paths.iter().position(|path| path.is_ident(name)) {
                 self.paths.remove(pos);
-                self.args.entry(name.clone()).or_insert(ArgValue::None);
+                self.args.entry(name.clone()).or_insert(req.default_value());
             }
 
             if !self.args.contains_key(name) && req.is_required() {

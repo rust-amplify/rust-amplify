@@ -123,10 +123,22 @@ impl ArgReq {
         }
     }
 
+    /// Returns default argument value. If not default is provided within the
+    /// requirement, returns [`ArgValue::None`] (since this is *de facto*
+    /// default value for any argument).
+    pub fn default_value(&self) -> ArgValue {
+        match self {
+            ArgReq::Required {
+                default: Some(d), ..
+            } => d.clone(),
+            _ => ArgValue::None,
+        }
+    }
+
     /// Determines whether argument is required to have a value
     pub fn is_required(&self) -> bool {
         match self {
-            ArgReq::Required { .. } => true,
+            ArgReq::Required { default: None, .. } => true,
             _ => false,
         }
     }
@@ -159,9 +171,11 @@ impl ArgReq {
                 ArgReq::Required {
                     default: Some(d), ..
                 },
-            ) if val.value_class() != d.value_class() => {
+            ) if val.value_class() != d.value_class() && val.value_class().is_some() => {
                 panic!(
-                    "Default value class does not match argument value class for attribute {}, argument {}",
+                    "Default value class {:?} does not match argument value class {:?} for attribute {}, argument {}",
+                    d.value_class(),
+                    val.value_class(),
                     attr.to_string(),
                     arg.to_string()
                 );
