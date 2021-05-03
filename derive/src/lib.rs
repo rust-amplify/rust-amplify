@@ -505,7 +505,7 @@ pub fn derive_as_any(input: TokenStream) -> TokenStream {
 #[proc_macro_derive(Getters, attributes(getter))]
 pub fn derive_getters(input: TokenStream) -> TokenStream {
     let derive_input = parse_macro_input!(input as DeriveInput);
-    getters::inner(derive_input)
+    getters::derive(derive_input)
         .unwrap_or_else(|e| e.to_compile_error())
         .into()
 }
