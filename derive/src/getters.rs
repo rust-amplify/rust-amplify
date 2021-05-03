@@ -24,7 +24,8 @@ pub(crate) fn inner(input: DeriveInput) -> Result<TokenStream2> {
     let ident_name = &input.ident;
 
     let mut attribute = ParametrizedAttr::with("getter", &input.attrs)?;
-    attribute.check(AttrReq::with(vec![
+
+    let _ = attribute.check(AttrReq::with(vec![
         (
             "prefix",
             ValueReq::Required,
@@ -67,7 +68,7 @@ pub(crate) fn inner(input: DeriveInput) -> Result<TokenStream2> {
             )))),
             ValueClass::Literal(LiteralClass::StringLiteral),
         ),
-    ]))?;
+    ]));
 
     let data = match input.data {
         Data::Struct(ref data) => data,

@@ -247,6 +247,15 @@ impl ArgValue {
             _ => false,
         }
     }
+
+    /// Tests whether the self is not set to [`ArgValue::None`]
+    #[inline]
+    pub fn is_some(&self) -> bool {
+        match self {
+            ArgValue::None => false,
+            _ => true,
+        }
+    }
 }
 
 /// Structure requirements for parametrized attribute
@@ -369,6 +378,15 @@ pub enum ValueReq {
 }
 
 impl ValueReq {
+    /// Detects if the presence of the value is required
+    #[inline]
+    pub fn is_required(&self) -> bool {
+        match self {
+            ValueReq::Required => true,
+            _ => false,
+        }
+    }
+
     /// Checks the value against current requirements, generating [`Error`] if
     /// the requirements are not met.
     pub fn check<T>(
@@ -388,10 +406,12 @@ impl ValueReq {
                 attr: attr.to_string(),
                 arg: arg.to_string(),
             }),
-            (ValueReq::Prohibited, _) => Err(Error::ArgMustNotHaveValue {
-                attr: attr.to_string(),
-                arg: arg.to_string(),
-            }),
+            (ValueReq::Prohibited, v) if v.clone().into().is_some() => {
+                Err(Error::ArgMustNotHaveValue {
+                    attr: attr.to_string(),
+                    arg: arg.to_string(),
+                })
+            }
             (ValueReq::Default(ref val), v) if v.clone().into().is_none() => {
                 *v = val.clone().try_into()?;
                 Ok(())
@@ -1231,8 +1251,18 @@ impl ParametrizedAttr {
     ///    [`AttrReq::args`] with values set to [`ValueOccurrences::Default`]
     ///    are moved into [`ParametrizedAttr::args`] field.
     pub fn check(&mut self, req: AttrReq) -> Result<(), Error> {
-        for name in req.arg_req.keys() {
-            self.args.entry(name.clone()).or_insert(ArgValue::None);
+        for (name, req) in &req.arg_req {
+            if let Some(pos) = self.paths.iter().position(|path| path.is_ident(name)) {
+                self.paths.remove(pos);
+                self.args.entry(name.clone()).or_insert(ArgValue::None);
+            }
+
+            if !self.args.contains_key(name) && req.presence.is_required() {
+                return Err(Error::ArgRequired {
+                    attr: self.name.clone(),
+                    arg: name.clone(),
+                });
+            }
         }
 
         for (name, value) in &mut self.args {

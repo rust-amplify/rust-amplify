@@ -185,8 +185,8 @@ impl Display for Error {
             ),
             Error::ArgMustNotHaveValue { attr, arg } => write!(
                 f,
-                "Attribute `{}` argument `{}` must not have a value",
-                attr, arg
+                "Argument {arg} in `{attr}` attribute must not have a value",
+                attr = attr, arg = arg
             ),
             Error::ArgTypeProhibited { attr, arg: type_name } => write!(
                 f,
@@ -200,34 +200,34 @@ impl Display for Error {
             ),
             Error::ArgNameMustBeUnique { attr, arg } => write!(
                 f,
-                "attribute `{}` argument name must be unique while multiple instances of `{}` were found",
+                "Argument names must be unique, while attribute `{}` contains multiple arguments with name`{}`",
                 attr, arg,
             ),
             Error::ArgNameMustBeIdent => write!(
                 f,
-                "attribute arguments must be identifiers, not paths",
+                "Attribute arguments must be identifiers, not paths",
             ),
             Error::ArgValueRequired { attr, arg } => write!(
                 f,
-                "attribute `{}` requires value for argument `{}`",
+                "Attribute `{}` requires value for argument `{}`",
                 attr, arg
             ),
             Error::ArgValueMustBeLiteral => f.write_str(
-                "attribute value must be a literal (string, int etc)",
+                "Attribute value must be a literal (string, int etc)",
             ),
             Error::ArgValueMustBeType => {
-                f.write_str("attribute value for must be a valid type name")
+                f.write_str("Attribute value for must be a valid type name")
             }
             Error::ParametrizedAttrHasNoValue(name) => {
                 write!(
                     f,
-                    "attribute `{name}` must be in a `#[{name} = ...]` form",
+                    "Attribute `{name}` must be in a `#[{name} = ...]` form",
                     name = name
                 )
             }
             Error::NestedListsNotSupported(name) => write!(
                 f,
-                "attribute `{name}` must be in `{name} = ...` form and a nested list",
+                "Attribute `{name}` must be in `{name} = ...` form and a nested list",
                 name = name,
             ),
             Error::UnsupportedLiteral(attr) => write!(
