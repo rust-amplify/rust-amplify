@@ -58,7 +58,7 @@ pub struct AttrReq {
 impl AttrReq {
     /// Constructor creating [`AttrReq`] accepting only name-value arguments
     /// with the provided parameters
-    pub fn with(args: Vec<(&str, ArgReq)>) -> AttrReq {
+    pub fn with(args: HashMap<&str, ArgReq>) -> AttrReq {
         let args = args
             .into_iter()
             .map(|(name, req)| (name.to_owned(), req))

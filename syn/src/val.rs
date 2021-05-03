@@ -14,7 +14,7 @@
 // If not, see <https://opensource.org/licenses/MIT>.
 
 use std::convert::TryInto;
-use syn::{Type, Lit, LitStr, LitByteStr, LitBool};
+use syn::{Type, Lit, LitStr, LitByteStr, LitBool, LitChar, LitInt, LitFloat};
 use proc_macro2::{TokenStream, Span};
 
 use crate::{Error, ValueClass};
@@ -37,6 +37,51 @@ pub enum ArgValue {
 impl From<&str> for ArgValue {
     fn from(val: &str) -> Self {
         ArgValue::Literal(Lit::Str(LitStr::new(val, Span::call_site())))
+    }
+}
+
+impl From<String> for ArgValue {
+    fn from(val: String) -> Self {
+        ArgValue::Literal(Lit::Str(LitStr::new(&val, Span::call_site())))
+    }
+}
+
+impl From<&[u8]> for ArgValue {
+    fn from(val: &[u8]) -> Self {
+        ArgValue::Literal(Lit::ByteStr(LitByteStr::new(val, Span::call_site())))
+    }
+}
+
+impl From<Vec<u8>> for ArgValue {
+    fn from(val: Vec<u8>) -> Self {
+        ArgValue::Literal(Lit::ByteStr(LitByteStr::new(&val, Span::call_site())))
+    }
+}
+
+impl From<char> for ArgValue {
+    fn from(val: char) -> Self {
+        ArgValue::Literal(Lit::Char(LitChar::new(val, Span::call_site())))
+    }
+}
+
+impl From<usize> for ArgValue {
+    fn from(val: usize) -> Self {
+        ArgValue::Literal(Lit::Int(LitInt::new(&val.to_string(), Span::call_site())))
+    }
+}
+
+impl From<isize> for ArgValue {
+    fn from(val: isize) -> Self {
+        ArgValue::Literal(Lit::Int(LitInt::new(&val.to_string(), Span::call_site())))
+    }
+}
+
+impl From<f64> for ArgValue {
+    fn from(val: f64) -> Self {
+        ArgValue::Literal(Lit::Float(LitFloat::new(
+            &val.to_string(),
+            Span::call_site(),
+        )))
     }
 }
 
@@ -63,6 +108,143 @@ impl From<Option<LitBool>> for ArgValue {
         match val {
             Some(val) => ArgValue::Literal(Lit::Bool(val)),
             None => ArgValue::None,
+        }
+    }
+}
+
+impl From<Option<LitChar>> for ArgValue {
+    fn from(val: Option<LitChar>) -> Self {
+        match val {
+            Some(val) => ArgValue::Literal(Lit::Char(val)),
+            None => ArgValue::None,
+        }
+    }
+}
+
+impl From<Option<LitInt>> for ArgValue {
+    fn from(val: Option<LitInt>) -> Self {
+        match val {
+            Some(val) => ArgValue::Literal(Lit::Int(val)),
+            None => ArgValue::None,
+        }
+    }
+}
+
+impl From<Option<LitFloat>> for ArgValue {
+    fn from(val: Option<LitFloat>) -> Self {
+        match val {
+            Some(val) => ArgValue::Literal(Lit::Float(val)),
+            None => ArgValue::None,
+        }
+    }
+}
+
+impl TryInto<String> for ArgValue {
+    type Error = Error;
+
+    fn try_into(self) -> Result<String, Self::Error> {
+        match self {
+            ArgValue::Literal(Lit::Str(s)) => Ok(s.value()),
+            _ => Err(Error::ArgValueMustBeLiteral),
+        }
+    }
+}
+
+impl TryInto<Vec<u8>> for ArgValue {
+    type Error = Error;
+
+    fn try_into(self) -> Result<Vec<u8>, Self::Error> {
+        match self {
+            ArgValue::Literal(Lit::ByteStr(s)) => Ok(s.value()),
+            _ => Err(Error::ArgValueMustBeLiteral),
+        }
+    }
+}
+
+impl TryInto<bool> for ArgValue {
+    type Error = Error;
+
+    fn try_into(self) -> Result<bool, Self::Error> {
+        match self {
+            ArgValue::Literal(Lit::Bool(b)) => Ok(b.value),
+            _ => Err(Error::ArgValueMustBeLiteral),
+        }
+    }
+}
+
+impl TryInto<char> for ArgValue {
+    type Error = Error;
+
+    fn try_into(self) -> Result<char, Self::Error> {
+        match self {
+            ArgValue::Literal(Lit::Char(c)) => Ok(c.value()),
+            _ => Err(Error::ArgValueMustBeLiteral),
+        }
+    }
+}
+
+impl TryInto<LitStr> for ArgValue {
+    type Error = Error;
+
+    fn try_into(self) -> Result<LitStr, Self::Error> {
+        match self {
+            ArgValue::Literal(Lit::Str(s)) => Ok(s),
+            _ => Err(Error::ArgValueMustBeLiteral),
+        }
+    }
+}
+
+impl TryInto<LitByteStr> for ArgValue {
+    type Error = Error;
+
+    fn try_into(self) -> Result<LitByteStr, Self::Error> {
+        match self {
+            ArgValue::Literal(Lit::ByteStr(s)) => Ok(s),
+            _ => Err(Error::ArgValueMustBeLiteral),
+        }
+    }
+}
+
+impl TryInto<LitBool> for ArgValue {
+    type Error = Error;
+
+    fn try_into(self) -> Result<LitBool, Self::Error> {
+        match self {
+            ArgValue::Literal(Lit::Bool(s)) => Ok(s),
+            _ => Err(Error::ArgValueMustBeLiteral),
+        }
+    }
+}
+
+impl TryInto<LitChar> for ArgValue {
+    type Error = Error;
+
+    fn try_into(self) -> Result<LitChar, Self::Error> {
+        match self {
+            ArgValue::Literal(Lit::Char(c)) => Ok(c),
+            _ => Err(Error::ArgValueMustBeLiteral),
+        }
+    }
+}
+
+impl TryInto<LitInt> for ArgValue {
+    type Error = Error;
+
+    fn try_into(self) -> Result<LitInt, Self::Error> {
+        match self {
+            ArgValue::Literal(Lit::Int(i)) => Ok(i),
+            _ => Err(Error::ArgValueMustBeLiteral),
+        }
+    }
+}
+
+impl TryInto<LitFloat> for ArgValue {
+    type Error = Error;
+
+    fn try_into(self) -> Result<LitFloat, Self::Error> {
+        match self {
+            ArgValue::Literal(Lit::Float(f)) => Ok(f),
+            _ => Err(Error::ArgValueMustBeLiteral),
         }
     }
 }
@@ -97,6 +279,42 @@ impl TryInto<Option<LitBool>> for ArgValue {
     fn try_into(self) -> Result<Option<LitBool>, Self::Error> {
         match self {
             ArgValue::Literal(Lit::Bool(b)) => Ok(Some(b)),
+            ArgValue::None => Ok(None),
+            _ => Err(Error::ArgValueMustBeLiteral),
+        }
+    }
+}
+
+impl TryInto<Option<LitChar>> for ArgValue {
+    type Error = Error;
+
+    fn try_into(self) -> Result<Option<LitChar>, Self::Error> {
+        match self {
+            ArgValue::Literal(Lit::Char(c)) => Ok(Some(c)),
+            ArgValue::None => Ok(None),
+            _ => Err(Error::ArgValueMustBeLiteral),
+        }
+    }
+}
+
+impl TryInto<Option<LitInt>> for ArgValue {
+    type Error = Error;
+
+    fn try_into(self) -> Result<Option<LitInt>, Self::Error> {
+        match self {
+            ArgValue::Literal(Lit::Int(i)) => Ok(Some(i)),
+            ArgValue::None => Ok(None),
+            _ => Err(Error::ArgValueMustBeLiteral),
+        }
+    }
+}
+
+impl TryInto<Option<LitFloat>> for ArgValue {
+    type Error = Error;
+
+    fn try_into(self) -> Result<Option<LitFloat>, Self::Error> {
+        match self {
+            ArgValue::Literal(Lit::Float(f)) => Ok(Some(f)),
             ArgValue::None => Ok(None),
             _ => Err(Error::ArgValueMustBeLiteral),
         }
