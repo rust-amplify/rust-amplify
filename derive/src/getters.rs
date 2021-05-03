@@ -23,7 +23,7 @@ use syn::{
     TypeGenerics, WhereClause, Field,
 };
 
-use amplify_syn::{ParametrizedAttr, AttrReq, ArgReq, ArgValue, ValueClass, LiteralClass};
+use amplify_syn::{ParametrizedAttr, AttrReq, ArgReq, ArgValue, ValueClass};
 
 pub(crate) fn derive(input: DeriveInput) -> Result<TokenStream2> {
     let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
@@ -77,13 +77,12 @@ impl GetterDerive {
 
         if !global {
             map.insert("skip", ArgReq::Prohibited);
-            map.insert(
-                "base_name",
-                ArgReq::required(ValueClass::Literal(LiteralClass::StringLiteral)),
-            );
+            map.insert("base_name", ArgReq::Optional(ValueClass::str()));
         }
 
+        println!("{:#?}", attr);
         attr.check(AttrReq::with(map))?;
+        println!("{:#?}", attr);
 
         if attr.args.contains_key("all") {
             if attr.args.contains_key("as_clone")
@@ -127,13 +126,7 @@ impl GetterDerive {
                 .map(|a| a.clone().try_into())
                 .transpose()?
                 .unwrap_or(LitStr::new("", Span::call_site())),
-            skip: attr
-                .args
-                .get("skip")
-                .cloned()
-                .map(ArgValue::try_into)
-                .transpose()?
-                .unwrap_or_default(),
+            skip: attr.args.get("skip").is_some(),
             copy: attr.args.contains_key("as_copy"),
             base: attr
                 .args
@@ -173,28 +166,35 @@ impl GetterMethod {
             GetterMethod::Main { copy: true } => "returning copy of",
             GetterMethod::Main { copy: false } => "cloning",
             GetterMethod::AsRef => "borrowing",
-            GetterMethod::AsMut => "mutating borrow",
+            GetterMethod::AsMut => "returning mutable borrow of",
+        }
+    }
+
+    fn mut_prefix(&self) -> TokenStream2 {
+        match self {
+            GetterMethod::Main { copy: true } => quote! {},
+            GetterMethod::Main { copy: false } => quote! {},
+            GetterMethod::AsRef => quote! {},
+            GetterMethod::AsMut => quote! { mut },
         }
     }
 
     fn ret_prefix(&self) -> TokenStream2 {
-        let s = match self {
-            GetterMethod::Main { copy: true } => "",
-            GetterMethod::Main { copy: false } => "",
-            GetterMethod::AsRef => "&",
-            GetterMethod::AsMut => "&mut",
-        };
-        quote! { #s }
+        match self {
+            GetterMethod::Main { copy: true } => quote! {},
+            GetterMethod::Main { copy: false } => quote! {},
+            GetterMethod::AsRef => quote! { & },
+            GetterMethod::AsMut => quote! { &mut },
+        }
     }
 
     fn ret_suffix(&self) -> TokenStream2 {
-        let s = match self {
-            GetterMethod::Main { copy: true } => "",
-            GetterMethod::Main { copy: false } => ".clone()",
-            GetterMethod::AsRef => "",
-            GetterMethod::AsMut => "",
-        };
-        quote! { #s }
+        match self {
+            GetterMethod::Main { copy: true } => quote! {},
+            GetterMethod::Main { copy: false } => quote! { .clone() },
+            GetterMethod::AsRef => quote! {},
+            GetterMethod::AsMut => quote! {},
+        }
     }
 }
 
@@ -259,9 +259,15 @@ impl GetterDerive {
                 .unwrap_or_else(|| field_index.to_string())
         );
 
-        quote! {
-            #[doc = #fn_doc]
-            #[doc = #field_doc]
+        if let Some(field_doc) = field_doc {
+            quote! {
+                #[doc = #fn_doc]
+                #field_doc
+            }
+        } else {
+            quote! {
+                #[doc = #fn_doc]
+            }
         }
     }
 }
@@ -330,11 +336,12 @@ fn derive_field_methods(
         let fn_doc = getter.getter_fn_doc(method, struct_name, field_name, index, doc);
         let ret_prefix = method.ret_prefix();
         let ret_suffix = method.ret_suffix();
+        let mut_prefix = method.mut_prefix();
 
         res.push(quote_spanned! { field.span() =>
             #fn_doc
             #[inline]
-            pub fn #fn_name(&self) -> #ret_prefix #ty {
+            pub fn #fn_name(&#mut_prefix self) -> #ret_prefix #ty {
                 #ret_prefix self.#field_name#ret_suffix
             }
         })

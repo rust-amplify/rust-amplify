@@ -484,7 +484,7 @@ pub fn derive_as_any(input: TokenStream) -> TokenStream {
 /// #[derive(Getters, Default)]
 /// #[getter(as_mut, prefix = "get_")]
 /// struct One {
-///     /// Doc comments are assigned to the getter methods
+///     /// Contains byte representation of the data
 ///     #[getter(all, base_name = "bytes")]
 ///     vec: Vec<u8>,
 ///
@@ -495,14 +495,61 @@ pub fn derive_as_any(input: TokenStream) -> TokenStream {
 ///     pub(self) field: u8,
 /// }
 ///
-/// let one = One::default();
+/// let mut one = One::default();
 /// assert_eq!(one.get_bytes_ref(), &Vec::<u8>::default());
 /// *one.get_bytes_mut() = vec![0, 1, 2];
 /// assert_eq!(one.get_bytes(), vec![0, 1, 2]);
 /// assert_eq!(one.get_flag(), bool::default());
 /// assert_eq!(one.get_flag_mut(), &mut bool::default());
-/// assert_eq!(one.b, one.get_b());
+/// let flag = one.get_flag_mut();
+/// *flag = true;
+/// assert_eq!(one.get_flag(), true);
+/// assert_eq!(one.flag, one.get_flag());
 /// // method does not exist: assert_eq!(one.get_field(), u8::default());
+/// ```
+///
+/// this will end up in the following generated code:
+/// ```
+/// # struct One {
+/// #    vec: Vec<u8>,
+/// #    pub flag: bool,
+/// #    pub(self) field: u8,
+/// # }
+///
+/// impl One {
+///     #[doc = "Method cloning [`One::vec`] field.\n"]
+///     #[doc = " Contains byte representation of the data"]
+///     #[inline]
+///     pub fn get_bytes(&self) -> Vec<u8> {
+///         self.vec.clone()
+///     }
+///
+///     #[doc = "Method borrowing [`One::vec`] field.\n"]
+///     #[doc = " Contains byte representation of the data"]
+///     #[inline]
+///     pub fn get_bytes_ref(&self) -> &Vec<u8> {
+///         &self.vec
+///     }
+///
+///     #[doc = "Method returning mutable borrow of [`One::vec`] field.\n"]
+///     #[doc = " Contains byte representation of the data"]
+///     #[inline]
+///     pub fn get_bytes_mut(&mut self) -> &mut Vec<u8> {
+///         &mut self.vec
+///     }
+///
+///     #[doc = "Method returning copy of [`One::flag`] field.\n"]
+///     #[inline]
+///     pub fn get_flag(&self) -> bool {
+///         self.flag
+///     }
+///
+///     #[doc = "Method returning mutable borrow of [`One::flag`] field.\n"]
+///     #[inline]
+///     pub fn get_flag_mut(&mut self) -> &mut bool {
+///         &mut self.flag
+///     }
+/// }
 /// ```
 #[proc_macro_derive(Getters, attributes(getter))]
 pub fn derive_getters(input: TokenStream) -> TokenStream {
