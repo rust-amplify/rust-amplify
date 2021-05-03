@@ -13,9 +13,11 @@
 // along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
+use std::fmt::{Debug, Formatter, self};
 use std::convert::TryInto;
 use syn::{Type, Lit, LitStr, LitByteStr, LitBool, LitChar, LitInt, LitFloat};
 use proc_macro2::{TokenStream, Span};
+use quote::ToTokens;
 
 use crate::{Error, ValueClass};
 
@@ -32,6 +34,16 @@ pub enum ArgValue {
 
     /// No value is given
     None,
+}
+
+impl Debug for ArgValue {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            ArgValue::Literal(lit) => write!(f, "ArgValue::Literal({})", lit.to_token_stream()),
+            ArgValue::Type(ty) => write!(f, "ArgValue::Type({})", ty.to_token_stream()),
+            ArgValue::None => f.write_str("ArgValue::None"),
+        }
+    }
 }
 
 impl From<&str> for ArgValue {

@@ -13,6 +13,7 @@
 // along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
+use std::fmt::{Debug, Formatter, self};
 use std::collections::{HashMap, HashSet};
 use syn::{
     Type, Path, Attribute, Meta, MetaList, MetaNameValue, NestedMeta, Lit, LitInt, LitStr,
@@ -23,7 +24,7 @@ use crate::{Error, ArgValue, ArgReq, AttrReq};
 
 /// Internal structure representation of a proc macro attribute collected
 /// instances having some specific name (accessible via [`Attr::name()`]).
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum Attr {
     /// Attribute of `#[attr]` or `#[attr = value]` form, which, aside from the
     /// case where `value` is a string literal, may have only a single
@@ -52,7 +53,7 @@ pub enum Attr {
 /// corresponding cases of `None`,
 /// `Some(`[`AttrArgValue::Lit`]`(`[`Lit::Str`]`(`[`LitStr`]`)))`, and
 /// `Some(`[`AttrArgValue::Type`]`(`[`Type::Path`]`(`[`Path`]`)))`.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct SingularAttr {
     /// Optional attribute argument path part; for instance in
     /// `#[my(name = value)]` or in `#[name = value]` this is a `name` part
@@ -759,5 +760,176 @@ where
         }
 
         Some(attr.checked(req)).transpose()
+    }
+}
+
+impl Debug for ParametrizedAttr {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        f.write_str("ParametrizedAttr({")?;
+        if f.alternate() {
+            f.write_str("\n\t")?;
+        }
+
+        write!(f, "name: {:?},", self.name)?;
+        if f.alternate() {
+            f.write_str("\n\t")?;
+        }
+
+        f.write_str("args: {")?;
+        if !self.args.is_empty() {
+            if f.alternate() {
+                f.write_str("\n")?;
+            }
+            for (name, val) in &self.args {
+                if f.alternate() {
+                    f.write_str("\t\t")?;
+                }
+                write!(f, "{} => {:?},", name, val)?;
+                if f.alternate() {
+                    f.write_str("\n")?;
+                }
+            }
+            if f.alternate() {
+                f.write_str("\t")?;
+            }
+        }
+        f.write_str("},")?;
+        if f.alternate() {
+            f.write_str("\n\t")?;
+        }
+
+        f.write_str("paths: [")?;
+        if !self.paths.is_empty() {
+            if f.alternate() {
+                f.write_str("\n")?;
+            }
+            for path in &self.paths {
+                if f.alternate() {
+                    f.write_str("\t\t")?;
+                }
+                write!(f, "{},", quote! { #path })?;
+                if f.alternate() {
+                    f.write_str("\n")?;
+                }
+            }
+            if f.alternate() {
+                f.write_str("\t")?;
+            }
+        }
+        f.write_str("],")?;
+        if f.alternate() {
+            f.write_str("\n\t")?;
+        }
+
+        write!(
+            f,
+            "bool: {:?},",
+            self.bool
+                .as_ref()
+                .map(|b| format!("Some({:?})", b.value))
+                .unwrap_or("None".to_owned())
+        )?;
+        if f.alternate() {
+            f.write_str("\n\t")?;
+        }
+
+        write!(
+            f,
+            "string: {:?},",
+            self.string
+                .as_ref()
+                .map(|s| format!("Some({:?})", s.value()))
+                .unwrap_or("None".to_owned())
+        )?;
+        if f.alternate() {
+            f.write_str("\n\t")?;
+        }
+
+        write!(
+            f,
+            "bytes: {:?}",
+            self.bytes
+                .as_ref()
+                .map(|s| format!("Some({:?})", s.value()))
+                .unwrap_or("None".to_owned())
+        )?;
+        if f.alternate() {
+            f.write_str("\n\t")?;
+        }
+
+        f.write_str("chars: [")?;
+        if !self.chars.is_empty() {
+            if f.alternate() {
+                f.write_str("\n")?;
+            }
+            for c in &self.chars {
+                if f.alternate() {
+                    f.write_str("\t\t")?;
+                }
+                write!(f, "{},", quote! { #c })?;
+                if f.alternate() {
+                    f.write_str("\n")?;
+                }
+            }
+            if f.alternate() {
+                f.write_str("\t")?;
+            }
+        }
+        f.write_str("],")?;
+        if f.alternate() {
+            f.write_str("\n\t")?;
+        }
+
+        f.write_str("integers: [")?;
+        if !self.integers.is_empty() {
+            if f.alternate() {
+                f.write_str("\n")?;
+            }
+            for c in &self.integers {
+                if f.alternate() {
+                    f.write_str("\t\t")?;
+                }
+                write!(f, "{},", quote! { #c })?;
+                if f.alternate() {
+                    f.write_str("\n")?;
+                }
+            }
+            if f.alternate() {
+                f.write_str("\t")?;
+            }
+        }
+        f.write_str("],")?;
+        if f.alternate() {
+            f.write_str("\n\t")?;
+        }
+
+        f.write_str("floats: [")?;
+        if !self.floats.is_empty() {
+            if f.alternate() {
+                f.write_str("\n")?;
+            }
+            for c in &self.floats {
+                if f.alternate() {
+                    f.write_str("\t\t")?;
+                }
+                write!(f, "{},", quote! { #c })?;
+                if f.alternate() {
+                    f.write_str("\n")?;
+                }
+            }
+            if f.alternate() {
+                f.write_str("\t")?;
+            }
+        }
+        f.write_str("],")?;
+
+        if f.alternate() {
+            f.write_str("\n")?;
+        }
+        f.write_str("})")?;
+        if f.alternate() {
+            f.write_str("\n")?;
+        }
+        Ok(())
     }
 }
