@@ -413,31 +413,148 @@ pub fn derive_as_any(input: TokenStream) -> TokenStream {
         .into()
 }
 
-/// Creates getter methods matching field names for all fields within a
-/// structure (including public and private fields). Getters return reference
-/// types.
+/// Derives getter methods for structures. The return type and naming of the
+/// methods depends on the provided attribute arguments.
+///
+/// # Attribute `#[getter(...)]`
+///
+/// Macro is provided with `#[getter]` attribute, which may be used on both
+/// type and field level. See following sections describing its arguments
+///
+/// ## Arguments
+///
+/// ### Method derivation arguments
+/// Method derivation arguments define which forms of methods should be derived.
+/// Applicable both at the type level, where it defines a set of derived methods
+/// for all fields (unless they are overrided on the field level) – or on the
+/// field level, where it overrides/replaces the default set of methods with a
+/// new one.
+///
+/// Attribute takes a list of arguments in form of verbatim literals:
+/// - `as_copy`: derives methods returning copy of the field value. Will error
+///   at compile time on types which does not implement `Copy`
+/// - `as_clone`: derives methods returning cloned value; will conflict with
+///   `as_copy`. Errors at compile time on types which does not implement
+///   `Clone`.
+/// - `as_ref`: derives method returning reference. If provided together with
+///   either `as_copy` or `as_clone`, method name returning reference is
+///   suffixed with `_ref`; otherwise the base name is used (see below)
+/// - `as_mut`: derives method returning mutable reference. Method name is
+///   suffixed with `_mut`
+/// - `all`: equivalent to `as_clone, as_ref, as_mut`
+///
+/// **Can be used**: at type and field level
+///
+/// **Defaults to**: `as_ref`
+///
+/// ### `#[getter(skip)]`
+/// Skips derivation of a all gettter methods for this field
+///
+/// ### `#[getter(prefix = "...")]`
+/// Defines prefix added to all derived getter method names.
+///
+/// **Defaults to**: none (no prefix added)
+///
+/// **Can be used**: at type level
+///
+/// ### `#[getter(base_name = "...")]`
+/// Defines base name for the getter method. Base name is prefixed with prefix
+/// from a type-level getter `prefix` attribute (if the one is specified) and
+/// suffix, which is method-specific (see `methods` argument description above).
+///
+/// **Defaults to**: field name
+///
+/// **Can be used**: at field level
+///
+/// # Errors
+///
+/// Enums and units are not supported; attempt to derive `Getters` on them will
+/// result in a compile-time error.
+///
+/// Deriving getters on unit structs and structs with unnamed fields (tupe
+/// structs) is not supported (since it's meaningless), and results in a error.
+///
+/// Additionally to these two cases, macro errors on argument inconsistencies,
+/// as described in the argument-specifc sections.
 ///
 /// # Example
 ///
 /// ```
 /// # #[macro_use] extern crate amplify_derive;
 /// #[derive(Getters, Default)]
+/// #[getter(as_mut, prefix = "get_")]
 /// struct One {
-///     /// Doc comments are assigned to the getter methods
-///     a: Vec<u8>,
-///     pub b: bool,
-///     pub(self) c: u8,
+///     /// Contains byte representation of the data
+///     #[getter(all, base_name = "bytes")]
+///     vec: Vec<u8>,
+///
+///     #[getter(as_copy)]
+///     pub flag: bool,
+///
+///     #[getter(skip)]
+///     pub(self) field: u8,
 /// }
 ///
-/// let one = One::default();
-/// assert_eq!(one.a(), &Vec::<u8>::default());
-/// assert_eq!(one.b(), &bool::default());
-/// assert_eq!(one.c(), &u8::default());
+/// let mut one = One::default();
+/// assert_eq!(one.get_bytes_ref(), &Vec::<u8>::default());
+/// *one.get_bytes_mut() = vec![0, 1, 2];
+/// assert_eq!(one.get_bytes(), vec![0, 1, 2]);
+/// assert_eq!(one.get_flag(), bool::default());
+/// assert_eq!(one.get_flag_mut(), &mut bool::default());
+/// let flag = one.get_flag_mut();
+/// *flag = true;
+/// assert_eq!(one.get_flag(), true);
+/// assert_eq!(one.flag, one.get_flag());
+/// // method does not exist: assert_eq!(one.get_field(), u8::default());
 /// ```
-#[proc_macro_derive(Getters)]
+///
+/// this will end up in the following generated code:
+/// ```
+/// # struct One {
+/// #    vec: Vec<u8>,
+/// #    pub flag: bool,
+/// #    pub(self) field: u8,
+/// # }
+///
+/// impl One {
+///     #[doc = "Method cloning [`One::vec`] field.\n"]
+///     #[doc = " Contains byte representation of the data"]
+///     #[inline]
+///     pub fn get_bytes(&self) -> Vec<u8> {
+///         self.vec.clone()
+///     }
+///
+///     #[doc = "Method borrowing [`One::vec`] field.\n"]
+///     #[doc = " Contains byte representation of the data"]
+///     #[inline]
+///     pub fn get_bytes_ref(&self) -> &Vec<u8> {
+///         &self.vec
+///     }
+///
+///     #[doc = "Method returning mutable borrow of [`One::vec`] field.\n"]
+///     #[doc = " Contains byte representation of the data"]
+///     #[inline]
+///     pub fn get_bytes_mut(&mut self) -> &mut Vec<u8> {
+///         &mut self.vec
+///     }
+///
+///     #[doc = "Method returning copy of [`One::flag`] field.\n"]
+///     #[inline]
+///     pub fn get_flag(&self) -> bool {
+///         self.flag
+///     }
+///
+///     #[doc = "Method returning mutable borrow of [`One::flag`] field.\n"]
+///     #[inline]
+///     pub fn get_flag_mut(&mut self) -> &mut bool {
+///         &mut self.flag
+///     }
+/// }
+/// ```
+#[proc_macro_derive(Getters, attributes(getter))]
 pub fn derive_getters(input: TokenStream) -> TokenStream {
     let derive_input = parse_macro_input!(input as DeriveInput);
-    getters::inner(derive_input)
+    getters::derive(derive_input)
         .unwrap_or_else(|e| e.to_compile_error())
         .into()
 }

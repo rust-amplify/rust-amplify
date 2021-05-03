@@ -81,7 +81,7 @@ Minimum supported rust compiler version (MSRV): 1.41.1
    You can also mix in this mode with other fors of display tags on a
    specific options; in this case doc comments are ignored
 
-# Example
+### Example
 
 Advanced use with enums:
 ```rust
@@ -136,7 +136,7 @@ Implements [`From`] trait for the whole entity and/or its separate fields.
 Works well with `#[derive(Error)]` and, in many cases may require
 [`Default`] implementation (for details, pls see Examples below)
 
-# Examples
+### Examples
 
 ```rust
 #[derive(From, Default)]

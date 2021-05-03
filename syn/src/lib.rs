@@ -21,24 +21,30 @@
 //! `#[name]` - single form
 //! `#[name = "literal"]` - optional single value
 //! `#[name = TypeName]` - path value
-//! `#[name("literal", TypeName)]` - list of arguments
+//! `#[name("literal", TypeName, arg = value)]` - list of arguments
 
-#![recursion_limit = "256"]
 #![deny(
     non_upper_case_globals,
     non_camel_case_types,
     non_snake_case,
     unused_mut,
     unused_imports,
-    // missing_docs,
+    missing_docs,
     dead_code,
     warnings
 )]
 
+#[macro_use]
+extern crate quote;
+
 mod attr;
+mod cls;
 mod error;
+mod req;
+mod val;
+
 pub use error::Error;
-pub use attr::{
-    Attr, ArgValue, SingularAttr, ParametrizedAttr, ExtractAttr, AttrReq, ListOccurrences,
-    LiteralConstraints, ValueReq, TypeConstraints, ValueConstraints, ValueOccurrences,
-};
+pub use attr::{Attr, SingularAttr, ParametrizedAttr, ExtractAttr};
+pub use cls::{LiteralClass, ValueClass, TypeClass};
+pub use req::{ValueReq, ListReq, AttrReq, ArgReq};
+pub use val::ArgValue;
