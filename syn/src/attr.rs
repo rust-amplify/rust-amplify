@@ -16,11 +16,15 @@
 use std::hash::Hash;
 use std::fmt::{Debug};
 use std::collections::{HashMap, HashSet};
-use syn::{Type, Path, Attribute, Meta, MetaList, MetaNameValue, NestedMeta, Lit, LitInt, LitStr};
-use syn::spanned::Spanned;
+use std::convert::TryInto;
+use syn::{
+    Type, Path, Attribute, Meta, MetaList, MetaNameValue, NestedMeta, Lit, LitInt, LitStr,
+    LitByteStr, LitFloat, LitChar, LitBool,
+};
 use proc_macro2::TokenStream;
 
 use crate::Error;
+use quote::ToTokens;
 
 /// Internal structure representation of a proc macro attribute collected
 /// instances having some specific name (accessible via [`Attr::name()`]).
@@ -59,9 +63,9 @@ pub struct SingularAttr {
     /// `#[my(name = value)]` or in `#[name = value]` this is a `name` part
     pub name: String,
 
-    /// Optional attribute argument value part; for instance in
-    /// `#[name = value]` this is a `value` part
-    pub value: Option<ArgValue>,
+    /// Attribute argument value part; for instance in `#[name = value]` this is
+    /// the `value` part
+    pub value: ArgValue,
 }
 
 /// Representation for all allowed forms of `#[attr(...)]` attribute.
@@ -78,25 +82,47 @@ pub struct ParametrizedAttr {
     pub name: String,
 
     /// All attribute arguments that have form of `#[attr(ident = "literal")]`
-    /// or `#[attr(ident = TypeName)]` mapped to their name identifiers
+    /// or `#[attr(ident = TypeName)]` mapped to their name identifiers.
     pub args: HashMap<String, ArgValue>,
 
     /// All attribute arguments that are paths or identifiers without any
     /// specific value, like `#[attr(std::io::Error, crate, super::SomeType)]`.
     ///
     /// NB: All named arguments without the value assigned are getting into this
-    /// field as well, even if they do not represent any known rust path or type
-    /// name, like `#[attr(some_id, other)]`
+    /// field by default, even if they do not represent any known rust path or
+    /// type name, like `#[attr(some_id, other)]`. However, with
+    /// [`ParametrizedAttr::check`] and [`ParametrizedAttr::checked`] those
+    /// values matching ones specified in [`AttrReq::args`] with values set to
+    /// [`ValueOccurrences::Default`] are moved into [`ParametrizedAttr::args`].
     pub paths: Vec<Path>,
+
+    /// Unnamed string literal found within attribute arguments.
+    ///
+    /// If multiple string literals are present they are concatenated into a
+    /// single value, like it is done by the rust compiler for
+    /// `#[doc = "..."]` attributes
+    pub string: Option<LitStr>,
+
+    /// Unnamed byte string literal found within attribute arguments.
+    ///
+    /// If multiple byte string literals are present they are concatenated into
+    /// a single value, like it is done by the rust compiler for
+    /// `#[doc = "..."]` attributes
+    pub bytes: Option<LitByteStr>,
+
+    /// Unnamed char literals found within attribute arguments
+    pub chars: Vec<LitChar>,
 
     /// Unnamed integer literals found within attribute arguments
     pub integers: Vec<LitInt>,
 
-    /// Unnamed literal value found in the list of attribute arguments.
-    /// If multiple literals are found they must be a string literals and
-    /// are concatenated into a single value, like it is done by the rust
-    /// compiler for `#[doc = "..."]` attributes
-    pub literal: Option<Lit>,
+    /// Unnamed float literals found within attribute arguments
+    pub floats: Vec<LitFloat>,
+
+    /// Unnamed bool literal found within attribute arguments.
+    ///
+    /// If multiple bool literals are present this will generate an error.
+    pub bool: Option<LitBool>,
 }
 
 /// Value for attribute or attribute argument, i.e. for `#[attr = value]` and
@@ -109,6 +135,72 @@ pub enum ArgValue {
 
     /// Attribute value represented by a type name
     Type(Type),
+
+    /// No value is given
+    None,
+}
+
+impl From<Option<LitStr>> for ArgValue {
+    fn from(val: Option<LitStr>) -> Self {
+        match val {
+            Some(val) => ArgValue::Literal(Lit::Str(val)),
+            None => ArgValue::None,
+        }
+    }
+}
+
+impl From<Option<LitByteStr>> for ArgValue {
+    fn from(val: Option<LitByteStr>) -> Self {
+        match val {
+            Some(val) => ArgValue::Literal(Lit::ByteStr(val)),
+            None => ArgValue::None,
+        }
+    }
+}
+
+impl From<Option<LitBool>> for ArgValue {
+    fn from(val: Option<LitBool>) -> Self {
+        match val {
+            Some(val) => ArgValue::Literal(Lit::Bool(val)),
+            None => ArgValue::None,
+        }
+    }
+}
+
+impl TryInto<Option<LitStr>> for ArgValue {
+    type Error = Error;
+
+    fn try_into(self) -> Result<Option<LitStr>, Self::Error> {
+        match self {
+            ArgValue::Literal(Lit::Str(s)) => Ok(Some(s)),
+            ArgValue::None => Ok(None),
+            _ => Err(Error::ArgValueMustBeLiteral),
+        }
+    }
+}
+
+impl TryInto<Option<LitByteStr>> for ArgValue {
+    type Error = Error;
+
+    fn try_into(self) -> Result<Option<LitByteStr>, Self::Error> {
+        match self {
+            ArgValue::Literal(Lit::ByteStr(s)) => Ok(Some(s)),
+            ArgValue::None => Ok(None),
+            _ => Err(Error::ArgValueMustBeLiteral),
+        }
+    }
+}
+
+impl TryInto<Option<LitBool>> for ArgValue {
+    type Error = Error;
+
+    fn try_into(self) -> Result<Option<LitBool>, Self::Error> {
+        match self {
+            ArgValue::Literal(Lit::Bool(b)) => Ok(Some(b)),
+            ArgValue::None => Ok(None),
+            _ => Err(Error::ArgValueMustBeLiteral),
+        }
+    }
 }
 
 impl ArgValue {
@@ -123,6 +215,7 @@ impl ArgValue {
         match self {
             ArgValue::Literal(lit) => quote! { #lit },
             ArgValue::Type(ty) => quote! { #ty },
+            ArgValue::None => quote! {},
         }
     }
 
@@ -132,7 +225,7 @@ impl ArgValue {
     pub fn literal_value(&self) -> Result<Lit, Error> {
         match self {
             ArgValue::Literal(lit) => Ok(lit.clone()),
-            ArgValue::Type(_) => Err(Error::ArgValueMustBeLiteral),
+            ArgValue::Type(_) | ArgValue::None => Err(Error::ArgValueMustBeLiteral),
         }
     }
 
@@ -141,8 +234,17 @@ impl ArgValue {
     #[inline]
     pub fn type_value(&self) -> Result<Type, Error> {
         match self {
-            ArgValue::Literal(_) => Err(Error::ArgValueMustBeType),
+            ArgValue::Literal(_) | ArgValue::None => Err(Error::ArgValueMustBeType),
             ArgValue::Type(ty) => Ok(ty.clone()),
+        }
+    }
+
+    /// Tests whether the self is set to [`ArgValue::None`]
+    #[inline]
+    pub fn is_none(&self) -> bool {
+        match self {
+            ArgValue::None => true,
+            _ => false,
         }
     }
 }
@@ -151,55 +253,108 @@ impl ArgValue {
 #[derive(Clone)]
 pub struct AttrReq {
     /// Specifies all named arguments and which requirements they must meet
-    pub args: HashMap<String, ValueReq>,
+    pub arg_req: HashMap<String, ArgReq>,
 
     /// Specifies whether path arguments are allowed and with which
     /// requirements.
-    pub paths: ListOccurrences<Path>,
+    pub path_req: ListReq<Path>,
 
     /// Whether integer literals are allowed as an attribute argument and, if
     /// yes, with which requirements
-    pub integers: ListOccurrences<LitInt>,
+    pub char_req: ListReq<LitChar>,
 
-    /// Which other literals are allowed and which requirements should apply.
-    ///
-    /// NB: Non-string and non-integer literals may be always present only once.
-    pub literal: (LiteralConstraints, ValueOccurrences),
+    /// Whether integer literals are allowed as an attribute argument and, if
+    /// yes, with which requirements
+    pub integer_req: ListReq<LitInt>,
+
+    /// Whether integer literals are allowed as an attribute argument and, if
+    /// yes, with which requirements
+    pub float_req: ListReq<LitFloat>,
+
+    /// Whether string literal is allowed as an attribute argument and, if
+    /// yes, with which requirements
+    pub string_req: ValueReq,
+
+    /// Whether byte string literal is allowed as an attribute argument and, if
+    /// yes, with which requirements
+    pub bytes_req: ValueReq,
+
+    /// Whether boolean literal is allowed as an attribute argument and, if
+    /// yes, with which requirements
+    pub bool_req: ValueReq,
 }
 
-/*
 impl AttrReq {
-    pub fn with(args: Vec<(String, ValueOccurrences, ValueConstraints)>, paths: Vec<>)
-}
- */
+    /// Constructor creating [`AttrReq`] accepting only name-value arguments
+    /// with the provided parameters
+    pub fn with(args: Vec<(&str, ValueReq, ValueClass)>) -> AttrReq {
+        let args = args
+            .into_iter()
+            .map(|(name, occurrences, constraints)| {
+                (
+                    name.to_owned(),
+                    ArgReq {
+                        constraints,
+                        presence: occurrences,
+                    },
+                )
+            })
+            .collect();
 
-/// Requirements for path & identifiers without values inside attribute
-/// arguments for [`AttrReq`]
-#[derive(Clone)]
-pub struct PathReq {
-    /// List of allowed paths. If it is set to `None`, than any path is allowed
-    pub white_list: Option<Vec<Path>>,
-
-    /// Requirements to the number of occurrences of path arguments within the
-    /// attribute
-    pub occurrences: ListOccurrences<Path>,
+        AttrReq {
+            arg_req: args,
+            path_req: ListReq::Deny,
+            char_req: ListReq::Deny,
+            integer_req: ListReq::Deny,
+            float_req: ListReq::Deny,
+            string_req: ValueReq::Prohibited,
+            bytes_req: ValueReq::Prohibited,
+            bool_req: ValueReq::Prohibited,
+        }
+    }
 }
 
 /// Requirements for attribute or named argument value presence
 #[derive(Clone)]
-pub struct ValueReq {
+pub struct ArgReq {
     /// Constraints to the value of the argument inside the attribute
-    pub constraints: ValueConstraints,
+    pub constraints: ValueClass,
 
     /// Requirements to the number of occurrences of the specific argument
     /// within the attribute
-    pub occurrences: ValueOccurrences,
+    pub presence: ValueReq,
+}
+
+impl ArgReq {
+    /// Checks the argument against current requirements, generating [`Error`]
+    /// if the requirements are not met.
+    pub fn check(
+        &self,
+        value: &mut ArgValue,
+        attr: impl ToString,
+        arg: impl ToString,
+    ) -> Result<(), Error> {
+        match (value, &self.presence) {
+            (val, ValueReq::Default(default)) if val.is_none() => {
+                *val = default.clone();
+            }
+            (val, occ) if val.is_none() => {
+                occ.check(val, attr, arg)?;
+            }
+            (val, occ) => {
+                occ.check(val, attr.to_string(), arg.to_string())?;
+                self.constraints.check(val, attr, arg)?;
+            }
+        }
+
+        Ok(())
+    }
 }
 
 /// Requirements for attribute or named argument value presence
 #[derive(Clone)]
-pub enum ValueOccurrences {
-    /// Argument or an attribute must explicitly hold a value
+pub enum ValueReq {
+    /// Argument or an attribute must hold a value
     Required,
 
     /// Argument or an attribute must hold a value; if the value is not present
@@ -213,16 +368,32 @@ pub enum ValueOccurrences {
     Prohibited,
 }
 
-impl ValueOccurrences {
+impl ValueReq {
     /// Checks the value against current requirements, generating [`Error`] if
     /// the requirements are not met.
-    pub fn check(self, value: &mut Option<ArgValue>, attr: String) -> Result<(), Error> {
+    pub fn check<T>(
+        &self,
+        value: &mut T,
+        attr: impl ToString,
+        arg: impl ToString,
+    ) -> Result<(), Error>
+    where
+        T: Clone + Into<ArgValue>,
+        ArgValue: TryInto<T>,
+        Error: From<<ArgValue as TryInto<T>>::Error>,
+    {
         let attr = attr.to_string();
         match (self, value) {
-            (ValueOccurrences::Required, None) => Err(Error::SingularAttrRequired(attr)),
-            (ValueOccurrences::Prohibited, Some(_)) => Err(Error::AttrMustNotHaveValue(attr)),
-            (ValueOccurrences::Default(ref val), v) if v.is_none() => {
-                *v = Some(val.clone());
+            (ValueReq::Required, v) if v.clone().into().is_none() => Err(Error::ArgValueRequired {
+                attr: attr.to_string(),
+                arg: arg.to_string(),
+            }),
+            (ValueReq::Prohibited, _) => Err(Error::ArgMustNotHaveValue {
+                attr: attr.to_string(),
+                arg: arg.to_string(),
+            }),
+            (ValueReq::Default(ref val), v) if v.clone().into().is_none() => {
+                *v = val.clone().try_into()?;
                 Ok(())
             }
             _ => Ok(()),
@@ -230,54 +401,196 @@ impl ValueOccurrences {
     }
 }
 
-/// Requirements for a [`ParametrizedAttr`] elements
+/// Requirements for list elements. For instance, used in [`AttrReq`] for
+/// providing [`ParametrizedAttr`] fields requirements.
 #[derive(Clone)]
-pub enum ListOccurrences<T>
+pub enum ListReq<T>
 where
     T: Clone,
 {
-    /// Element may not be present or may be present multiple times
-    NoneOrMore,
+    /// Only a single value allowed and it must be present
+    Single {
+        /// Restricts set of possible values to the given whitelist
+        ///
+        /// NB: If whitelist does not contain values from the `default` field,
+        /// they are still accepted as valid, i.e. "automatically whitelisted"
+        whitelist: Option<Vec<T>>,
 
-    /// Element must be present at least once, or may have multiple occurrences
-    OneOrMore,
+        /// Default value assigned as a signe list item if no values are
+        /// provided
+        ///
+        /// NB: If whitelist does not contain values from the `default` field,
+        /// they are still accepted as valid, i.e. "automatically whitelisted"
+        default: Option<T>,
+    },
 
-    /// Element must be present exact amount of times
-    Default(T),
+    /// Any number of any elements may be present
+    Many {
+        /// Restricts set of possible values to the given whitelist
+        whitelist: Option<Vec<T>>,
+
+        /// Require that at least one value is present
+        required: bool,
+
+        /// Restricts the maximum number of items
+        max_no: Option<u8>,
+    },
+
+    /// Any number of any elements may not be present; if none of the elements
+    /// is present the list will use default vec of the values
+    Predefined {
+        /// Restricts set of possible values to the given whitelist.
+        ///
+        /// NB: If whitelist does not contain values from the `default` field,
+        /// they are still accepted as valid, i.e. "automatically whitelisted"
+        whitelist: Option<Vec<T>>,
+
+        /// Default set of values for the list used if no values are provided
+        ///
+        /// NB: If whitelist does not contain values from the `default` field,
+        /// they are still accepted as valid, i.e. "automatically whitelisted"
+        default: Vec<T>,
+    },
 
     /// Element must not be present
     Deny,
 }
 
+impl<T> ListReq<T>
+where
+    T: Clone + ToTokens,
+{
+    /// Checks the value against the list requirements, generating [`Error`] if
+    /// the requirements are not met.
+    pub fn check(
+        &self,
+        value: &mut Vec<T>,
+        attr: impl ToString,
+        arg: impl ToString,
+    ) -> Result<(), Error> {
+        match (self, value.len()) {
+            // Checking are we allowed to have a value
+            (ListReq::Deny, x) if x > 0 => {
+                return Err(Error::ArgTypeProhibited {
+                    attr: attr.to_string(),
+                    arg: arg.to_string(),
+                })
+            }
+
+            // Checking are we required to have a value while no value is available
+            (ListReq::Many { required: true, .. }, 0)
+            | (ListReq::Single { default: None, .. }, 0) => {
+                return Err(Error::ArgRequired {
+                    attr: attr.to_string(),
+                    arg: arg.to_string(),
+                })
+            }
+
+            // Checking not to the exceed maximally allowed number of values
+            (
+                ListReq::Many {
+                    max_no: Some(max_no),
+                    ..
+                },
+                no,
+            ) if no > *max_no as usize => {
+                return Err(Error::ArgNumberExceedsMax {
+                    attr: attr.to_string(),
+                    type_name: arg.to_string(),
+                    no,
+                    max_no: *max_no,
+                })
+            }
+
+            // Checking that arguments are matching whitelist
+            (
+                ListReq::Many {
+                    whitelist: Some(whitelist),
+                    ..
+                },
+                len,
+            )
+            | (
+                ListReq::Predefined {
+                    whitelist: Some(whitelist),
+                    ..
+                },
+                len,
+            )
+            | (
+                ListReq::Single {
+                    whitelist: Some(whitelist),
+                    ..
+                },
+                len,
+            ) if len > 0 => {
+                for item in value {
+                    if whitelist
+                        .iter()
+                        .find(|i| {
+                            i.to_token_stream().to_string() == item.to_token_stream().to_string()
+                        })
+                        .is_none()
+                    {
+                        return Err(Error::AttributeUnknownArgument {
+                            attr: attr.to_string(),
+                            arg: arg.to_string(),
+                        });
+                    }
+                }
+            }
+
+            // Defaulting if no value is provided
+            (
+                ListReq::Single {
+                    default: Some(d), ..
+                },
+                0,
+            ) => value.push(d.clone()),
+            (ListReq::Predefined { default, .. }, 0) => *value = default.clone(),
+
+            // Otherwise we are good
+            _ => {}
+        }
+        Ok(())
+    }
+}
+
 /// Constrains for attribute value type
 #[derive(Clone, Copy, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
-pub enum ValueConstraints {
+pub enum ValueClass {
     /// The value must be a literal matching given literal constraints (see
     /// [`ConstrainedLit`])
-    Literal(LiteralConstraints),
+    Literal(LiteralClass),
 
     /// The value must be of a native rust type matching given type constraints
     /// (see [`ConstrainedType`])
-    Type(TypeConstraints),
+    Type(TypeClass),
 }
 
-impl ValueConstraints {
-    /// Checks the value against current requirements, generating [`Error`] if
-    /// the requirements are not met.
-    pub fn check(self, value: &ArgValue, attr: String) -> Result<(), Error> {
+impl ValueClass {
+    /// Checks the value against value class requirements, generating [`Error`]
+    /// if the requirements are not met.
+    pub fn check(
+        self,
+        value: &ArgValue,
+        attr: impl ToString,
+        arg: impl ToString,
+    ) -> Result<(), Error> {
         match (self, value) {
-            (ValueConstraints::Literal(lit), ArgValue::Literal(ref value)) => {
-                lit.check(value, attr)
-            }
-            (ValueConstraints::Type(ty), ArgValue::Type(ref value)) => ty.check(value, attr),
-            _ => Err(Error::AttrValueTypeMimatch(attr)),
+            (ValueClass::Literal(lit), ArgValue::Literal(ref value)) => lit.check(value, attr, arg),
+            (ValueClass::Type(ty), ArgValue::Type(ref value)) => ty.check(value, attr, arg),
+            _ => Err(Error::ArgValueTypeMismatch {
+                attr: attr.to_string(),
+                arg: arg.to_string(),
+            }),
         }
     }
 }
 
 /// Constrains for literal value type
 #[derive(Clone, Copy, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
-pub enum LiteralConstraints {
+pub enum LiteralClass {
     /// Literal must be a string
     StringLiteral,
 
@@ -303,27 +616,30 @@ pub enum LiteralConstraints {
     Verbatim,
 }
 
-impl LiteralConstraints {
+impl LiteralClass {
     /// Checks the literal against current requirements, generating [`Error`] if
     /// the requirements are not met.
-    pub fn check(self, lit: &Lit, attr: String) -> Result<(), Error> {
+    pub fn check(self, lit: &Lit, attr: impl ToString, arg: impl ToString) -> Result<(), Error> {
         match (self, lit) {
-            (LiteralConstraints::BoolLiteral, Lit::Bool(_))
-            | (LiteralConstraints::ByteLiteral, Lit::Byte(_))
-            | (LiteralConstraints::ByteStrLiteral, Lit::ByteStr(_))
-            | (LiteralConstraints::CharLiteral, Lit::Char(_))
-            | (LiteralConstraints::FloatLiteral, Lit::Float(_))
-            | (LiteralConstraints::IntLiteral, Lit::Int(_))
-            | (LiteralConstraints::StringLiteral, Lit::Str(_))
-            | (LiteralConstraints::Verbatim, Lit::Verbatim(_)) => Ok(()),
-            _ => Err(Error::AttrValueTypeMimatch(attr)),
+            (LiteralClass::BoolLiteral, Lit::Bool(_))
+            | (LiteralClass::ByteLiteral, Lit::Byte(_))
+            | (LiteralClass::ByteStrLiteral, Lit::ByteStr(_))
+            | (LiteralClass::CharLiteral, Lit::Char(_))
+            | (LiteralClass::FloatLiteral, Lit::Float(_))
+            | (LiteralClass::IntLiteral, Lit::Int(_))
+            | (LiteralClass::StringLiteral, Lit::Str(_))
+            | (LiteralClass::Verbatim, Lit::Verbatim(_)) => Ok(()),
+            _ => Err(Error::ArgValueTypeMismatch {
+                attr: attr.to_string(),
+                arg: arg.to_string(),
+            }),
         }
     }
 }
 
 /// Constrains for the possible types that a Rust value could have.
 #[derive(Clone, Copy, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
-pub enum TypeConstraints {
+pub enum TypeClass {
     /// A fixed size array type: `[T; n]`.
     Array,
 
@@ -373,27 +689,30 @@ pub enum TypeConstraints {
     Verbatim,
 }
 
-impl TypeConstraints {
+impl TypeClass {
     /// Checks the [`Type`] against current requirements, generating [`Error`]
     /// if the requirements are not met.
-    pub fn check(self, ty: &Type, attr: String) -> Result<(), Error> {
+    pub fn check(self, ty: &Type, attr: impl ToString, arg: impl ToString) -> Result<(), Error> {
         match (self, ty) {
-            (TypeConstraints::Verbatim, Type::Verbatim(_))
-            | (TypeConstraints::Array, Type::Array(_))
-            | (TypeConstraints::BareFn, Type::BareFn(_))
-            | (TypeConstraints::Group, Type::Group(_))
-            | (TypeConstraints::ImplTrait, Type::ImplTrait(_))
-            | (TypeConstraints::Infer, Type::Infer(_))
-            | (TypeConstraints::Macro, Type::Macro(_))
-            | (TypeConstraints::Never, Type::Never(_))
-            | (TypeConstraints::Paren, Type::Paren(_))
-            | (TypeConstraints::Path, Type::Path(_))
-            | (TypeConstraints::Ptr, Type::Ptr(_))
-            | (TypeConstraints::Reference, Type::Reference(_))
-            | (TypeConstraints::Slice, Type::Slice(_))
-            | (TypeConstraints::TraitObject, Type::TraitObject(_))
-            | (TypeConstraints::Tuple, Type::Tuple(_)) => Ok(()),
-            _ => Err(Error::AttrValueTypeMimatch(attr)),
+            (TypeClass::Verbatim, Type::Verbatim(_))
+            | (TypeClass::Array, Type::Array(_))
+            | (TypeClass::BareFn, Type::BareFn(_))
+            | (TypeClass::Group, Type::Group(_))
+            | (TypeClass::ImplTrait, Type::ImplTrait(_))
+            | (TypeClass::Infer, Type::Infer(_))
+            | (TypeClass::Macro, Type::Macro(_))
+            | (TypeClass::Never, Type::Never(_))
+            | (TypeClass::Paren, Type::Paren(_))
+            | (TypeClass::Path, Type::Path(_))
+            | (TypeClass::Ptr, Type::Ptr(_))
+            | (TypeClass::Reference, Type::Reference(_))
+            | (TypeClass::Slice, Type::Slice(_))
+            | (TypeClass::TraitObject, Type::TraitObject(_))
+            | (TypeClass::Tuple, Type::Tuple(_)) => Ok(()),
+            _ => Err(Error::ArgValueTypeMismatch {
+                attr: attr.to_string(),
+                arg: arg.to_string(),
+            }),
         }
     }
 }
@@ -458,7 +777,7 @@ impl Attr {
     #[inline]
     pub fn arg_value(&self) -> Result<ArgValue, Error> {
         match self {
-            Attr::Singular(attr) => attr.arg_value(),
+            Attr::Singular(attr) => Ok(attr.value.clone()),
             Attr::Parametrized(attr) => Err(Error::ParametrizedAttrHasNoValue(attr.name.clone())),
         }
     }
@@ -486,7 +805,7 @@ impl SingularAttr {
     pub fn new(name: impl ToString) -> Self {
         Self {
             name: name.to_string(),
-            value: None,
+            value: ArgValue::None,
         }
     }
 
@@ -514,7 +833,7 @@ impl SingularAttr {
     pub fn with_literal(name: impl ToString, lit: Lit) -> Self {
         Self {
             name: name.to_string(),
-            value: Some(ArgValue::Literal(lit)),
+            value: ArgValue::Literal(lit),
         }
     }
 
@@ -524,7 +843,7 @@ impl SingularAttr {
     pub fn with_type(name: impl ToString, ty: Type) -> Self {
         Self {
             name: name.to_string(),
-            value: Some(ArgValue::Type(ty)),
+            value: ArgValue::Type(ty),
         }
     }
 
@@ -550,28 +869,19 @@ impl SingularAttr {
         }
     }
 
-    /// Returns [`ArgValue`], if any, or fails with [`Error::ArgValueRequired`]
-    #[inline]
-    pub fn arg_value(&self) -> Result<ArgValue, Error> {
-        self.value
-            .as_ref()
-            .cloned()
-            .ok_or(Error::ArgValueRequired(self.name.clone()))
-    }
-
     /// Returns literal value, if any, or fails with
     /// [`Error::ArgValueRequired`]. See [`ArgValue::literal_value`] for the
     /// details.
     #[inline]
     pub fn literal_value(&self) -> Result<Lit, Error> {
-        self.arg_value()?.literal_value()
+        self.value.literal_value()
     }
 
     /// Returns type value, if any, or fails with [`Error::ArgValueRequired`].
     /// See [`ArgValue::literal_value`] for the details.
     #[inline]
     pub fn type_value(&self) -> Result<Type, Error> {
-        self.arg_value()?.type_value()
+        self.value.type_value()
     }
 
     /// Merges data from the `other` into the self.
@@ -587,9 +897,9 @@ impl SingularAttr {
             return Err(Error::NamesDontMatch(self.name.clone(), other.name.clone()));
         }
         match (&self.value, &other.value) {
-            (_, None) => {}
-            (None, Some(_)) => self.value = other.value,
-            (Some(_), Some(_)) => return Err(Error::MultipleSingularValues(self.name.clone())),
+            (_, ArgValue::None) => {}
+            (ArgValue::None, _) => self.value = other.value,
+            (_, _) => return Err(Error::MultipleSingularValues(self.name.clone())),
         }
         Ok(())
     }
@@ -629,11 +939,11 @@ impl SingularAttr {
 
     /// Checks that the structure meets provided value requirements (see
     /// [`ValueReq`]), generating [`Error`] if the requirements are not met.
-    pub fn check(&mut self, req: ValueReq) -> Result<(), Error> {
-        req.occurrences.check(&mut self.value, self.name.clone())?;
-        if let Some(ref value) = self.value {
-            req.constraints.check(value, self.name.clone())?;
-        }
+    pub fn check(&mut self, req: ArgReq) -> Result<(), Error> {
+        req.presence
+            .check(&mut self.value, &self.name, &self.name)?;
+        req.constraints
+            .check(&mut self.value, &self.name, &self.name)?;
         Ok(())
     }
 
@@ -641,7 +951,7 @@ impl SingularAttr {
     /// self and returns a itself in case of the successful operation.
     /// Useful in operation chains.
     #[inline]
-    pub fn checked(mut self, req: ValueReq) -> Result<Self, Error> {
+    pub fn checked(mut self, req: ArgReq) -> Result<Self, Error> {
         self.check(req)?;
         Ok(self)
     }
@@ -654,9 +964,13 @@ impl ParametrizedAttr {
         Self {
             name: name.to_string(),
             args: Default::default(),
-            paths: Default::default(),
-            integers: Default::default(),
-            literal: None,
+            paths: vec![],
+            string: None,
+            bytes: None,
+            chars: vec![],
+            integers: vec![],
+            floats: vec![],
+            bool: None,
         }
     }
 
@@ -702,7 +1016,10 @@ impl ParametrizedAttr {
     pub fn arg_literal_value(&self, name: &str) -> Result<Lit, Error> {
         self.args
             .get(name)
-            .ok_or(Error::NamedArgRequired(name.to_owned()))?
+            .ok_or(Error::ArgRequired {
+                attr: self.name.clone(),
+                arg: name.to_owned(),
+            })?
             .literal_value()
     }
 
@@ -744,20 +1061,36 @@ impl ParametrizedAttr {
         if self.name != other.name {
             return Err(Error::NamesDontMatch(self.name.clone(), other.name.clone()));
         }
+
         self.args.extend(other.args);
         self.paths.extend(other.paths);
+
         self.integers.extend(other.integers);
-        let span = self.literal.span();
-        match (&mut self.literal, &other.literal) {
+        self.floats.extend(other.floats);
+        self.chars.extend(other.chars);
+
+        match (&mut self.string, &other.string) {
             (_, None) => {}
-            (None, Some(_)) => self.literal = other.literal,
-            (Some(Lit::Str(str1)), Some(Lit::Str(str2))) => {
-                let mut joined = str1.value();
-                joined.push_str(&str2.value());
-                *str1 = LitStr::new(&joined, span);
+            (None, Some(_)) => self.string = other.string.clone(),
+            (Some(str1), Some(str2)) => {
+                *str1 = LitStr::new(&format!("{} {}", str1.value(), str2.value()), str1.span());
             }
+        }
+        match (&mut self.bytes, &other.bytes) {
+            (_, None) => {}
+            (None, Some(_)) => self.bytes = other.bytes.clone(),
+            (Some(bytes1), Some(bytes2)) => {
+                let mut joined = bytes1.value();
+                joined.extend(bytes2.value());
+                *bytes1 = LitByteStr::new(&joined, bytes1.span());
+            }
+        }
+        match (&mut self.bool, &other.bool) {
+            (_, None) => {}
+            (None, Some(_)) => self.bool = other.bool.clone(),
             (Some(_), Some(_)) => return Err(Error::MultipleLiteralValues(self.name.clone())),
         }
+
         Ok(())
     }
 
@@ -803,28 +1136,48 @@ impl ParametrizedAttr {
     pub fn fuse(&mut self, nested: NestedMeta) -> Result<(), Error> {
         match nested {
             // `#[ident("literal", ...)]`
-            NestedMeta::Lit(Lit::Str(str2)) => {
-                let span = self.literal.span();
-                match self.literal {
-                    None => self.literal = Some(Lit::Str(str2)),
-                    Some(Lit::Str(ref mut str1)) => {
+            NestedMeta::Lit(Lit::Str(s)) => {
+                let span = s.span();
+                match self.string {
+                    None => self.string = Some(s),
+                    Some(ref mut str1) => {
                         let mut joined = str1.value();
-                        joined.push_str(&str2.value());
+                        joined.push_str(&s.value());
                         *str1 = LitStr::new(&joined, span);
                     }
-                    Some(_) => return Err(Error::MultipleLiteralValues(self.name.clone())),
+                }
+            }
+
+            // `#[ident(b"literal", ...)]`
+            NestedMeta::Lit(Lit::ByteStr(s)) => {
+                let span = s.span();
+                match self.bytes {
+                    None => self.bytes = Some(s),
+                    Some(ref mut str1) => {
+                        let mut joined = str1.value();
+                        joined.extend(&s.value());
+                        *str1 = LitByteStr::new(&joined, span);
+                    }
                 }
             }
 
             // `#[ident(3, ...)]`
-            NestedMeta::Lit(Lit::Int(litint)) => self.integers.push(litint),
+            NestedMeta::Lit(Lit::Int(lit)) => self.integers.push(lit),
 
-            // `#[ident(other_literal, ...)]`
-            NestedMeta::Lit(lit) => self
-                .literal
-                .as_mut()
-                .map(|l| *l = lit)
-                .ok_or(Error::MultipleLiteralValues(self.name.clone()))?,
+            // `#[ident(2.3, ...)]`
+            NestedMeta::Lit(Lit::Float(lit)) => self.floats.push(lit),
+
+            // `#[ident('a', ...)]`
+            NestedMeta::Lit(Lit::Char(lit)) => self.chars.push(lit),
+
+            // `#[ident(true, ...)]`
+            NestedMeta::Lit(Lit::Bool(_)) if self.bool.is_some() => {
+                return Err(Error::MultipleLiteralValues(self.name.clone()))
+            }
+            NestedMeta::Lit(Lit::Bool(lit)) if self.bool.is_none() => self.bool = Some(lit.clone()),
+
+            // `#[ident(true, ...)]`
+            NestedMeta::Lit(_) => return Err(Error::UnsupportedLiteral(self.name.clone())),
 
             // `#[ident(arg::path)]`
             NestedMeta::Meta(Meta::Path(path)) => self.paths.push(path),
@@ -841,7 +1194,10 @@ impl ParametrizedAttr {
                     .insert(id.clone(), ArgValue::Literal(lit))
                     .is_some()
                 {
-                    return Err(Error::ArgNameMustBeUnique(id));
+                    return Err(Error::ArgNameMustBeUnique {
+                        attr: self.name.clone(),
+                        arg: id,
+                    });
                 }
             }
 
@@ -864,63 +1220,49 @@ impl ParametrizedAttr {
 
     /// Checks that the structure meets provided value requirements (see
     /// [`AttrReq`]), generating [`Error`] if the requirements are not met.
+    ///
+    /// The procedure modifies the [`ParametrizedAttr`] data in the following
+    /// ways:
+    /// 1. First, it fills in [`ParametrizedAttr::paths`],
+    ///    [`ParametrizedAttr::integers`] and [`ParametrizedAttr::literal`] with
+    ///    default values    from [`AttrReq::paths`], [`AttrReq::integers`] and
+    ///    [`AttrReq::literal`] (correspondingly).
+    /// 2. [`ParametrizedAttr::paths`] values matching ones specified in
+    ///    [`AttrReq::args`] with values set to [`ValueOccurrences::Default`]
+    ///    are moved into [`ParametrizedAttr::args`] field.
     pub fn check(&mut self, req: AttrReq) -> Result<(), Error> {
-        match (req.paths, self.paths.len()) {
-            (ListOccurrences::Deny, x) if x > 0 => {
-                return Err(Error::AttrMustNotHavePaths(self.name.clone()))
-            }
-            (ListOccurrences::OneOrMore, 0) => {
-                return Err(Error::AttrMustHavePath(self.name.clone()))
-            }
-            (ListOccurrences::Default(path), 0) => self.paths.push(path),
-            _ => {}
+        for name in req.arg_req.keys() {
+            self.args.entry(name.clone()).or_insert(ArgValue::None);
         }
 
-        match (req.integers, self.integers.len()) {
-            (ListOccurrences::Deny, x) if x > 0 => {
-                return Err(Error::AttrMustNotHavePaths(self.name.clone()))
-            }
-            (ListOccurrences::OneOrMore, 0) => {
-                return Err(Error::AttrMustHavePath(self.name.clone()))
-            }
-            (ListOccurrences::Default(int), 0) => self.integers.push(int),
-            _ => {}
+        for (name, value) in &mut self.args {
+            let req = if let Some(req) = req.arg_req.get(name) {
+                req
+            } else {
+                return Err(Error::AttributeUnknownArgument {
+                    attr: self.name.clone(),
+                    arg: name.clone(),
+                });
+            };
+
+            req.check(value, &self.name, name)?;
         }
 
-        match (req.literal.1, self.literal.as_ref()) {
-            (ValueOccurrences::Prohibited, Some(_)) => {
-                return Err(Error::AttrMustNotHaveLiteral(self.name.clone()))
-            }
-            (ValueOccurrences::Required, None) => {
-                return Err(Error::AttrMustHaveLiteral(self.name.clone()))
-            }
-            (ValueOccurrences::Default(lit), None) => {
-                self.literal = Some(lit.literal_value().expect(&format!(
-                    "Argument default value for {} attribute must be a literal",
-                    self.name
-                )));
-            }
-            _ => {}
-        }
+        req.path_req.check(&mut self.paths, &self.name, "path")?;
 
-        if let Some(ref mut lit) = self.literal {
-            req.literal.0.check(&lit, self.name.clone())?;
-        }
+        req.integer_req
+            .check(&mut self.integers, &self.name, "integer literal")?;
+        req.float_req
+            .check(&mut self.floats, &self.name, "float literal")?;
+        req.char_req
+            .check(&mut self.chars, &self.name, "char literal")?;
 
-        for (name, req) in req.args {
-            match (self.args.get(&name), req.occurrences) {
-                (None, ValueOccurrences::Default(default)) => {
-                    self.args.insert(name, default);
-                }
-                (None, occ) => {
-                    occ.check(&mut None, self.name.clone())?;
-                }
-                (Some(val), occ) => {
-                    occ.check(&mut Some(val.clone()), self.name.clone())?;
-                    req.constraints.check(val, self.name.clone())?;
-                }
-            }
-        }
+        req.string_req
+            .check(&mut self.string, &self.name, "string literal")?;
+        req.bool_req
+            .check(&mut self.bool, &self.name, "bool literal")?;
+        req.bytes_req
+            .check(&mut self.bytes, &self.name, "byte string literal")?;
 
         Ok(())
     }
@@ -942,7 +1284,7 @@ pub trait ExtractAttr {
     fn singular_attr(
         self,
         name: impl ToString + AsRef<str>,
-        req: ValueReq,
+        req: ArgReq,
     ) -> Result<Option<SingularAttr>, Error>;
 
     #[doc(hidden)]
@@ -963,7 +1305,7 @@ where
     fn singular_attr(
         self,
         name: impl ToString + AsRef<str>,
-        req: ValueReq,
+        req: ArgReq,
     ) -> Result<Option<SingularAttr>, Error> {
         let mut attr = SingularAttr::new(name.to_string());
 

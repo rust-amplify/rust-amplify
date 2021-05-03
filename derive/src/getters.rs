@@ -13,38 +13,61 @@
 // along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
-use proc_macro2::TokenStream as TokenStream2;
+use proc_macro2::{TokenStream as TokenStream2, Span};
 use syn::spanned::Spanned;
-use syn::{Data, DeriveInput, Error, Fields, Result};
+use syn::{Data, DeriveInput, Error, Fields, Result, Lit, LitStr};
 use quote::ToTokens;
-use amplify_syn::{ParametrizedAttr};
+use amplify_syn::{ParametrizedAttr, ValueReq, LiteralClass, ValueClass, AttrReq, ArgValue};
 
 pub(crate) fn inner(input: DeriveInput) -> Result<TokenStream2> {
     let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
     let ident_name = &input.ident;
 
-    let attribute = ParametrizedAttr::with("getter", &input.attrs)?;
-    println!("Args: ");
-    attribute
-        .args
-        .iter()
-        .for_each(|(name, val)| println!("\t{}: {}", name, val.to_token_stream()));
-    println!("Paths: ");
-    attribute
-        .paths
-        .iter()
-        .for_each(|path| println!("\t{}", quote! { #path }));
-    /*
-    attribute.check(AttrReq::with(
-        vec![(
+    let mut attribute = ParametrizedAttr::with("getter", &input.attrs)?;
+    attribute.check(AttrReq::with(vec![
+        (
             "prefix",
-            ValueOccurrences::Optional,
-            ValueConstraints::Literal(LiteralConstraints::StringLiteral),
-        )],
-        vec!["all", "as_copy", "as_clone", "as_ref", "as_mut"],
-        Vec::default(),
-        Vec::default(),
-    ))?*/
+            ValueReq::Required,
+            ValueClass::Literal(LiteralClass::StringLiteral),
+        ),
+        (
+            "all",
+            ValueReq::Prohibited,
+            ValueClass::Literal(LiteralClass::StringLiteral),
+        ),
+        (
+            "as_copy",
+            ValueReq::Default(ArgValue::Literal(Lit::Str(LitStr::new(
+                "",
+                Span::call_site(),
+            )))),
+            ValueClass::Literal(LiteralClass::StringLiteral),
+        ),
+        (
+            "as_clone",
+            ValueReq::Default(ArgValue::Literal(Lit::Str(LitStr::new(
+                "",
+                Span::call_site(),
+            )))),
+            ValueClass::Literal(LiteralClass::StringLiteral),
+        ),
+        (
+            "as_ref",
+            ValueReq::Default(ArgValue::Literal(Lit::Str(LitStr::new(
+                "_ref",
+                Span::call_site(),
+            )))),
+            ValueClass::Literal(LiteralClass::StringLiteral),
+        ),
+        (
+            "as_mut",
+            ValueReq::Default(ArgValue::Literal(Lit::Str(LitStr::new(
+                "_mut",
+                Span::call_site(),
+            )))),
+            ValueClass::Literal(LiteralClass::StringLiteral),
+        ),
+    ]))?;
 
     let data = match input.data {
         Data::Struct(ref data) => data,

@@ -14,6 +14,7 @@
 // If not, see <https://opensource.org/licenses/MIT>.
 
 use std::fmt::{Display, Formatter, self};
+use std::convert::Infallible;
 use proc_macro2::Span;
 
 /// Errors representing inconsistency in proc macro attribute structure
@@ -34,37 +35,58 @@ pub enum Error {
     /// meaningless.
     MultipleLiteralValues(String),
 
+    /// Attribute contains unsupported literal argument
+    UnsupportedLiteral(String),
+
     /// Attribute must be in a singular form (`#[attr]` or `#[attr = ...]`)
     SingularAttrRequired(String),
-
-    /// Attribute value type mismatch
-    AttrValueTypeMimatch(String),
-
-    /// Attribute `{0}` must not have a value
-    AttrMustNotHaveValue(String),
-
-    /// Attribute `{0}` does not allow path arguments
-    AttrMustNotHavePaths(String),
-
-    /// Attribute `{0}` must has a path argument (like `some::Type` in
-    /// `#[{0}(some::Type)`)
-    AttrMustHavePath(String),
-
-    /// Attribute `{0}` does not allow literal arguments
-    AttrMustNotHaveLiteral(String),
-
-    /// Attribute `{0}` must has a literal argument
-    AttrMustHaveLiteral(String),
 
     /// Attribute must be in a parametrized form (`#[attr(...)]`)
     ParametrizedAttrRequired(String),
 
-    /// Attribute argument must be a path identifier like `#[attr(std::io)]`
-    /// or `#[attr = std::io]`
-    ArgMustBePath,
+    /// Attribute has an unknown argument
+    AttributeUnknownArgument {
+        /// Attribute name
+        attr: String,
+        /// Argument name
+        arg: String,
+    },
 
-    /// Attribute or attribute argument must has a name
-    ArgNameRequired,
+    /// Attribute is not allowed to have argument of type `arg`
+    ArgTypeProhibited {
+        /// Attribute name
+        attr: String,
+        /// Argument name
+        arg: String,
+    },
+
+    /// Number of `arg` arguments in attribute `attr` exceeds maximum
+    ArgNumberExceedsMax {
+        /// Attribute name
+        attr: String,
+        /// Argument type name
+        type_name: String,
+        /// Number of arguments
+        no: usize,
+        /// Maximum allowed number of arguments
+        max_no: u8,
+    },
+
+    /// Attribute argument `arg` must not have a value
+    ArgMustNotHaveValue {
+        /// Attribute name
+        attr: String,
+        /// Argument name
+        arg: String,
+    },
+
+    /// Attribute must has an `arg` argument
+    ArgRequired {
+        /// Attribute name
+        attr: String,
+        /// Argument name
+        arg: String,
+    },
 
     /// Attribute or attribute argument name (in form of `#[attr(arg = ...)]`)
     /// must be an identifier (like `arg`) and not a path (like `std::io`)
@@ -72,11 +94,29 @@ pub enum Error {
 
     /// The same argument name is used multiple times within parametrized
     /// attribute (like in `#[attr(name1 = value1, name1 = value2)]`)
-    ArgNameMustBeUnique(String),
+    ArgNameMustBeUnique {
+        /// Attribute name
+        attr: String,
+        /// Argument name
+        arg: String,
+    },
 
     /// Attribute or attribute argument must has a value:
     /// `#[attr(arg = value)]`
-    ArgValueRequired(String),
+    ArgValueRequired {
+        /// Attribute name
+        attr: String,
+        /// Argument name
+        arg: String,
+    },
+
+    /// Attribute value type mismatch
+    ArgValueTypeMismatch {
+        /// Attribute name
+        attr: String,
+        /// Argument name
+        arg: String,
+    },
 
     /// Parametrized attribute argument must have a literal value (string,
     /// integer etc): `#[attr(arg = "value")]` or `#[arg = 4]`
@@ -90,12 +130,15 @@ pub enum Error {
     /// have a single value
     ParametrizedAttrHasNoValue(String),
 
-    /// Attribute named argument must be present
-    NamedArgRequired(String),
-
     /// Lists nested within attribute arguments, like `#[attr(arg(...))]`
     /// are not supported
     NestedListsNotSupported(String),
+}
+
+impl From<Infallible> for Error {
+    fn from(_: Infallible) -> Self {
+        unreachable!()
+    }
 }
 
 impl From<syn::Error> for Error {
@@ -140,55 +183,34 @@ impl Display for Error {
                 "Attribute `{}` must be in a parametrized form (`#[attr(...)]`)",
                 name
             ),
-            Error::AttrValueTypeMimatch(name) => write!(
+            Error::ArgMustNotHaveValue { attr, arg } => write!(
                 f,
-                "Attribute `{}` value type mismatch",
-                name
+                "Attribute `{}` argument `{}` must not have a value",
+                attr, arg
             ),
-            Error::AttrMustNotHaveValue(name) => write!(
+            Error::ArgTypeProhibited { attr, arg: type_name } => write!(
                 f,
-                "Attribute `{}` must not have a value",
-                name
+                "Attribute `{}` prohibits arguments of type `{}`",
+                attr, type_name
             ),
-            Error::AttrMustNotHavePaths(name) => write!(
+            Error::ArgRequired { attr, arg } => write!(
                 f,
-                "Attribute `{}` does not allow path arguments",
-                name
+                "Attribute `{}` requires argument `{}` to be explicitly specified",
+                attr, arg,
             ),
-            Error::AttrMustHavePath(name) => write!(
+            Error::ArgNameMustBeUnique { attr, arg } => write!(
                 f,
-                "Attribute `{name}` must has a path argument (like `some::Type` in `#[{name}(some::Type)`)",
-                name = name
-            ),
-            Error::AttrMustNotHaveLiteral(name) => write!(
-                f,
-                "Attribute `{}` does not allow literal arguments",
-                name
-            ),
-            Error::AttrMustHaveLiteral(name) => write!(
-                f,
-                "Attribute `{}` must has a literal argument",
-                name
-            ),
-            Error::ArgMustBePath => f.write_str(
-                "attribute argument must be a path identifier"
-            ),
-            Error::ArgNameRequired => f.write_str(
-                "attribute argument name is required"
-            ),
-            Error::ArgNameMustBeUnique(name) => write!(
-                f,
-                "attribute argument name must be unique while multiple instances of `{}` were found",
-                name
+                "attribute `{}` argument name must be unique while multiple instances of `{}` were found",
+                attr, arg,
             ),
             Error::ArgNameMustBeIdent => write!(
                 f,
                 "attribute arguments must be identifiers, not paths",
             ),
-            Error::ArgValueRequired(name) => write!(
+            Error::ArgValueRequired { attr, arg } => write!(
                 f,
-                "attribute or attribute argument value is required for `{}`",
-                name
+                "attribute `{}` requires value for argument `{}`",
+                attr, arg
             ),
             Error::ArgValueMustBeLiteral => f.write_str(
                 "attribute value must be a literal (string, int etc)",
@@ -196,11 +218,6 @@ impl Display for Error {
             Error::ArgValueMustBeType => {
                 f.write_str("attribute value for must be a valid type name")
             }
-            Error::NamedArgRequired(name) => write!(
-                f,
-                "attribute must has argument with name `{}`",
-                name
-            ),
             Error::ParametrizedAttrHasNoValue(name) => {
                 write!(
                     f,
@@ -212,6 +229,26 @@ impl Display for Error {
                 f,
                 "attribute `{name}` must be in `{name} = ...` form and a nested list",
                 name = name,
+            ),
+            Error::UnsupportedLiteral(attr) => write!(
+                f,
+                "Attribute `{}` has an unsupported type of literal as one of its arguments",
+                attr
+            ),
+            Error::AttributeUnknownArgument { attr, arg } => write!(
+                f,
+                "Attribute `{}` has an unknown argument `{}`",
+                attr, arg
+            ),
+            Error::ArgNumberExceedsMax { attr, type_name, no, max_no } => write!(
+                f,
+                "Attribute `{}` has excessive number of arguments of type `{}` ({} while only {} are allowed)",
+                attr, type_name, no, max_no
+            ),
+            Error::ArgValueTypeMismatch { attr, arg } => write!(
+                f,
+                "Type mismatch in attribute `{}` argument `{}`",
+                attr, arg
             ),
         }
     }
@@ -225,22 +262,20 @@ impl std::error::Error for Error {
             | Error::MultipleSingularValues(_)
             | Error::MultipleLiteralValues(_)
             | Error::SingularAttrRequired(_)
-            | Error::AttrValueTypeMimatch(_)
-            | Error::AttrMustNotHaveValue(_)
-            | Error::AttrMustNotHavePaths(_)
-            | Error::AttrMustHavePath(_)
-            | Error::AttrMustNotHaveLiteral(_)
-            | Error::AttrMustHaveLiteral(_)
+            | Error::ArgMustNotHaveValue { .. }
+            | Error::ArgTypeProhibited { .. }
+            | Error::ArgRequired { .. }
             | Error::ParametrizedAttrRequired(_)
-            | Error::ArgMustBePath
-            | Error::ArgNameRequired
             | Error::ArgNameMustBeIdent
-            | Error::ArgNameMustBeUnique(_)
-            | Error::ArgValueRequired(_)
+            | Error::ArgNameMustBeUnique { .. }
+            | Error::ArgValueRequired { .. }
             | Error::ArgValueMustBeLiteral
             | Error::ArgValueMustBeType
             | Error::ParametrizedAttrHasNoValue(_)
-            | Error::NamedArgRequired(_)
+            | Error::UnsupportedLiteral(_)
+            | Error::AttributeUnknownArgument { .. }
+            | Error::ArgNumberExceedsMax { .. }
+            | Error::ArgValueTypeMismatch { .. }
             | Error::NestedListsNotSupported(_) => None,
         }
     }
