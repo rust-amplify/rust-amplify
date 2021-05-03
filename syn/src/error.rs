@@ -213,7 +213,7 @@ impl Display for Error {
                 attr, arg
             ),
             Error::ArgValueMustBeLiteral => f.write_str(
-                "Attribute value must be a literal (string, int etc)",
+                "Attribute argument value must be a literal (string, int etc)",
             ),
             Error::ArgValueMustBeType => {
                 f.write_str("Attribute value for must be a valid type name")

@@ -56,6 +56,50 @@ impl From<&Type> for ValueClass {
 }
 
 impl ValueClass {
+    /// Convenience constructor creating
+    /// `ValueClass::Literal(LiteralClass::Str)`
+    pub fn str() -> ValueClass {
+        ValueClass::Literal(LiteralClass::Str)
+    }
+
+    /// Convenience constructor creating
+    /// `ValueClass::Literal(LiteralClass::ByteStr)`
+    pub fn byte_str() -> ValueClass {
+        ValueClass::Literal(LiteralClass::ByteStr)
+    }
+
+    /// Convenience constructor creating
+    /// `ValueClass::Literal(LiteralClass::Byte)`
+    pub fn byte() -> ValueClass {
+        ValueClass::Literal(LiteralClass::Byte)
+    }
+
+    /// Convenience constructor creating
+    /// `ValueClass::Literal(LiteralClass::Int)`
+    pub fn int() -> ValueClass {
+        ValueClass::Literal(LiteralClass::Int)
+    }
+
+    /// Convenience constructor creating
+    /// `ValueClass::Literal(LiteralClass::Float)`
+    pub fn float() -> ValueClass {
+        ValueClass::Literal(LiteralClass::Float)
+    }
+
+    /// Convenience constructor creating
+    /// `ValueClass::Literal(LiteralClass::Char)`
+    pub fn char() -> ValueClass {
+        ValueClass::Literal(LiteralClass::Char)
+    }
+
+    /// Convenience constructor creating
+    /// `ValueClass::Literal(LiteralClass::Bool)`
+    pub fn bool() -> ValueClass {
+        ValueClass::Literal(LiteralClass::Bool)
+    }
+}
+
+impl ValueClass {
     /// Checks the value against value class requirements, generating [`Error`]
     /// if the requirements are not met.
     pub fn check(
@@ -79,25 +123,25 @@ impl ValueClass {
 #[derive(Clone, Copy, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
 pub enum LiteralClass {
     /// Literal must be a string
-    StringLiteral,
+    Str,
 
     /// Literal must be a byte string
-    ByteStrLiteral,
+    ByteStr,
 
     /// Literal must be a byte (in form of `b'f'`)
-    ByteLiteral,
+    Byte,
 
     /// Literal must be a character
-    CharLiteral,
+    Char,
 
     /// Literal must be an integer
-    IntLiteral,
+    Int,
 
     /// Literal must be a float
-    FloatLiteral,
+    Float,
 
     /// Literal must be a boolean
-    BoolLiteral,
+    Bool,
 
     /// Literal must be a verbatim form
     Verbatim,
@@ -113,13 +157,13 @@ impl From<Lit> for LiteralClass {
 impl From<&Lit> for LiteralClass {
     fn from(lit: &Lit) -> Self {
         match lit {
-            Lit::Str(_) => LiteralClass::StringLiteral,
-            Lit::ByteStr(_) => LiteralClass::ByteStrLiteral,
-            Lit::Byte(_) => LiteralClass::ByteLiteral,
-            Lit::Char(_) => LiteralClass::CharLiteral,
-            Lit::Int(_) => LiteralClass::IntLiteral,
-            Lit::Float(_) => LiteralClass::FloatLiteral,
-            Lit::Bool(_) => LiteralClass::BoolLiteral,
+            Lit::Str(_) => LiteralClass::Str,
+            Lit::ByteStr(_) => LiteralClass::ByteStr,
+            Lit::Byte(_) => LiteralClass::Byte,
+            Lit::Char(_) => LiteralClass::Char,
+            Lit::Int(_) => LiteralClass::Int,
+            Lit::Float(_) => LiteralClass::Float,
+            Lit::Bool(_) => LiteralClass::Bool,
             Lit::Verbatim(_) => LiteralClass::Verbatim,
         }
     }
