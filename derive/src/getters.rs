@@ -13,11 +13,11 @@
 // along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
-use proc_macro2::{TokenStream as TokenStream2, Span};
+use proc_macro2::{TokenStream as TokenStream2};
 use syn::spanned::Spanned;
-use syn::{Data, DeriveInput, Error, Fields, Result, Lit, LitStr};
+use syn::{Data, DeriveInput, Error, Fields, Result};
 use quote::ToTokens;
-use amplify_syn::{ParametrizedAttr, ValueReq, LiteralClass, ValueClass, AttrReq, ArgValue};
+use amplify_syn::{ParametrizedAttr, AttrReq, ArgReq};
 
 pub(crate) fn inner(input: DeriveInput) -> Result<TokenStream2> {
     let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
@@ -26,48 +26,12 @@ pub(crate) fn inner(input: DeriveInput) -> Result<TokenStream2> {
     let mut attribute = ParametrizedAttr::with("getter", &input.attrs)?;
 
     let _ = attribute.check(AttrReq::with(vec![
-        (
-            "prefix",
-            ValueReq::Required,
-            ValueClass::Literal(LiteralClass::StringLiteral),
-        ),
-        (
-            "all",
-            ValueReq::Prohibited,
-            ValueClass::Literal(LiteralClass::StringLiteral),
-        ),
-        (
-            "as_copy",
-            ValueReq::Default(ArgValue::Literal(Lit::Str(LitStr::new(
-                "",
-                Span::call_site(),
-            )))),
-            ValueClass::Literal(LiteralClass::StringLiteral),
-        ),
-        (
-            "as_clone",
-            ValueReq::Default(ArgValue::Literal(Lit::Str(LitStr::new(
-                "",
-                Span::call_site(),
-            )))),
-            ValueClass::Literal(LiteralClass::StringLiteral),
-        ),
-        (
-            "as_ref",
-            ValueReq::Default(ArgValue::Literal(Lit::Str(LitStr::new(
-                "_ref",
-                Span::call_site(),
-            )))),
-            ValueClass::Literal(LiteralClass::StringLiteral),
-        ),
-        (
-            "as_mut",
-            ValueReq::Default(ArgValue::Literal(Lit::Str(LitStr::new(
-                "_mut",
-                Span::call_site(),
-            )))),
-            ValueClass::Literal(LiteralClass::StringLiteral),
-        ),
+        ("prefix", ArgReq::with_default("")),
+        ("all", ArgReq::Prohibited),
+        ("as_copy", ArgReq::with_default("")),
+        ("as_clone", ArgReq::with_default("")),
+        ("as_ref", ArgReq::with_default("_ref")),
+        ("as_mut", ArgReq::with_default("_mut")),
     ]));
 
     let data = match input.data {

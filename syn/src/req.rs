@@ -58,18 +58,10 @@ pub struct AttrReq {
 impl AttrReq {
     /// Constructor creating [`AttrReq`] accepting only name-value arguments
     /// with the provided parameters
-    pub fn with(args: Vec<(&str, ValueReq, ValueClass)>) -> AttrReq {
+    pub fn with(args: Vec<(&str, ArgReq)>) -> AttrReq {
         let args = args
             .into_iter()
-            .map(|(name, occurrences, constraints)| {
-                (
-                    name.to_owned(),
-                    ArgReq {
-                        constraints,
-                        presence: occurrences,
-                    },
-                )
-            })
+            .map(|(name, req)| (name.to_owned(), req))
             .collect();
 
         AttrReq {
@@ -87,16 +79,58 @@ impl AttrReq {
 
 /// Requirements for attribute or named argument value presence
 #[derive(Clone)]
-pub struct ArgReq {
-    /// Constraints to the value of the argument inside the attribute
-    pub constraints: ValueClass,
+pub enum ArgReq {
+    /// Argument must hold a value with the provided class
+    Required {
+        /// Default value
+        default: Option<ArgValue>,
+        /// Type of the value literal
+        class: ValueClass,
+    },
 
-    /// Requirements to the number of occurrences of the specific argument
-    /// within the attribute
-    pub presence: ValueReq,
+    /// Argument or an attribute may or may not hold a value
+    Optional(ValueClass),
+
+    /// Argument or an attribute must not hold a value
+    Prohibited,
 }
 
 impl ArgReq {
+    /// Constructs argument requirements object with default value
+    pub fn with_default(default: impl Into<ArgValue>) -> ArgReq {
+        let value = default.into();
+        ArgReq::Required {
+            class: value
+                .value_class()
+                .expect("Default argument value must not be `ArgValue::None`"),
+            default: Some(value),
+        }
+    }
+
+    /// Construct [`ArgReq::Required`] variant with no default value
+    pub fn required(class: ValueClass) -> ArgReq {
+        ArgReq::Required {
+            default: None,
+            class,
+        }
+    }
+
+    /// Returns value class requirements, if any
+    pub fn value_class(&self) -> Option<ValueClass> {
+        match self {
+            ArgReq::Required { class, .. } | ArgReq::Optional(class) => Some(*class),
+            ArgReq::Prohibited => None,
+        }
+    }
+
+    /// Determines whether argument is required to have a value
+    pub fn is_required(&self) -> bool {
+        match self {
+            ArgReq::Required { .. } => true,
+            _ => false,
+        }
+    }
+
     /// Checks the argument against current requirements, generating [`Error`]
     /// if the requirements are not met.
     pub fn check(
@@ -105,17 +139,50 @@ impl ArgReq {
         attr: impl ToString,
         arg: impl ToString,
     ) -> Result<(), Error> {
-        match (value, &self.presence) {
-            (val, ValueReq::Default(default)) if val.is_none() => {
-                *val = default.clone();
+        let value = match (value, self) {
+            (val, ArgReq::Required { default: None, .. }) if val.is_none() => {
+                return Err(Error::ArgValueRequired {
+                    attr: attr.to_string(),
+                    arg: arg.to_string(),
+                })
             }
-            (val, occ) if val.is_none() => {
-                occ.check(val, attr, arg)?;
+
+            (val, ArgReq::Prohibited) if val.is_some() => {
+                return Err(Error::ArgMustNotHaveValue {
+                    attr: attr.to_string(),
+                    arg: arg.to_string(),
+                })
             }
-            (val, occ) => {
-                occ.check(val, attr.to_string(), arg.to_string())?;
-                self.constraints.check(val, attr, arg)?;
+
+            (
+                val,
+                ArgReq::Required {
+                    default: Some(d), ..
+                },
+            ) if val.value_class() != d.value_class() => {
+                panic!(
+                    "Default value class does not match argument value class for attribute {}, argument {}",
+                    attr.to_string(),
+                    arg.to_string()
+                );
             }
+
+            (
+                val,
+                ArgReq::Required {
+                    default: Some(d), ..
+                },
+            ) if val.is_none() => {
+                *val = d.clone();
+                val
+            }
+
+            // We are fine here
+            (val, _) => val,
+        };
+
+        if let Some(value_class) = self.value_class() {
+            value_class.check(value, attr, arg)?;
         }
 
         Ok(())

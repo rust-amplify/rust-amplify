@@ -15,9 +15,9 @@
 
 use std::convert::TryInto;
 use syn::{Type, Lit, LitStr, LitByteStr, LitBool};
-use proc_macro2::TokenStream;
+use proc_macro2::{TokenStream, Span};
 
-use crate::Error;
+use crate::{Error, ValueClass};
 
 /// Value for attribute or attribute argument, i.e. for `#[attr = value]` and
 /// `#[attr(arg = value)]` this is the `value` part of the attribute. Can be
@@ -32,6 +32,12 @@ pub enum ArgValue {
 
     /// No value is given
     None,
+}
+
+impl From<&str> for ArgValue {
+    fn from(val: &str) -> Self {
+        ArgValue::Literal(Lit::Str(LitStr::new(val, Span::call_site())))
+    }
 }
 
 impl From<Option<LitStr>> for ArgValue {
@@ -148,6 +154,16 @@ impl ArgValue {
         match self {
             ArgValue::None => false,
             _ => true,
+        }
+    }
+
+    /// Returns [`ValueClass`] for the current value, if any
+    #[inline]
+    pub fn value_class(&self) -> Option<ValueClass> {
+        match self {
+            ArgValue::Literal(lit) => Some(ValueClass::from(lit)),
+            ArgValue::Type(ty) => Some(ValueClass::from(ty)),
+            ArgValue::None => None,
         }
     }
 }

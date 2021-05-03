@@ -343,10 +343,7 @@ impl SingularAttr {
     /// Checks that the structure meets provided value requirements (see
     /// [`ValueReq`]), generating [`Error`] if the requirements are not met.
     pub fn check(&mut self, req: ArgReq) -> Result<(), Error> {
-        req.presence
-            .check(&mut self.value, &self.name, &self.name)?;
-        req.constraints
-            .check(&mut self.value, &self.name, &self.name)?;
+        req.check(&mut self.value, &self.name, &self.name)?;
         Ok(())
     }
 
@@ -640,7 +637,7 @@ impl ParametrizedAttr {
                 self.args.entry(name.clone()).or_insert(ArgValue::None);
             }
 
-            if !self.args.contains_key(name) && req.presence.is_required() {
+            if !self.args.contains_key(name) && req.is_required() {
                 return Err(Error::ArgRequired {
                     attr: self.name.clone(),
                     arg: name.clone(),

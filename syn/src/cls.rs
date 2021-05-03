@@ -31,6 +31,30 @@ pub enum ValueClass {
     Type(TypeClass),
 }
 
+impl From<Lit> for ValueClass {
+    fn from(lit: Lit) -> Self {
+        ValueClass::Literal(LiteralClass::from(lit))
+    }
+}
+
+impl From<&Lit> for ValueClass {
+    fn from(lit: &Lit) -> Self {
+        ValueClass::Literal(LiteralClass::from(lit))
+    }
+}
+
+impl From<Type> for ValueClass {
+    fn from(ty: Type) -> Self {
+        ValueClass::Type(TypeClass::from(ty))
+    }
+}
+
+impl From<&Type> for ValueClass {
+    fn from(ty: &Type) -> Self {
+        ValueClass::Type(TypeClass::from(ty))
+    }
+}
+
 impl ValueClass {
     /// Checks the value against value class requirements, generating [`Error`]
     /// if the requirements are not met.
@@ -79,23 +103,39 @@ pub enum LiteralClass {
     Verbatim,
 }
 
+impl From<Lit> for LiteralClass {
+    #[inline]
+    fn from(lit: Lit) -> Self {
+        LiteralClass::from(&lit)
+    }
+}
+
+impl From<&Lit> for LiteralClass {
+    fn from(lit: &Lit) -> Self {
+        match lit {
+            Lit::Str(_) => LiteralClass::StringLiteral,
+            Lit::ByteStr(_) => LiteralClass::ByteStrLiteral,
+            Lit::Byte(_) => LiteralClass::ByteLiteral,
+            Lit::Char(_) => LiteralClass::CharLiteral,
+            Lit::Int(_) => LiteralClass::IntLiteral,
+            Lit::Float(_) => LiteralClass::FloatLiteral,
+            Lit::Bool(_) => LiteralClass::BoolLiteral,
+            Lit::Verbatim(_) => LiteralClass::Verbatim,
+        }
+    }
+}
+
 impl LiteralClass {
     /// Checks the literal against current requirements, generating [`Error`] if
     /// the requirements are not met.
     pub fn check(self, lit: &Lit, attr: impl ToString, arg: impl ToString) -> Result<(), Error> {
-        match (self, lit) {
-            (LiteralClass::BoolLiteral, Lit::Bool(_))
-            | (LiteralClass::ByteLiteral, Lit::Byte(_))
-            | (LiteralClass::ByteStrLiteral, Lit::ByteStr(_))
-            | (LiteralClass::CharLiteral, Lit::Char(_))
-            | (LiteralClass::FloatLiteral, Lit::Float(_))
-            | (LiteralClass::IntLiteral, Lit::Int(_))
-            | (LiteralClass::StringLiteral, Lit::Str(_))
-            | (LiteralClass::Verbatim, Lit::Verbatim(_)) => Ok(()),
-            _ => Err(Error::ArgValueTypeMismatch {
+        if self != LiteralClass::from(lit) {
+            Err(Error::ArgValueTypeMismatch {
                 attr: attr.to_string(),
                 arg: arg.to_string(),
-            }),
+            })
+        } else {
+            Ok(())
         }
     }
 }
@@ -152,30 +192,47 @@ pub enum TypeClass {
     Verbatim,
 }
 
+impl From<Type> for TypeClass {
+    #[inline]
+    fn from(ty: Type) -> Self {
+        TypeClass::from(&ty)
+    }
+}
+
+impl From<&Type> for TypeClass {
+    fn from(ty: &Type) -> Self {
+        match ty {
+            Type::Array(_) => TypeClass::Array,
+            Type::BareFn(_) => TypeClass::BareFn,
+            Type::Group(_) => TypeClass::Group,
+            Type::ImplTrait(_) => TypeClass::ImplTrait,
+            Type::Infer(_) => TypeClass::Infer,
+            Type::Macro(_) => TypeClass::Macro,
+            Type::Never(_) => TypeClass::Never,
+            Type::Paren(_) => TypeClass::Paren,
+            Type::Path(_) => TypeClass::Path,
+            Type::Ptr(_) => TypeClass::Ptr,
+            Type::Reference(_) => TypeClass::Reference,
+            Type::Slice(_) => TypeClass::Slice,
+            Type::TraitObject(_) => TypeClass::TraitObject,
+            Type::Tuple(_) => TypeClass::Tuple,
+            Type::Verbatim(_) => TypeClass::Verbatim,
+            _ => unreachable!(),
+        }
+    }
+}
+
 impl TypeClass {
     /// Checks the [`Type`] against current requirements, generating [`Error`]
     /// if the requirements are not met.
     pub fn check(self, ty: &Type, attr: impl ToString, arg: impl ToString) -> Result<(), Error> {
-        match (self, ty) {
-            (TypeClass::Verbatim, Type::Verbatim(_))
-            | (TypeClass::Array, Type::Array(_))
-            | (TypeClass::BareFn, Type::BareFn(_))
-            | (TypeClass::Group, Type::Group(_))
-            | (TypeClass::ImplTrait, Type::ImplTrait(_))
-            | (TypeClass::Infer, Type::Infer(_))
-            | (TypeClass::Macro, Type::Macro(_))
-            | (TypeClass::Never, Type::Never(_))
-            | (TypeClass::Paren, Type::Paren(_))
-            | (TypeClass::Path, Type::Path(_))
-            | (TypeClass::Ptr, Type::Ptr(_))
-            | (TypeClass::Reference, Type::Reference(_))
-            | (TypeClass::Slice, Type::Slice(_))
-            | (TypeClass::TraitObject, Type::TraitObject(_))
-            | (TypeClass::Tuple, Type::Tuple(_)) => Ok(()),
-            _ => Err(Error::ArgValueTypeMismatch {
+        if self != TypeClass::from(ty) {
+            Err(Error::ArgValueTypeMismatch {
                 attr: attr.to_string(),
                 arg: arg.to_string(),
-            }),
+            })
+        } else {
+            Ok(())
         }
     }
 }
