@@ -132,6 +132,10 @@ pub enum Error {
 
     /// Lists nested within attribute arguments, like `#[attr(arg(...))]`
     /// are not supported
+    #[deprecated(
+        since = "1.1.0",
+        note = "This error variant is not used anymore after the introduction of custom attribute parser"
+    )]
     NestedListsNotSupported(String),
 }
 
@@ -225,6 +229,7 @@ impl Display for Error {
                     name = name
                 )
             }
+            #[allow(deprecated)]
             Error::NestedListsNotSupported(name) => write!(
                 f,
                 "Attribute `{name}` must be in `{name} = ...` form and a nested list",
@@ -275,8 +280,9 @@ impl std::error::Error for Error {
             | Error::UnsupportedLiteral(_)
             | Error::AttributeUnknownArgument { .. }
             | Error::ArgNumberExceedsMax { .. }
-            | Error::ArgValueTypeMismatch { .. }
-            | Error::NestedListsNotSupported(_) => None,
+            | Error::ArgValueTypeMismatch { .. } => None,
+            #[allow(deprecated)]
+            Error::NestedListsNotSupported(_) => None,
         }
     }
 }

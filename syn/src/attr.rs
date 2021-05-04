@@ -19,8 +19,11 @@ use syn::{
     Type, Path, Attribute, Meta, MetaList, MetaNameValue, NestedMeta, Lit, LitInt, LitStr,
     LitByteStr, LitFloat, LitChar, LitBool,
 };
+use syn::parse::{Parse, Parser};
+use proc_macro::TokenStream;
+use quote::ToTokens;
 
-use crate::{Error, ArgValue, ArgValueReq, AttrReq};
+use crate::{Error, ArgValue, ArgValueReq, AttrReq, MetaArgs, MetaArgNameValue};
 
 /// Internal structure representation of a proc macro attribute collected
 /// instances having some specific name (accessible via [`Attr::name()`]).
@@ -535,9 +538,10 @@ impl ParametrizedAttr {
     /// fusion takes a nested meta data.
     #[inline]
     pub fn fuse(&mut self, nested: NestedMeta) -> Result<(), Error> {
+        let nested = MetaArgs::parse.parse(TokenStream::from(nested.to_token_stream()))?;
         match nested {
             // `#[ident("literal", ...)]`
-            NestedMeta::Lit(Lit::Str(s)) => {
+            MetaArgs::Literal(Lit::Str(s)) => {
                 let span = s.span();
                 match self.string {
                     None => self.string = Some(s),
@@ -550,7 +554,7 @@ impl ParametrizedAttr {
             }
 
             // `#[ident(b"literal", ...)]`
-            NestedMeta::Lit(Lit::ByteStr(s)) => {
+            MetaArgs::Literal(Lit::ByteStr(s)) => {
                 let span = s.span();
                 match self.bytes {
                     None => self.bytes = Some(s),
@@ -563,48 +567,37 @@ impl ParametrizedAttr {
             }
 
             // `#[ident(3, ...)]`
-            NestedMeta::Lit(Lit::Int(lit)) => self.integers.push(lit),
+            MetaArgs::Literal(Lit::Int(lit)) => self.integers.push(lit),
 
             // `#[ident(2.3, ...)]`
-            NestedMeta::Lit(Lit::Float(lit)) => self.floats.push(lit),
+            MetaArgs::Literal(Lit::Float(lit)) => self.floats.push(lit),
 
             // `#[ident('a', ...)]`
-            NestedMeta::Lit(Lit::Char(lit)) => self.chars.push(lit),
+            MetaArgs::Literal(Lit::Char(lit)) => self.chars.push(lit),
 
             // `#[ident(true, ...)]`
-            NestedMeta::Lit(Lit::Bool(_)) if self.bool.is_some() => {
+            MetaArgs::Literal(Lit::Bool(_)) if self.bool.is_some() => {
                 return Err(Error::MultipleLiteralValues(self.name.clone()))
             }
-            NestedMeta::Lit(Lit::Bool(lit)) if self.bool.is_none() => self.bool = Some(lit.clone()),
+            MetaArgs::Literal(Lit::Bool(lit)) if self.bool.is_none() => {
+                self.bool = Some(lit.clone())
+            }
 
             // `#[ident(true, ...)]`
-            NestedMeta::Lit(_) => return Err(Error::UnsupportedLiteral(self.name.clone())),
+            MetaArgs::Literal(_) => return Err(Error::UnsupportedLiteral(self.name.clone())),
 
             // `#[ident(arg::path)]`
-            NestedMeta::Meta(Meta::Path(path)) => self.paths.push(path),
+            MetaArgs::Path(path) => self.paths.push(path),
 
             // `#[ident(name = value, ...)]`
-            NestedMeta::Meta(Meta::NameValue(MetaNameValue { path, lit, .. })) => {
-                let id = path
-                    .clone()
-                    .get_ident()
-                    .ok_or(Error::ArgNameMustBeIdent)?
-                    .to_string();
-                if self
-                    .args
-                    .insert(id.clone(), ArgValue::Literal(lit))
-                    .is_some()
-                {
+            MetaArgs::NameValue(MetaArgNameValue { name, value, .. }) => {
+                let id = name.to_string();
+                if self.args.insert(id.clone(), value).is_some() {
                     return Err(Error::ArgNameMustBeUnique {
                         attr: self.name.clone(),
                         arg: id,
                     });
                 }
-            }
-
-            // `#[ident(arg(...), ...)]`
-            NestedMeta::Meta(Meta::List(_)) => {
-                return Err(Error::NestedListsNotSupported(self.name.clone()))
             }
         }
         Ok(())
