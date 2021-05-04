@@ -4,6 +4,8 @@ Change Log
 1.1.0
 -----
 - Custom parsers allowing attribute values to take any form, not only literals
+- Convenience methods for ArgValue conversion from/to idents & paths
+- `ident!` macros for simplified `syn::Ident` creation
 
 1.0.1
 -----

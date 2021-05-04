@@ -53,3 +53,22 @@ pub use cls::{LiteralClass, ValueClass, TypeClass};
 pub use req::{ValueReq, ListReq, AttrReq, ArgValueReq};
 pub use val::ArgValue;
 pub use parsers::{MetaArgs, MetaArgNameValue};
+
+/// Convenience macro for constructing [`syn::Ident`] from literals
+#[macro_export]
+macro_rules! ident {
+    ($ident:ident) => {
+        ::syn::Ident::new(stringify!($ident), ::proc_macro2::Span::call_site())
+    };
+}
+
+#[cfg(test)]
+mod test {
+    use syn::Ident;
+    use proc_macro2::Span;
+
+    #[test]
+    fn ident() {
+        assert_eq!(ident!(u8), Ident::new("u8", Span::call_site()));
+    }
+}

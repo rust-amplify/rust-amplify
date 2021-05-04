@@ -92,18 +92,6 @@ impl From<isize> for ArgValue {
     }
 }
 
-impl From<Ident> for ArgValue {
-    fn from(ident: Ident) -> Self {
-        Path::from(PathSegment::parse.parse(quote! { #ident }.into()).unwrap()).into()
-    }
-}
-
-impl From<Path> for ArgValue {
-    fn from(path: Path) -> Self {
-        ArgValue::Type(Type::Path(TypePath { qself: None, path }))
-    }
-}
-
 impl From<f64> for ArgValue {
     fn from(val: f64) -> Self {
         ArgValue::Literal(Lit::Float(LitFloat::new(
@@ -119,6 +107,18 @@ impl From<Option<LitStr>> for ArgValue {
             Some(val) => ArgValue::Literal(Lit::Str(val)),
             None => ArgValue::None,
         }
+    }
+}
+
+impl From<Ident> for ArgValue {
+    fn from(ident: Ident) -> Self {
+        Path::from(PathSegment::parse.parse(quote! { #ident }.into()).unwrap()).into()
+    }
+}
+
+impl From<Path> for ArgValue {
+    fn from(path: Path) -> Self {
+        ArgValue::Type(Type::Path(TypePath { qself: None, path }))
     }
 }
 
