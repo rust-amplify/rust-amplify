@@ -43,7 +43,7 @@ extern crate proc_macro;
 mod attr;
 mod cls;
 mod error;
-mod meta;
+mod parsers;
 mod req;
 mod val;
 
@@ -52,4 +52,4 @@ pub use attr::{Attr, SingularAttr, ParametrizedAttr, ExtractAttr};
 pub use cls::{LiteralClass, ValueClass, TypeClass};
 pub use req::{ValueReq, ListReq, AttrReq, ArgValueReq};
 pub use val::ArgValue;
-pub use meta::{MetaArgs, MetaArgNameValue};
+pub use parsers::{MetaArgs, MetaArgNameValue};
