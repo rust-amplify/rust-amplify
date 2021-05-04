@@ -15,8 +15,11 @@
 
 use std::fmt::{Debug, Formatter, self};
 use std::convert::TryInto;
-use syn::{Type, Lit, LitStr, LitByteStr, LitBool, LitChar, LitInt, LitFloat};
-use syn::parse::{Parse, ParseBuffer};
+use syn::{
+    Type, Ident, Path, Lit, LitStr, LitByteStr, LitBool, LitChar, LitInt, LitFloat, TypePath,
+    PathSegment,
+};
+use syn::parse::{Parse, ParseBuffer, Parser};
 use proc_macro2::{TokenStream, Span};
 use quote::{ToTokens};
 
@@ -86,6 +89,18 @@ impl From<usize> for ArgValue {
 impl From<isize> for ArgValue {
     fn from(val: isize) -> Self {
         ArgValue::Literal(Lit::Int(LitInt::new(&val.to_string(), Span::call_site())))
+    }
+}
+
+impl From<Ident> for ArgValue {
+    fn from(ident: Ident) -> Self {
+        Path::from(PathSegment::parse.parse(quote! { #ident }.into()).unwrap()).into()
+    }
+}
+
+impl From<Path> for ArgValue {
+    fn from(path: Path) -> Self {
+        ArgValue::Type(Type::Path(TypePath { qself: None, path }))
     }
 }
 
@@ -262,6 +277,34 @@ impl TryInto<LitFloat> for ArgValue {
     }
 }
 
+impl TryInto<Ident> for ArgValue {
+    type Error = Error;
+
+    fn try_into(self) -> Result<Ident, Self::Error> {
+        match self {
+            ArgValue::Type(Type::Path(ty)) => {
+                if let Some(ident) = ty.path.get_ident() {
+                    Ok(ident.clone())
+                } else {
+                    Err(Error::ArgValueMustBeType)
+                }
+            }
+            _ => Err(Error::ArgValueMustBeType),
+        }
+    }
+}
+
+impl TryInto<Path> for ArgValue {
+    type Error = Error;
+
+    fn try_into(self) -> Result<Path, Self::Error> {
+        match self {
+            ArgValue::Type(Type::Path(ty)) => Ok(ty.path),
+            _ => Err(Error::ArgValueMustBeType),
+        }
+    }
+}
+
 impl TryInto<Option<LitStr>> for ArgValue {
     type Error = Error;
 
@@ -330,6 +373,36 @@ impl TryInto<Option<LitFloat>> for ArgValue {
             ArgValue::Literal(Lit::Float(f)) => Ok(Some(f)),
             ArgValue::None => Ok(None),
             _ => Err(Error::ArgValueMustBeLiteral),
+        }
+    }
+}
+
+impl TryInto<Option<Ident>> for ArgValue {
+    type Error = Error;
+
+    fn try_into(self) -> Result<Option<Ident>, Self::Error> {
+        match self {
+            ArgValue::Type(Type::Path(ty)) => {
+                if let Some(ident) = ty.path.get_ident() {
+                    Ok(Some(ident.clone()))
+                } else {
+                    Err(Error::ArgValueMustBeType)
+                }
+            }
+            ArgValue::None => Ok(None),
+            _ => Err(Error::ArgValueMustBeType),
+        }
+    }
+}
+
+impl TryInto<Option<Path>> for ArgValue {
+    type Error = Error;
+
+    fn try_into(self) -> Result<Option<Path>, Self::Error> {
+        match self {
+            ArgValue::Type(Type::Path(ty)) => Ok(Some(ty.path)),
+            ArgValue::None => Ok(None),
+            _ => Err(Error::ArgValueMustBeType),
         }
     }
 }
