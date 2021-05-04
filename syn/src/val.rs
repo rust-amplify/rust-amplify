@@ -19,8 +19,8 @@ use syn::{
     Type, Ident, Path, Lit, LitStr, LitByteStr, LitBool, LitChar, LitInt, LitFloat, TypePath,
     PathSegment,
 };
-use syn::parse::{Parse, ParseBuffer, Parser};
-use proc_macro2::{TokenStream, Span};
+use syn::parse::{Parse, Parser};
+use proc_macro2::Span;
 use quote::{ToTokens};
 
 use crate::{Error, ValueClass};
@@ -403,31 +403,6 @@ impl TryInto<Option<Path>> for ArgValue {
             ArgValue::Type(Type::Path(ty)) => Ok(Some(ty.path)),
             ArgValue::None => Ok(None),
             _ => Err(Error::ArgValueMustBeType),
-        }
-    }
-}
-
-impl Parse for ArgValue {
-    fn parse(input: &ParseBuffer) -> Result<Self, syn::Error> {
-        if let Ok(lit) = Lit::parse(input) {
-            Ok(ArgValue::Literal(lit))
-        } else if let Ok(ty) = Type::parse(input) {
-            Ok(ArgValue::Type(ty))
-        } else {
-            Err(syn::Error::new(
-                input.span(),
-                "Attribute argument value must be a rust literal or a type",
-            ))
-        }
-    }
-}
-
-impl ToTokens for ArgValue {
-    fn to_tokens(&self, tokens: &mut TokenStream) {
-        match self {
-            ArgValue::Literal(lit) => lit.to_tokens(tokens),
-            ArgValue::Type(ty) => ty.to_tokens(tokens),
-            ArgValue::None => quote! { ! }.to_tokens(tokens),
         }
     }
 }

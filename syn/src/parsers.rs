@@ -90,3 +90,23 @@ impl ToTokens for MetaArgNameValue {
         self.value.to_tokens(tokens);
     }
 }
+
+impl Parse for ArgValue {
+    fn parse(input: &ParseBuffer) -> Result<Self> {
+        if input.peek(Lit) {
+            input.parse().map(ArgValue::Literal)
+        } else {
+            input.parse().map(ArgValue::Type)
+        }
+    }
+}
+
+impl ToTokens for ArgValue {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        match self {
+            ArgValue::Literal(lit) => lit.to_tokens(tokens),
+            ArgValue::Type(ty) => ty.to_tokens(tokens),
+            ArgValue::None => quote! { ! }.to_tokens(tokens),
+        }
+    }
+}
