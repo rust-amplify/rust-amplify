@@ -16,6 +16,7 @@
 use std::fmt::{Debug, Formatter, self};
 use std::convert::TryInto;
 use syn::{Type, Lit, LitStr, LitByteStr, LitBool, LitChar, LitInt, LitFloat};
+use syn::parse::{Parse, ParseBuffer};
 use proc_macro2::{TokenStream, Span};
 use quote::ToTokens;
 
@@ -329,6 +330,21 @@ impl TryInto<Option<LitFloat>> for ArgValue {
             ArgValue::Literal(Lit::Float(f)) => Ok(Some(f)),
             ArgValue::None => Ok(None),
             _ => Err(Error::ArgValueMustBeLiteral),
+        }
+    }
+}
+
+impl Parse for ArgValue {
+    fn parse(input: &ParseBuffer) -> Result<Self, syn::Error> {
+        if let Ok(lit) = Lit::parse(input) {
+            Ok(ArgValue::Literal(lit))
+        } else if let Ok(ty) = Type::parse(input) {
+            Ok(ArgValue::Type(ty))
+        } else {
+            Err(syn::Error::new(
+                input.span(),
+                "Attribute argument value must be a rust literal or a type",
+            ))
         }
     }
 }

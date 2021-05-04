@@ -36,10 +36,13 @@
 
 #[macro_use]
 extern crate quote;
+#[macro_use]
+extern crate syn;
 
 mod attr;
 mod cls;
 mod error;
+mod meta;
 mod req;
 mod val;
 
@@ -48,3 +51,4 @@ pub use attr::{Attr, SingularAttr, ParametrizedAttr, ExtractAttr};
 pub use cls::{LiteralClass, ValueClass, TypeClass};
 pub use req::{ValueReq, ListReq, AttrReq, ArgValueReq};
 pub use val::ArgValue;
+pub use meta::MetaArgNameValue;
