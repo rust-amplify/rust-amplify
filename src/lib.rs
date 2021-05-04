@@ -40,6 +40,8 @@ extern crate serde_crate as serde;
 pub extern crate stringly_conversions;
 #[cfg(feature = "stringly_conversions")]
 pub use stringly_conversions::*;
+#[cfg(feature = "proc_attr")]
+pub extern crate amplify_syn as proc_attr;
 
 #[macro_use]
 mod macros;

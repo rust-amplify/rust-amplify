@@ -1,6 +1,6 @@
 [package]
 name = "amplify"
-version = "3.2.0"
+version = "3.3.0"
 description = "Amplifying Rust language capabilities: multiple generic trait implementations, type wrappers, derive macros"
 authors = ["Dr. Maxim Orlovsky <orlovsky@pandoracore.com>", "Martin Habovstiak <martin.habovstiak@gmail.com>"]
 keywords = ["generics", "core", "no_std", "wrap", "patterns"]
@@ -19,6 +19,7 @@ path = "src/lib.rs"
 [dependencies]
 libc = { version = "0.2", optional = true }
 amplify_derive = { version = "2.5", path = "./derive" }
+amplify_syn = { version = "1.0", path = "./syn", optional = true }
 parse_arg = { version = "0.1.4", optional = true }
 # This strange naming is a workaround for not being able to define required features for a dependency
 # See https://github.com/rust-lang/api-guidelines/issues/180 for the explanation and references.
@@ -29,8 +30,9 @@ toml = { version = "0.5", optional = true }
 stringly_conversions = { version = "0.1.1", optional = true, features = ["alloc"] }
 
 [features]
-all = ["serde", "std", "parse_arg", "stringly_conversions", "c_raw"]
+all = ["serde", "std", "parse_arg", "stringly_conversions", "c_raw", "proc_attr"]
 c_raw = ["libc"]
+proc_attr = ["amplify_syn"]
 serde = ["serde_crate", "std",
          "serde_yaml", "serde_json", "toml",
          "stringly_conversions",

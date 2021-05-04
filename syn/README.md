@@ -13,7 +13,7 @@
 Carefully crafted extensions to the well-known `syn` crate, which helps to
 create complex derivation and proc macro libraries.
 
-For samples, please check [documentation]((https://docs.rs/amplify_syn)) and 
+For samples, please check [documentation](https://docs.rs/amplify_syn) and 
 the [following code](https://github.com/LNP-BP/rust-amplify/tree/master/derive/src/getters.rs) 
 from `amplify_derive` crate, which uses this library for its custom derivation 
 macros.
