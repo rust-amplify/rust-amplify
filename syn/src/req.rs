@@ -107,7 +107,7 @@ impl ArgValueReq {
         }
     }
 
-    /// Construct [`ArgReq::Required`] variant with no default value
+    /// Construct [`ArgValueReq::Required`] variant with no default value
     pub fn required(class: ValueClass) -> ArgValueReq {
         ArgValueReq::Required {
             default: None,

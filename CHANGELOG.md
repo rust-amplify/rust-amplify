@@ -1,6 +1,12 @@
 Change Log
 ==========
 
+3.4.0
+-----
+- Support for amplify_syn (re-exported as `proc_attr` if the same-named feature
+  is used)
+- Use of new `amplify_derive` version
+
 3.1.0
 -----
 - Wrapper::copy()
