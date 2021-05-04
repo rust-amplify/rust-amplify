@@ -42,6 +42,8 @@ pub extern crate stringly_conversions;
 pub use stringly_conversions::*;
 #[cfg(feature = "proc_attr")]
 pub extern crate amplify_syn as proc_attr;
+#[cfg(feature = "proc_attr")]
+pub use proc_attr::ident;
 
 #[macro_use]
 mod macros;

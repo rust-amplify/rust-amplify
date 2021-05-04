@@ -4,7 +4,7 @@ version = 3
 
 [[package]]
 name = "amplify"
-version = "3.3.0"
+version = "3.4.0"
 dependencies = [
  "amplify_derive",
  "amplify_syn",
@@ -30,7 +30,7 @@ dependencies = [
 
 [[package]]
 name = "amplify_syn"
-version = "1.0.1"
+version = "1.1.0"
 dependencies = [
  "proc-macro2",
  "quote",
