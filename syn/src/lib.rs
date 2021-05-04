@@ -51,4 +51,4 @@ pub use attr::{Attr, SingularAttr, ParametrizedAttr, ExtractAttr};
 pub use cls::{LiteralClass, ValueClass, TypeClass};
 pub use req::{ValueReq, ListReq, AttrReq, ArgValueReq};
 pub use val::ArgValue;
-pub use meta::MetaArgNameValue;
+pub use meta::{MetaArgs, MetaArgNameValue};

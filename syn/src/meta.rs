@@ -14,9 +14,42 @@
 // If not, see <https://opensource.org/licenses/MIT>.
 
 use syn::parse::{Parse, Result, ParseBuffer};
+use syn::{Path, Lit};
 use proc_macro2::Ident;
 
 use crate::ArgValue;
+
+/// Drop-in replacement for [`syn::NestedMeta`], which allows to parse
+/// attributes which can have arguments made of either literal, path or
+/// [`MetaArgNameValue`] expressions.
+pub enum MetaArgs {
+    /// Attribute argument in form of literal
+    Literal(Lit),
+
+    /// Attribute argument in form of a path
+    Path(Path),
+
+    /// Attribute argument in form of `name = value` expression, where value
+    /// can be any [`ArgValue`]-representable data
+    NameValue(MetaArgNameValue),
+}
+
+impl Parse for MetaArgs {
+    fn parse(input: &ParseBuffer) -> Result<Self> {
+        if let Ok(lit) = Lit::parse(input) {
+            Ok(MetaArgs::Literal(lit))
+        } else if let Ok(path) = Path::parse(input) {
+            Ok(MetaArgs::Path(path))
+        } else if let Ok(meta) = MetaArgNameValue::parse(input) {
+            Ok(MetaArgs::NameValue(meta))
+        } else {
+            Err(syn::Error::new(
+                input.span(),
+                "Attribute argument must be a rust literal, path or a `name=value` expression",
+            ))
+        }
+    }
+}
 
 /// Drop-in replacement for [`syn::MetaNameValue`] used for parsing named
 /// arguments inside attributes which name is always an [`proc_macro2::Ident`]
