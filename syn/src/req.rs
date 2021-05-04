@@ -24,7 +24,7 @@ use crate::{Error, ValueClass, ArgValue};
 #[derive(Clone)]
 pub struct AttrReq {
     /// Specifies all named arguments and which requirements they must meet
-    pub arg_req: HashMap<String, ArgReq>,
+    pub arg_req: HashMap<String, ArgValueReq>,
 
     /// Specifies whether path arguments are allowed and with which
     /// requirements.
@@ -58,7 +58,7 @@ pub struct AttrReq {
 impl AttrReq {
     /// Constructor creating [`AttrReq`] accepting only name-value arguments
     /// with the provided parameters
-    pub fn with(args: HashMap<&str, ArgReq>) -> AttrReq {
+    pub fn with(args: HashMap<&str, ArgValueReq>) -> AttrReq {
         let args = args
             .into_iter()
             .map(|(name, req)| (name.to_owned(), req))
@@ -79,7 +79,7 @@ impl AttrReq {
 
 /// Requirements for attribute or named argument value presence
 #[derive(Clone)]
-pub enum ArgReq {
+pub enum ArgValueReq {
     /// Argument must hold a value with the provided class
     Required {
         /// Default value
@@ -95,11 +95,11 @@ pub enum ArgReq {
     Prohibited,
 }
 
-impl ArgReq {
+impl ArgValueReq {
     /// Constructs argument requirements object with default value
-    pub fn with_default(default: impl Into<ArgValue>) -> ArgReq {
+    pub fn with_default(default: impl Into<ArgValue>) -> ArgValueReq {
         let value = default.into();
-        ArgReq::Required {
+        ArgValueReq::Required {
             class: value
                 .value_class()
                 .expect("Default argument value must not be `ArgValue::None`"),
@@ -108,8 +108,8 @@ impl ArgReq {
     }
 
     /// Construct [`ArgReq::Required`] variant with no default value
-    pub fn required(class: ValueClass) -> ArgReq {
-        ArgReq::Required {
+    pub fn required(class: ValueClass) -> ArgValueReq {
+        ArgValueReq::Required {
             default: None,
             class,
         }
@@ -118,8 +118,8 @@ impl ArgReq {
     /// Returns value class requirements, if any
     pub fn value_class(&self) -> Option<ValueClass> {
         match self {
-            ArgReq::Required { class, .. } | ArgReq::Optional(class) => Some(*class),
-            ArgReq::Prohibited => None,
+            ArgValueReq::Required { class, .. } | ArgValueReq::Optional(class) => Some(*class),
+            ArgValueReq::Prohibited => None,
         }
     }
 
@@ -128,7 +128,7 @@ impl ArgReq {
     /// default value for any argument).
     pub fn default_value(&self) -> ArgValue {
         match self {
-            ArgReq::Required {
+            ArgValueReq::Required {
                 default: Some(d), ..
             } => d.clone(),
             _ => ArgValue::None,
@@ -138,7 +138,7 @@ impl ArgReq {
     /// Determines whether argument is required to have a value
     pub fn is_required(&self) -> bool {
         match self {
-            ArgReq::Required { default: None, .. } => true,
+            ArgValueReq::Required { default: None, .. } => true,
             _ => false,
         }
     }
@@ -152,14 +152,14 @@ impl ArgReq {
         arg: impl ToString,
     ) -> Result<(), Error> {
         let value = match (value, self) {
-            (val, ArgReq::Required { default: None, .. }) if val.is_none() => {
+            (val, ArgValueReq::Required { default: None, .. }) if val.is_none() => {
                 return Err(Error::ArgValueRequired {
                     attr: attr.to_string(),
                     arg: arg.to_string(),
                 })
             }
 
-            (val, ArgReq::Prohibited) if val.is_some() => {
+            (val, ArgValueReq::Prohibited) if val.is_some() => {
                 return Err(Error::ArgMustNotHaveValue {
                     attr: attr.to_string(),
                     arg: arg.to_string(),
@@ -168,7 +168,7 @@ impl ArgReq {
 
             (
                 val,
-                ArgReq::Required {
+                ArgValueReq::Required {
                     default: Some(d), ..
                 },
             ) if val.value_class() != d.value_class() && val.value_class().is_some() => {
@@ -183,7 +183,7 @@ impl ArgReq {
 
             (
                 val,
-                ArgReq::Required {
+                ArgValueReq::Required {
                     default: Some(d), ..
                 },
             ) if val.is_none() => {
@@ -203,7 +203,9 @@ impl ArgReq {
     }
 }
 
-/// Requirements for attribute or named argument value presence
+/// Requirements for attribute or named argument value presence for a values
+/// with known class. If the value class is not known, use [`ArgValueReq`]
+/// instead.
 #[derive(Clone)]
 pub enum ValueReq {
     /// Argument or an attribute must hold a value

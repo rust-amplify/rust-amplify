@@ -20,7 +20,7 @@ use syn::{
     LitByteStr, LitFloat, LitChar, LitBool,
 };
 
-use crate::{Error, ArgValue, ArgReq, AttrReq};
+use crate::{Error, ArgValue, ArgValueReq, AttrReq};
 
 /// Internal structure representation of a proc macro attribute collected
 /// instances having some specific name (accessible via [`Attr::name()`]).
@@ -343,7 +343,7 @@ impl SingularAttr {
 
     /// Checks that the structure meets provided value requirements (see
     /// [`ValueReq`]), generating [`Error`] if the requirements are not met.
-    pub fn check(&mut self, req: ArgReq) -> Result<(), Error> {
+    pub fn check(&mut self, req: ArgValueReq) -> Result<(), Error> {
         req.check(&mut self.value, &self.name, &self.name)?;
         Ok(())
     }
@@ -352,7 +352,7 @@ impl SingularAttr {
     /// self and returns a itself in case of the successful operation.
     /// Useful in operation chains.
     #[inline]
-    pub fn checked(mut self, req: ArgReq) -> Result<Self, Error> {
+    pub fn checked(mut self, req: ArgValueReq) -> Result<Self, Error> {
         self.check(req)?;
         Ok(self)
     }
@@ -695,7 +695,7 @@ pub trait ExtractAttr {
     fn singular_attr(
         self,
         name: impl ToString + AsRef<str>,
-        req: ArgReq,
+        req: ArgValueReq,
     ) -> Result<Option<SingularAttr>, Error>;
 
     #[doc(hidden)]
@@ -716,7 +716,7 @@ where
     fn singular_attr(
         self,
         name: impl ToString + AsRef<str>,
-        req: ArgReq,
+        req: ArgValueReq,
     ) -> Result<Option<SingularAttr>, Error> {
         let mut attr = SingularAttr::new(name.to_string());
 

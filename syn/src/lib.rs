@@ -46,5 +46,5 @@ mod val;
 pub use error::Error;
 pub use attr::{Attr, SingularAttr, ParametrizedAttr, ExtractAttr};
 pub use cls::{LiteralClass, ValueClass, TypeClass};
-pub use req::{ValueReq, ListReq, AttrReq, ArgReq};
+pub use req::{ValueReq, ListReq, AttrReq, ArgValueReq};
 pub use val::ArgValue;

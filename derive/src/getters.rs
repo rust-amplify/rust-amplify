@@ -23,7 +23,7 @@ use syn::{
     TypeGenerics, WhereClause, Field,
 };
 
-use amplify_syn::{ParametrizedAttr, AttrReq, ArgReq, ArgValue, ValueClass};
+use amplify_syn::{ParametrizedAttr, AttrReq, ArgValueReq, ArgValue, ValueClass};
 
 pub(crate) fn derive(input: DeriveInput) -> Result<TokenStream2> {
     let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
@@ -67,22 +67,20 @@ struct GetterDerive {
 impl GetterDerive {
     fn try_from(attr: &mut ParametrizedAttr, global: bool) -> Result<GetterDerive> {
         let mut map = HashMap::from_iter(vec![
-            ("prefix", ArgReq::with_default("")),
-            ("all", ArgReq::Prohibited),
-            ("as_copy", ArgReq::with_default("")),
-            ("as_clone", ArgReq::with_default("")),
-            ("as_ref", ArgReq::with_default("_ref")),
-            ("as_mut", ArgReq::with_default("_mut")),
+            ("prefix", ArgValueReq::with_default("")),
+            ("all", ArgValueReq::Prohibited),
+            ("as_copy", ArgValueReq::with_default("")),
+            ("as_clone", ArgValueReq::with_default("")),
+            ("as_ref", ArgValueReq::with_default("_ref")),
+            ("as_mut", ArgValueReq::with_default("_mut")),
         ]);
 
         if !global {
-            map.insert("skip", ArgReq::Prohibited);
-            map.insert("base_name", ArgReq::Optional(ValueClass::str()));
+            map.insert("skip", ArgValueReq::Prohibited);
+            map.insert("base_name", ArgValueReq::Optional(ValueClass::str()));
         }
 
-        println!("{:#?}", attr);
         attr.check(AttrReq::with(map))?;
-        println!("{:#?}", attr);
 
         if attr.args.contains_key("all") {
             if attr.args.contains_key("as_clone")
