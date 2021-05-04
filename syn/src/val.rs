@@ -18,7 +18,7 @@ use std::convert::TryInto;
 use syn::{Type, Lit, LitStr, LitByteStr, LitBool, LitChar, LitInt, LitFloat};
 use syn::parse::{Parse, ParseBuffer};
 use proc_macro2::{TokenStream, Span};
-use quote::ToTokens;
+use quote::{ToTokens};
 
 use crate::{Error, ValueClass};
 
@@ -349,22 +349,17 @@ impl Parse for ArgValue {
     }
 }
 
-impl ArgValue {
-    /// Helper method converting [`ArgValue`] into a [`TokenStream`].
-    ///
-    /// We can't `impl ToTokens for ArgValue`, since `ToTokens` trait is a
-    /// private inside `syn` crate, so we can't support direct use of
-    /// [`ArgValue`] inside `quote!` and `quote_spanned!` macros. Instead, use
-    /// this method to acquire [`TokenStream`] variable and use it in quotations
-    #[inline]
-    pub fn to_token_stream(&self) -> TokenStream {
+impl ToTokens for ArgValue {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
         match self {
-            ArgValue::Literal(lit) => quote! { #lit },
-            ArgValue::Type(ty) => quote! { #ty },
-            ArgValue::None => quote! {},
+            ArgValue::Literal(lit) => lit.to_tokens(tokens),
+            ArgValue::Type(ty) => ty.to_tokens(tokens),
+            ArgValue::None => quote! { ! }.to_tokens(tokens),
         }
     }
+}
 
+impl ArgValue {
     /// Returns literal value for [`ArgValue::Literal`] variant or fails with
     /// [`Error::ArgValueMustBeLiteral`] otherwise
     #[inline]

@@ -15,7 +15,9 @@
 
 use syn::parse::{Parse, Result, ParseBuffer};
 use syn::{Path, Lit};
-use proc_macro2::Ident;
+use syn::ext::IdentExt;
+use proc_macro2::{Ident, TokenStream};
+use quote::ToTokens;
 
 use crate::ArgValue;
 
@@ -36,17 +38,24 @@ pub enum MetaArgs {
 
 impl Parse for MetaArgs {
     fn parse(input: &ParseBuffer) -> Result<Self> {
-        if let Ok(lit) = Lit::parse(input) {
-            Ok(MetaArgs::Literal(lit))
-        } else if let Ok(path) = Path::parse(input) {
-            Ok(MetaArgs::Path(path))
-        } else if let Ok(meta) = MetaArgNameValue::parse(input) {
-            Ok(MetaArgs::NameValue(meta))
+        if input.peek2(Token![=]) {
+            input.parse().map(MetaArgs::NameValue)
+        } else if input.peek(Ident::peek_any)
+            || input.peek(Token![::]) && input.peek3(Ident::peek_any)
+        {
+            input.parse().map(MetaArgs::Path)
         } else {
-            Err(syn::Error::new(
-                input.span(),
-                "Attribute argument must be a rust literal, path or a `name=value` expression",
-            ))
+            input.parse().map(MetaArgs::Literal)
+        }
+    }
+}
+
+impl ToTokens for MetaArgs {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        match self {
+            MetaArgs::Literal(lit) => lit.to_tokens(tokens),
+            MetaArgs::Path(path) => path.to_tokens(tokens),
+            MetaArgs::NameValue(meta) => meta.to_tokens(tokens),
         }
     }
 }
@@ -71,5 +80,13 @@ impl Parse for MetaArgNameValue {
             eq_token: input.parse()?,
             value: input.parse()?,
         })
+    }
+}
+
+impl ToTokens for MetaArgNameValue {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        self.name.to_tokens(tokens);
+        self.eq_token.to_tokens(tokens);
+        self.value.to_tokens(tokens);
     }
 }
