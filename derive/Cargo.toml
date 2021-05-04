@@ -1,6 +1,6 @@
 [package]
 name = "amplify_derive"
-version = "2.6.0"
+version = "2.7.0"
 description = "Amplifying Rust language capabilities: derive macros for the 'amplify' library"
 authors = ["Dr. Maxim Orlovsky <orlovsky@pandoracore.com>", "Elichai Turkel <elichai.turkel@gmail.com>"]
 keywords = ["generics", "derive", "wrap", "patterns"]
@@ -24,7 +24,7 @@ path = "src/lib.rs"
 quote = "1"
 syn = "1"
 proc-macro2 = "1"
-amplify_syn = { version = "1", path = "../syn" }
+amplify_syn = { version = "1.1", path = "../syn" }
 
 [dev-dependencies]
 amplify = { path = ".." }
