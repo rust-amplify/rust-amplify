@@ -4,9 +4,10 @@ version = 3
 
 [[package]]
 name = "amplify"
-version = "3.2.0"
+version = "3.3.0"
 dependencies = [
  "amplify_derive",
+ "amplify_syn",
  "libc",
  "parse_arg",
  "serde",
