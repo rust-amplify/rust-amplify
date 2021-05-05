@@ -20,7 +20,7 @@ use syn::punctuated::Punctuated;
 use proc_macro2::{Ident, TokenStream};
 use quote::ToTokens;
 
-use crate::ArgValue;
+use crate::{ArgValue, Error};
 
 /// Drop-in replacement for [`syn::NestedMeta`], which allows to parse
 /// attributes which can have arguments made of either literal, path or
@@ -99,8 +99,9 @@ pub struct MetaArgNameValue {
 
 impl Parse for MetaArgNameValue {
     fn parse(input: &ParseBuffer) -> Result<Self> {
+        let path: Path = input.parse()?;
         Ok(MetaArgNameValue {
-            name: input.parse()?,
+            name: path.get_ident().ok_or(Error::ArgNameMustBeIdent)?.clone(),
             eq_token: input.parse()?,
             value: input.parse()?,
         })
