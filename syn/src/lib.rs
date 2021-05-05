@@ -52,7 +52,7 @@ pub use attr::{Attr, SingularAttr, ParametrizedAttr, ExtractAttr};
 pub use cls::{LiteralClass, ValueClass, TypeClass};
 pub use req::{ValueReq, ListReq, AttrReq, ArgValueReq};
 pub use val::ArgValue;
-pub use parsers::{MetaArgs, MetaArgNameValue};
+pub use parsers::{MetaArgList, MetaArg, MetaArgNameValue};
 
 /// Convenience macro for constructing [`syn::Ident`] from literals
 #[macro_export]
