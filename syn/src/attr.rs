@@ -16,14 +16,13 @@
 use std::fmt::{Debug, Formatter, self};
 use std::collections::{HashMap, HashSet};
 use syn::{
-    Type, Path, Attribute, Meta, MetaList, MetaNameValue, NestedMeta, Lit, LitInt, LitStr,
-    LitByteStr, LitFloat, LitChar, LitBool,
+    Type, Path, Attribute, Meta, MetaNameValue, Lit, LitInt, LitStr, LitByteStr, LitFloat, LitChar,
+    LitBool,
 };
-use syn::parse::{Parse, Parser};
-use proc_macro::TokenStream;
-use quote::ToTokens;
+use syn::parse_quote::ParseQuote;
+use syn::parse::Parser;
 
-use crate::{Error, ArgValue, ArgValueReq, AttrReq, MetaArgs, MetaArgNameValue};
+use crate::{Error, ArgValue, ArgValueReq, AttrReq, MetaArg, MetaArgNameValue, MetaArgList};
 
 /// Internal structure representation of a proc macro attribute collected
 /// instances having some specific name (accessible via [`Attr::name()`]).
@@ -383,15 +382,7 @@ impl ParametrizedAttr {
     pub fn with(name: impl ToString + AsRef<str>, attrs: &Vec<Attribute>) -> Result<Self, Error> {
         let mut me = ParametrizedAttr::new(name.to_string());
         for attr in attrs.iter().filter(|attr| attr.path.is_ident(&name)) {
-            match attr.parse_meta()? {
-                // `#[ident(...)]`
-                Meta::List(MetaList { nested, .. }) => {
-                    for meta in nested {
-                        me.fuse(meta)?;
-                    }
-                }
-                _ => return Err(Error::ParametrizedAttrRequired(name.to_string())),
-            }
+            me.fuse(attr)?;
         }
         Ok(me)
     }
@@ -403,15 +394,7 @@ impl ParametrizedAttr {
             .get_ident()
             .ok_or(Error::ArgNameMustBeIdent)?
             .to_string();
-        match attr.parse_meta()? {
-            // `#[ident(...)]`
-            Meta::List(MetaList { nested, .. }) => nested
-                .into_iter()
-                .fold(Ok(ParametrizedAttr::new(name)), |res, nested| {
-                    res.and_then(|attr| attr.fused(nested))
-                }),
-            _ => Err(Error::ParametrizedAttrRequired(name)),
-        }
+        ParametrizedAttr::new(name).fused(attr)
     }
 
     /// Returns literal value for a given argument with name `name`, if it is
@@ -530,73 +513,75 @@ impl ParametrizedAttr {
         Ok(self)
     }
 
-    /// Fuses data from a nested attribute arguments (see [`syn::NestedMeta`])
-    /// into the attribute parameters.
+    /// Fuses data from a nested attribute arguments (see [`Attribute`]) into
+    /// the attribute parameters.
     ///
     /// The operation is similar to the [`ParametrizedAttr::enrich`] with the
     /// only difference that enrichment operation takes the whole attribute, and
     /// fusion takes a nested meta data.
     #[inline]
-    pub fn fuse(&mut self, nested: NestedMeta) -> Result<(), Error> {
-        let nested = MetaArgs::parse.parse(TokenStream::from(nested.to_token_stream()))?;
-        match nested {
-            // `#[ident("literal", ...)]`
-            MetaArgs::Literal(Lit::Str(s)) => {
-                let span = s.span();
-                match self.string {
-                    None => self.string = Some(s),
-                    Some(ref mut str1) => {
-                        let mut joined = str1.value();
-                        joined.push_str(&s.value());
-                        *str1 = LitStr::new(&joined, span);
+    pub fn fuse(&mut self, attr: &Attribute) -> Result<(), Error> {
+        let args = MetaArgList::parse.parse(attr.tokens.clone().into())?;
+        for arg in args.list {
+            match arg {
+                // `#[ident("literal", ...)]`
+                MetaArg::Literal(Lit::Str(s)) => {
+                    let span = s.span();
+                    match self.string {
+                        None => self.string = Some(s),
+                        Some(ref mut str1) => {
+                            let mut joined = str1.value();
+                            joined.push_str(&s.value());
+                            *str1 = LitStr::new(&joined, span);
+                        }
                     }
                 }
-            }
 
-            // `#[ident(b"literal", ...)]`
-            MetaArgs::Literal(Lit::ByteStr(s)) => {
-                let span = s.span();
-                match self.bytes {
-                    None => self.bytes = Some(s),
-                    Some(ref mut str1) => {
-                        let mut joined = str1.value();
-                        joined.extend(&s.value());
-                        *str1 = LitByteStr::new(&joined, span);
+                // `#[ident(b"literal", ...)]`
+                MetaArg::Literal(Lit::ByteStr(s)) => {
+                    let span = s.span();
+                    match self.bytes {
+                        None => self.bytes = Some(s),
+                        Some(ref mut str1) => {
+                            let mut joined = str1.value();
+                            joined.extend(&s.value());
+                            *str1 = LitByteStr::new(&joined, span);
+                        }
                     }
                 }
-            }
 
-            // `#[ident(3, ...)]`
-            MetaArgs::Literal(Lit::Int(lit)) => self.integers.push(lit),
+                // `#[ident(3, ...)]`
+                MetaArg::Literal(Lit::Int(lit)) => self.integers.push(lit),
 
-            // `#[ident(2.3, ...)]`
-            MetaArgs::Literal(Lit::Float(lit)) => self.floats.push(lit),
+                // `#[ident(2.3, ...)]`
+                MetaArg::Literal(Lit::Float(lit)) => self.floats.push(lit),
 
-            // `#[ident('a', ...)]`
-            MetaArgs::Literal(Lit::Char(lit)) => self.chars.push(lit),
+                // `#[ident('a', ...)]`
+                MetaArg::Literal(Lit::Char(lit)) => self.chars.push(lit),
 
-            // `#[ident(true, ...)]`
-            MetaArgs::Literal(Lit::Bool(_)) if self.bool.is_some() => {
-                return Err(Error::MultipleLiteralValues(self.name.clone()))
-            }
-            MetaArgs::Literal(Lit::Bool(lit)) if self.bool.is_none() => {
-                self.bool = Some(lit.clone())
-            }
+                // `#[ident(true, ...)]`
+                MetaArg::Literal(Lit::Bool(_)) if self.bool.is_some() => {
+                    return Err(Error::MultipleLiteralValues(self.name.clone()))
+                }
+                MetaArg::Literal(Lit::Bool(lit)) if self.bool.is_none() => {
+                    self.bool = Some(lit.clone())
+                }
 
-            // `#[ident(true, ...)]`
-            MetaArgs::Literal(_) => return Err(Error::UnsupportedLiteral(self.name.clone())),
+                // `#[ident(true, ...)]`
+                MetaArg::Literal(_) => return Err(Error::UnsupportedLiteral(self.name.clone())),
 
-            // `#[ident(arg::path)]`
-            MetaArgs::Path(path) => self.paths.push(path),
+                // `#[ident(arg::path)]`
+                MetaArg::Path(path) => self.paths.push(path),
 
-            // `#[ident(name = value, ...)]`
-            MetaArgs::NameValue(MetaArgNameValue { name, value, .. }) => {
-                let id = name.to_string();
-                if self.args.insert(id.clone(), value).is_some() {
-                    return Err(Error::ArgNameMustBeUnique {
-                        attr: self.name.clone(),
-                        arg: id,
-                    });
+                // `#[ident(name = value, ...)]`
+                MetaArg::NameValue(MetaArgNameValue { name, value, .. }) => {
+                    let id = name.to_string();
+                    if self.args.insert(id.clone(), value).is_some() {
+                        return Err(Error::ArgNameMustBeUnique {
+                            attr: self.name.clone(),
+                            arg: id,
+                        });
+                    }
                 }
             }
         }
@@ -607,8 +592,8 @@ impl ParametrizedAttr {
     /// it consumes the self and returns an enriched structure in case of
     /// the successful operation. Useful in operation chains.
     #[inline]
-    pub fn fused(mut self, nested: NestedMeta) -> Result<Self, Error> {
-        self.fuse(nested)?;
+    pub fn fused(mut self, attr: &Attribute) -> Result<Self, Error> {
+        self.fuse(attr)?;
         Ok(self)
     }
 

@@ -13,9 +13,10 @@
 // along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
-use syn::parse::{Parse, Result, ParseBuffer};
 use syn::{Path, Lit};
+use syn::parse::{Parse, Result, ParseBuffer};
 use syn::ext::IdentExt;
+use syn::punctuated::Punctuated;
 use proc_macro2::{Ident, TokenStream};
 use quote::ToTokens;
 
@@ -24,7 +25,30 @@ use crate::ArgValue;
 /// Drop-in replacement for [`syn::NestedMeta`], which allows to parse
 /// attributes which can have arguments made of either literal, path or
 /// [`MetaArgNameValue`] expressions.
-pub enum MetaArgs {
+pub struct MetaArgList {
+    /// List of arguments
+    pub list: Punctuated<MetaArg, Token![,]>,
+}
+
+impl Parse for MetaArgList {
+    fn parse(input: &ParseBuffer) -> Result<Self> {
+        let content;
+        parenthesized!(content in input);
+        let list = Punctuated::parse_terminated(&content)?;
+        Ok(MetaArgList { list })
+    }
+}
+
+impl ToTokens for MetaArgList {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        (quote! { ( list ) }).to_tokens(tokens);
+    }
+}
+
+/// Drop-in replacement for [`syn::NestedMeta`], which allows to parse
+/// attributes which can have arguments made of either literal, path or
+/// [`MetaArgNameValue`] expressions.
+pub enum MetaArg {
     /// Attribute argument in form of literal
     Literal(Lit),
 
@@ -36,26 +60,26 @@ pub enum MetaArgs {
     NameValue(MetaArgNameValue),
 }
 
-impl Parse for MetaArgs {
+impl Parse for MetaArg {
     fn parse(input: &ParseBuffer) -> Result<Self> {
         if input.peek2(Token![=]) {
-            input.parse().map(MetaArgs::NameValue)
+            input.parse().map(MetaArg::NameValue)
         } else if input.peek(Ident::peek_any)
             || input.peek(Token![::]) && input.peek3(Ident::peek_any)
         {
-            input.parse().map(MetaArgs::Path)
+            input.parse().map(MetaArg::Path)
         } else {
-            input.parse().map(MetaArgs::Literal)
+            input.parse().map(MetaArg::Literal)
         }
     }
 }
 
-impl ToTokens for MetaArgs {
+impl ToTokens for MetaArg {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         match self {
-            MetaArgs::Literal(lit) => lit.to_tokens(tokens),
-            MetaArgs::Path(path) => path.to_tokens(tokens),
-            MetaArgs::NameValue(meta) => meta.to_tokens(tokens),
+            MetaArg::Literal(lit) => lit.to_tokens(tokens),
+            MetaArg::Path(path) => path.to_tokens(tokens),
+            MetaArg::NameValue(meta) => meta.to_tokens(tokens),
         }
     }
 }
