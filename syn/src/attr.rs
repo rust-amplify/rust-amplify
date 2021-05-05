@@ -748,7 +748,7 @@ impl Debug for ParametrizedAttr {
             f.write_str("\n\t")?;
         }
 
-        write!(f, "name: {:?},", self.name)?;
+        write!(f, "name: {:?}, ", self.name)?;
         if f.alternate() {
             f.write_str("\n\t")?;
         }
@@ -762,7 +762,7 @@ impl Debug for ParametrizedAttr {
                 if f.alternate() {
                     f.write_str("\t\t")?;
                 }
-                write!(f, "{} => {:?},", name, val)?;
+                write!(f, "{} => {:?}, ", name, val)?;
                 if f.alternate() {
                     f.write_str("\n")?;
                 }
@@ -771,7 +771,7 @@ impl Debug for ParametrizedAttr {
                 f.write_str("\t")?;
             }
         }
-        f.write_str("},")?;
+        f.write_str("}, ")?;
         if f.alternate() {
             f.write_str("\n\t")?;
         }
@@ -785,7 +785,7 @@ impl Debug for ParametrizedAttr {
                 if f.alternate() {
                     f.write_str("\t\t")?;
                 }
-                write!(f, "{},", quote! { #path })?;
+                write!(f, "{}, ", quote! { #path })?;
                 if f.alternate() {
                     f.write_str("\n")?;
                 }
@@ -794,14 +794,14 @@ impl Debug for ParametrizedAttr {
                 f.write_str("\t")?;
             }
         }
-        f.write_str("],")?;
+        f.write_str("], ")?;
         if f.alternate() {
             f.write_str("\n\t")?;
         }
 
         write!(
             f,
-            "bool: {:?},",
+            "bool: {:?}, ",
             self.bool
                 .as_ref()
                 .map(|b| format!("Some({:?})", b.value))
@@ -813,7 +813,7 @@ impl Debug for ParametrizedAttr {
 
         write!(
             f,
-            "string: {:?},",
+            "string: {:?}, ",
             self.string
                 .as_ref()
                 .map(|s| format!("Some({:?})", s.value()))
@@ -825,7 +825,7 @@ impl Debug for ParametrizedAttr {
 
         write!(
             f,
-            "bytes: {:?}",
+            "bytes: {:?}, ",
             self.bytes
                 .as_ref()
                 .map(|s| format!("Some({:?})", s.value()))
@@ -844,7 +844,7 @@ impl Debug for ParametrizedAttr {
                 if f.alternate() {
                     f.write_str("\t\t")?;
                 }
-                write!(f, "{},", quote! { #c })?;
+                write!(f, "{}, ", quote! { #c })?;
                 if f.alternate() {
                     f.write_str("\n")?;
                 }
@@ -853,7 +853,7 @@ impl Debug for ParametrizedAttr {
                 f.write_str("\t")?;
             }
         }
-        f.write_str("],")?;
+        f.write_str("], ")?;
         if f.alternate() {
             f.write_str("\n\t")?;
         }
@@ -867,7 +867,7 @@ impl Debug for ParametrizedAttr {
                 if f.alternate() {
                     f.write_str("\t\t")?;
                 }
-                write!(f, "{},", quote! { #c })?;
+                write!(f, "{}, ", quote! { #c })?;
                 if f.alternate() {
                     f.write_str("\n")?;
                 }
@@ -876,7 +876,7 @@ impl Debug for ParametrizedAttr {
                 f.write_str("\t")?;
             }
         }
-        f.write_str("],")?;
+        f.write_str("], ")?;
         if f.alternate() {
             f.write_str("\n\t")?;
         }
@@ -890,7 +890,7 @@ impl Debug for ParametrizedAttr {
                 if f.alternate() {
                     f.write_str("\t\t")?;
                 }
-                write!(f, "{},", quote! { #c })?;
+                write!(f, "{}, ", quote! { #c })?;
                 if f.alternate() {
                     f.write_str("\n")?;
                 }
@@ -899,7 +899,7 @@ impl Debug for ParametrizedAttr {
                 f.write_str("\t")?;
             }
         }
-        f.write_str("],")?;
+        f.write_str("], ")?;
 
         if f.alternate() {
             f.write_str("\n")?;
