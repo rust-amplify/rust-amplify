@@ -167,14 +167,14 @@ macro_rules! construct_uint {
                 }
             }
 
-            /// Creates big integer value from a byte array using
-            /// big-endian encoding
+            /// Creates the integer value from a byte array using big-endian
+            /// encoding
             pub fn from_be_bytes(bytes: [u8; $n_words * 8]) -> $name {
                 Self::_from_be_slice(&bytes)
             }
 
-            /// Creates big integer value from a byte slice using
-            /// big-endian encoding
+            /// Creates the integer value from a byte slice using big-endian
+            /// encoding
             pub fn from_be_slice(bytes: &[u8]) -> Result<$name, ParseLengthError> {
                 if bytes.len() != $n_words * 8 {
                     Err(ParseLengthError {
@@ -183,6 +183,25 @@ macro_rules! construct_uint {
                     })
                 } else {
                     Ok(Self::_from_be_slice(bytes))
+                }
+            }
+
+            /// Creates the integer value from a byte array using little-endian
+            /// encoding
+            pub fn from_le_bytes(bytes: [u8; $n_words * 8]) -> $name {
+                Self::_from_le_slice(&bytes)
+            }
+
+            /// Creates the integer value from a byte slice using little-endian
+            /// encoding
+            pub fn from_le_slice(bytes: &[u8]) -> Result<$name, ParseLengthError> {
+                if bytes.len() != $n_words * 8 {
+                    Err(ParseLengthError {
+                        actual: bytes.len(),
+                        expected: $n_words * 8,
+                    })
+                } else {
+                    Ok(Self::_from_le_slice(bytes))
                 }
             }
 
@@ -200,13 +219,36 @@ macro_rules! construct_uint {
                 $name(slice)
             }
 
-            /// Convert a big integer into a byte array using big-endian encoding
+            fn _from_le_slice(bytes: &[u8]) -> $name {
+                let mut slice = [0u64; $n_words];
+                slice
+                    .iter_mut()
+                    .zip(bytes.chunks(8).into_iter().map(|s| {
+                        let mut b = [0u8; 8];
+                        b.copy_from_slice(s);
+                        b
+                    }))
+                    .for_each(|(word, bytes)| *word = u64::from_le_bytes(bytes));
+                $name(slice)
+            }
+
+            /// Convert the integer into a byte array using big-endian encoding
             pub fn to_be_bytes(&self) -> [u8; $n_words * 8] {
                 let mut res = [0; $n_words * 8];
                 for i in 0..$n_words {
                     let start = i * 8;
                     res[start..start + 8]
                         .copy_from_slice(&self.0[$n_words - (i + 1)].to_be_bytes());
+                }
+                res
+            }
+
+            /// Convert a integer into a byte array using lottle-endian encoding
+            pub fn to_le_bytes(&self) -> [u8; $n_words * 8] {
+                let mut res = [0; $n_words * 8];
+                for i in 0..$n_words {
+                    let start = i * 8;
+                    res[start..start + 8].copy_from_slice(&self.0[i].to_le_bytes());
                 }
                 res
             }
@@ -862,6 +904,35 @@ mod tests {
     }
 
     #[test]
+    pub fn uint_from_le_bytes() {
+        let mut be = [
+            0x1b, 0xad, 0xca, 0xfe, 0xde, 0xad, 0xbe, 0xef, 0xde, 0xaf, 0xba, 0xbe, 0x2b, 0xed,
+            0xfe, 0xed,
+        ];
+        be.reverse();
+        assert_eq!(
+            Uint128::from_le_bytes(be),
+            Uint128([0xdeafbabe2bedfeed, 0x1badcafedeadbeef])
+        );
+
+        let mut be = [
+            0x1b, 0xad, 0xca, 0xfe, 0xde, 0xad, 0xbe, 0xef, 0xde, 0xaf, 0xba, 0xbe, 0x2b, 0xed,
+            0xfe, 0xed, 0xba, 0xad, 0xf0, 0x0d, 0xde, 0xfa, 0xce, 0xda, 0x11, 0xfe, 0xd2, 0xba,
+            0xd1, 0xc0, 0xff, 0xe0,
+        ];
+        be.reverse();
+        assert_eq!(
+            u256::from_le_bytes(be),
+            u256([
+                0x11fed2bad1c0ffe0,
+                0xbaadf00ddefaceda,
+                0xdeafbabe2bedfeed,
+                0x1badcafedeadbeef
+            ])
+        );
+    }
+
+    #[test]
     pub fn uint_to_be_bytes() {
         assert_eq!(
             Uint128([0xdeafbabe2bedfeed, 0x1badcafedeadbeef]).to_be_bytes(),
@@ -883,6 +954,32 @@ mod tests {
                 0x1b, 0xad, 0xca, 0xfe, 0xde, 0xad, 0xbe, 0xef, 0xde, 0xaf, 0xba, 0xbe, 0x2b, 0xed,
                 0xfe, 0xed, 0xba, 0xad, 0xf0, 0x0d, 0xde, 0xfa, 0xce, 0xda, 0x11, 0xfe, 0xd2, 0xba,
                 0xd1, 0xc0, 0xff, 0xe0
+            ]
+        );
+    }
+
+    #[test]
+    pub fn uint_to_le_bytes() {
+        assert_eq!(
+            Uint128([0xdeafbabe2bedfeed, 0x1badcafedeadbeef]).to_le_bytes(),
+            [
+                0xed, 0xfe, 0xed, 0x2b, 0xbe, 0xba, 0xaf, 0xde, 0xef, 0xbe, 0xad, 0xde, 0xfe, 0xca,
+                0xad, 0x1b
+            ]
+        );
+
+        assert_eq!(
+            u256([
+                0x11fed2bad1c0ffe0,
+                0xbaadf00ddefaceda,
+                0xdeafbabe2bedfeed,
+                0x1badcafedeadbeef
+            ])
+            .to_le_bytes(),
+            [
+                0xe0, 0xff, 0xc0, 0xd1, 0xba, 0xd2, 0xfe, 0x11, 0xda, 0xce, 0xfa, 0xde, 0x0d, 0xf0,
+                0xad, 0xba, 0xed, 0xfe, 0xed, 0x2b, 0xbe, 0xba, 0xaf, 0xde, 0xef, 0xbe, 0xad, 0xde,
+                0xfe, 0xca, 0xad, 0x1b,
             ]
         );
     }
