@@ -31,9 +31,12 @@
     warnings
 )]
 
-#[cfg(feature = "std")]
+#[cfg(feature = "derive")]
 #[macro_use]
 extern crate amplify_derive;
+#[cfg(feature = "derive")]
+pub use amplify_derive::{Wrapper, Display, AsAny, From, Getters};
+
 #[cfg(feature = "serde")]
 extern crate serde_crate as serde;
 #[cfg(feature = "stringly_conversions")]
