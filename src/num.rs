@@ -634,6 +634,8 @@ macro_rules! construct_uint {
 }
 
 construct_uint!(u256, 4);
+construct_uint!(u512, 8);
+construct_uint!(u1024, 16);
 
 /// Invalid slice length
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy, Hash)]
@@ -671,6 +673,90 @@ impl u256 {
                 arr[2] += 1;
                 if arr[2] == 0 {
                     arr[3] += 1;
+                }
+            }
+        }
+    }
+}
+
+impl u512 {
+    /// Increment by 1
+    #[inline]
+    pub fn increment(&mut self) {
+        let &mut u512(ref mut arr) = self;
+        arr[0] += 1;
+        if arr[0] == 0 {
+            arr[1] += 1;
+            if arr[1] == 0 {
+                arr[2] += 1;
+                if arr[2] == 0 {
+                    arr[3] += 1;
+                    if arr[3] == 0 {
+                        arr[4] += 1;
+                        if arr[4] == 0 {
+                            arr[5] += 1;
+                            if arr[5] == 0 {
+                                arr[6] += 1;
+                                if arr[6] == 0 {
+                                    arr[7] += 1;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+impl u1024 {
+    /// Increment by 1
+    #[inline]
+    pub fn increment(&mut self) {
+        let &mut u1024(ref mut arr) = self;
+        arr[0] += 1;
+        if arr[0] == 0 {
+            arr[1] += 1;
+            if arr[1] == 0 {
+                arr[2] += 1;
+                if arr[2] == 0 {
+                    arr[3] += 1;
+                    if arr[3] == 0 {
+                        arr[4] += 1;
+                        if arr[4] == 0 {
+                            arr[5] += 1;
+                            if arr[5] == 0 {
+                                arr[6] += 1;
+                                if arr[6] == 0 {
+                                    arr[7] += 1;
+                                    if arr[7] == 0 {
+                                        arr[8] += 1;
+                                        if arr[8] == 0 {
+                                            arr[9] += 1;
+                                            if arr[9] == 0 {
+                                                arr[10] += 1;
+                                                if arr[10] == 0 {
+                                                    arr[11] += 1;
+                                                    if arr[11] == 0 {
+                                                        arr[12] += 1;
+                                                        if arr[12] == 0 {
+                                                            arr[13] += 1;
+                                                            if arr[13] == 0 {
+                                                                arr[14] += 1;
+                                                                if arr[14] == 0 {
+                                                                    arr[15] += 1;
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
