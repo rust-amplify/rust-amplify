@@ -66,6 +66,7 @@ mod to_serde_string;
 
 #[cfg(feature = "std")]
 pub mod hex;
+pub mod num;
 
 pub use crate::as_any::AsAny;
 pub use crate::bipolar::Bipolar;
