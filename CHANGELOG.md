@@ -1,6 +1,17 @@
 Change Log
 ==========
 
+3.5.0
+-----
+- Introducing large unsigned integer types based on `bitcoin` crate original 
+  code as `num` mod (`u256`, `u512`, `u1024`)
+- Introducing `hex` mod with hexadecimal conversion traits and helpers from
+  `bitcoin_hashes`
+- Moving feature flag types from `descriptor-wallet` library
+- Re-exporting `amplify_derive` derivation macros if `derive` feature is used
+- Making `derive` feature default
+- Improvements to `IoError` type (better `Debug` implementation)
+
 3.4.0
 -----
 - Support for amplify_syn (re-exported as `proc_attr` if the same-named feature
