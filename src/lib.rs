@@ -56,7 +56,7 @@ mod wrapper;
 mod as_any;
 mod bipolar;
 mod dumb_default;
-#[cfg(feature = "std")]
+#[cfg(all(feature = "std", feature = "derive"))]
 mod io_error;
 #[cfg(feature = "c_raw")]
 mod raw;

@@ -19,7 +19,9 @@ use ::std::fmt::{Display, Formatter, self};
 
 use crate::Wrapper;
 
-/// Copyable & cloneable I/O error type represented by the error kind function
+/// Copyable & cloneable I/O error type represented by the error kind function.
+///
+/// Available only when both `std` and `derive` features are present.
 ///
 /// # Example
 /// ```compile_fail
