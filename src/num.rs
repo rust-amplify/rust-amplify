@@ -1,4 +1,7 @@
-// Rust Bitcoin Library
+// Rust language amplification library providing multiple generic trait
+// implementations, type wrappers, derive macros and other language enhancements
+//
+// Taken from bitcoin_hashes crate
 // Written in 2014 by
 //     Andrew Poelstra <apoelstra@wpsoftware.net>
 //
@@ -7,15 +10,35 @@
 // the public domain worldwide. This software is distributed without
 // any warranty.
 //
-// You should have received a copy of the CC0 Public Domain Dedication
+// You should have received a copy of the MIT License
 // along with this software.
-// If not, see <http://creativecommons.org/publicdomain/zero/1.0/>.
-//
+// If not, see <https://opensource.org/licenses/MIT>.
 
 //! Big unsigned integer types
 //!
 //! Implementation of a various large-but-fixed sized unsigned integer types.
 //! The functions here are designed to be fast.
+
+/// A trait which allows numbers to act as fixed-size bit arrays
+pub trait BitArray {
+    /// Is bit set?
+    fn bit(&self, idx: usize) -> bool;
+
+    /// Returns an array which is just the bits from start to end
+    fn bit_slice(&self, start: usize, end: usize) -> Self;
+
+    /// Bitwise and with `n` ones
+    fn mask(&self, n: usize) -> Self;
+
+    /// Trailing zeros
+    fn trailing_zeros(&self) -> usize;
+
+    /// Create all-zeros value
+    fn zero() -> Self;
+
+    /// Create value representing one
+    fn one() -> Self;
+}
 
 macro_rules! construct_uint {
     ($name:ident, $n_words:expr) => {
