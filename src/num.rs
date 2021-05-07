@@ -65,8 +65,21 @@ macro_rules! construct_uint {
 
             #[inline]
             /// Returns the length of the object as an array
+            pub fn array_len(&self) -> usize {
+                $n_words
+            }
+
+            #[inline]
+            /// Returns the length of the object as an array
+            #[deprecated(since = "3.5.2", note = "use `array_len` instead")]
             pub fn len(&self) -> usize {
                 $n_words
+            }
+
+            #[inline]
+            /// Returns the length of the object as an array
+            pub fn byte_len(&self) -> usize {
+                $n_words * 8
             }
 
             #[inline]
