@@ -269,6 +269,11 @@ impl FlagVec {
         }
     }
 
+    /// Returns byte slice representation of the inner data
+    pub fn as_slice(&self) -> &[u8] {
+        &self.0
+    }
+
     /// Returns a shrunk copy of the self
     pub fn shrunk(&self) -> Self {
         let mut shrinked = self.clone();
