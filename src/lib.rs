@@ -35,7 +35,7 @@
 #[macro_use]
 extern crate amplify_derive;
 #[cfg(feature = "derive")]
-pub use amplify_derive::{Wrapper, Display, AsAny, From, Getters};
+pub use amplify_derive::{Wrapper, Display, AsAny, From, Getters, Error};
 
 #[cfg(feature = "serde")]
 extern crate serde_crate as serde;
@@ -65,6 +65,8 @@ pub mod strategy;
 mod to_serde_string;
 
 #[cfg(feature = "std")]
+pub mod flags;
+#[cfg(feature = "std")]
 pub mod hex;
 pub mod num;
 
@@ -75,5 +77,5 @@ pub use crate::wrapper::Wrapper;
 pub use crate::dumb_default::DumbDefault;
 #[cfg(feature = "serde")]
 pub use crate::to_serde_string::{ToYamlString, ToJsonString, ToTomlString};
-#[cfg(feature = "std")]
+#[cfg(all(feature = "std", feature = "derive"))]
 pub use crate::io_error::IoError;

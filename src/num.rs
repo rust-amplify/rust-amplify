@@ -803,7 +803,7 @@ mod tests {
             "0x00000000000000000000000000000000000000000000000000000000deadbeef"
         );
         assert_eq!(
-            format!("{}", u256::from_u64(u64::MAX).unwrap()),
+            format!("{}", u256::from_u64(::core::u64::MAX).unwrap()),
             "0x000000000000000000000000000000000000000000000000ffffffffffffffff"
         );
 

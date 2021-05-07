@@ -43,7 +43,7 @@ serde = ["serde_crate", "std",
          "stringly_conversions/alloc",
          "stringly_conversions/serde_str_helpers"]
 default = ["std", "derive"]
-std = []
+std = ["derive"]
 
 [workspace]
 members = [".", "derive", "syn", "serde_str_helpers", "stringly_conversions"]
