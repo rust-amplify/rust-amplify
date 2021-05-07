@@ -64,6 +64,9 @@ pub mod strategy;
 #[cfg(feature = "serde")]
 mod to_serde_string;
 
+#[cfg(feature = "std")]
+pub mod hex;
+
 pub use crate::as_any::AsAny;
 pub use crate::bipolar::Bipolar;
 pub use crate::strategy::Holder;
