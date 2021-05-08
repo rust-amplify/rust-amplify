@@ -123,7 +123,7 @@ impl GetterDerive {
                 .get("prefix")
                 .map(|a| a.clone().try_into())
                 .transpose()?
-                .unwrap_or(LitStr::new("", Span::call_site())),
+                .unwrap_or_else(|| LitStr::new("", Span::call_site())),
             skip: attr.args.get("skip").is_some(),
             copy: attr.args.contains_key("as_copy"),
             base: attr
@@ -134,7 +134,7 @@ impl GetterDerive {
             main: attr
                 .args
                 .get("as_copy")
-                .or(attr.args.get("as_clone"))
+                .or_else(|| attr.args.get("as_clone"))
                 .map(|a| a.clone().try_into())
                 .transpose()?,
             as_ref: attr
@@ -221,11 +221,13 @@ impl GetterDerive {
             .base
             .as_ref()
             .map(LitStr::value)
-            .or(field_name.map(Ident::to_string))
-            .ok_or(Error::new(
+            .or_else(|| field_name.map(Ident::to_string))
+            .ok_or_else(|| {
+                Error::new(
                 span,
                 "Unnamed fields must be equipped with `#[getter(base_name = \"name\"]` attribute",
-            ))?;
+            )
+            })?;
 
         let name_lit = match method {
             GetterMethod::Main { .. } => &self.main,
@@ -290,14 +292,18 @@ fn derive_struct_impl(
                 )?)
             }
         }
-        Fields::Unnamed(_) => Err(Error::new(
-            Span::call_site(),
-            "Deriving getters is not supported for tuple-bases structs",
-        ))?,
-        Fields::Unit => Err(Error::new(
-            Span::call_site(),
-            "Deriving getters is meaningless for unit structs",
-        ))?,
+        Fields::Unnamed(_) => {
+            return Err(Error::new(
+                Span::call_site(),
+                "Deriving getters is not supported for tuple-bases structs",
+            ))
+        }
+        Fields::Unit => {
+            return Err(Error::new(
+                Span::call_site(),
+                "Deriving getters is meaningless for unit structs",
+            ))
+        }
     };
 
     Ok(quote! {

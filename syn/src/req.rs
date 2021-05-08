@@ -248,12 +248,12 @@ impl ValueReq {
         let attr = attr.to_string();
         match (self, value) {
             (ValueReq::Required, v) if v.clone().into().is_none() => Err(Error::ArgValueRequired {
-                attr: attr.to_string(),
+                attr,
                 arg: arg.to_string(),
             }),
             (ValueReq::Prohibited, v) if v.clone().into().is_some() => {
                 Err(Error::ArgMustNotHaveValue {
-                    attr: attr.to_string(),
+                    attr,
                     arg: arg.to_string(),
                 })
             }
@@ -390,13 +390,9 @@ where
                 len,
             ) if len > 0 => {
                 for item in value {
-                    if whitelist
-                        .iter()
-                        .find(|i| {
-                            i.to_token_stream().to_string() == item.to_token_stream().to_string()
-                        })
-                        .is_none()
-                    {
+                    if !whitelist.iter().any(|i| {
+                        i.to_token_stream().to_string() == item.to_token_stream().to_string()
+                    }) {
                         return Err(Error::AttributeUnknownArgument {
                             attr: attr.to_string(),
                             arg: arg.to_string(),

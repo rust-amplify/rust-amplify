@@ -21,8 +21,8 @@ use syn::{
 
 use crate::util::get_amplify_crate;
 
-const NAME: &'static str = "wrapper";
-const EXAMPLE: &'static str = r#"#[wrapper(LowerHex, Add)]"#;
+const NAME: &str = "wrapper";
+const EXAMPLE: &str = r#"#[wrapper(LowerHex, Add)]"#;
 
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
 enum WrapperDerives {
@@ -582,19 +582,23 @@ pub(crate) fn inner(input: DeriveInput) -> Result<TokenStream2> {
 
     let data = match input.data {
         Data::Struct(ref data) => data,
-        Data::Enum(_) => Err(Error::new_spanned(
-            &input,
-            "Deriving wrapper is not supported in enums",
-        ))?,
+        Data::Enum(_) => {
+            return Err(Error::new_spanned(
+                &input,
+                "Deriving wrapper is not supported in enums",
+            ))
+        }
         //strict_encode_inner_enum(&input, &data),
-        Data::Union(_) => Err(Error::new_spanned(
-            &input,
-            "Deriving wrapper is not supported in unions",
-        ))?,
+        Data::Union(_) => {
+            return Err(Error::new_spanned(
+                &input,
+                "Deriving wrapper is not supported in unions",
+            ))
+        }
     };
 
     let mut wrappers = vec![];
-    const WRAPPER_DERIVE_ERR: &'static str = "Wrapper attributes must be in a form of type list";
+    const WRAPPER_DERIVE_ERR: &str = "Wrapper attributes must be in a form of type list";
     for attr in input
         .attrs
         .iter()
@@ -608,16 +612,15 @@ pub(crate) fn inner(input: DeriveInput) -> Result<TokenStream2> {
                 for meta in nested {
                     match meta {
                         NestedMeta::Meta(Meta::Path(path)) => {
-                            wrappers.push(
-                                WrapperDerives::from_path(&path)?
-                                    .ok_or(attr_err!(path, "Unrecognized wrapper parameter"))?,
-                            );
+                            wrappers.push(WrapperDerives::from_path(&path)?.ok_or_else(|| {
+                                attr_err!(path, "Unrecognized wrapper parameter")
+                            })?);
                         }
-                        _ => Err(attr_err!(meta, WRAPPER_DERIVE_ERR))?,
+                        _ => return Err(attr_err!(meta, WRAPPER_DERIVE_ERR)),
                     }
                 }
             }
-            _ => Err(attr_err!(attr, WRAPPER_DERIVE_ERR))?,
+            _ => return Err(attr_err!(attr, WRAPPER_DERIVE_ERR)),
         }
     }
 
@@ -631,10 +634,10 @@ pub(crate) fn inner(input: DeriveInput) -> Result<TokenStream2> {
                 for attr in &field.attrs {
                     if attr.path.is_ident("wrap") {
                         if source.is_some() {
-                            Err(Error::new_spanned(
+                            return Err(Error::new_spanned(
                                 attr,
                                 "Only a single field may be wrapped",
-                            ))?;
+                            ));
                         }
                         source = Some(field.ident.clone().expect("we know it's named"));
                         from = field.ty.clone();
@@ -642,14 +645,14 @@ pub(crate) fn inner(input: DeriveInput) -> Result<TokenStream2> {
                 }
             }
             if source.is_none() && fields.named.len() > 1 {
-                Err(Error::new_spanned(
+                return Err(Error::new_spanned(
                     fields,
                     "When the structure has multiple fields you must point out \
                      the one you will wrap by using `#[wrap]` attribute",
-                ))?
+                ));
             }
-            let source =
-                source.unwrap_or(fields.named[0].ident.clone().expect("we know it's named"));
+            let source = source
+                .unwrap_or_else(|| fields.named[0].ident.clone().expect("we know it's named"));
             field = quote! { #source };
         }
         Fields::Unnamed(ref fields) => {
@@ -659,10 +662,10 @@ pub(crate) fn inner(input: DeriveInput) -> Result<TokenStream2> {
                 for attr in &field.attrs {
                     if attr.path.is_ident("wrap") {
                         if source.is_some() {
-                            Err(Error::new_spanned(
+                            return Err(Error::new_spanned(
                                 attr,
                                 "Only a single field may be wrapped",
-                            ))?;
+                            ));
                         }
                         let i = Index::from(index);
                         source = Some(quote! { #i });
@@ -671,11 +674,11 @@ pub(crate) fn inner(input: DeriveInput) -> Result<TokenStream2> {
                 }
             }
             if source.is_none() && fields.unnamed.len() > 1 {
-                Err(Error::new_spanned(
+                return Err(Error::new_spanned(
                     fields,
                     "When the structure has multiple fields you must point out \
                      the one you will wrap by using `#[wrap]` attribute",
-                ))?
+                ));
             }
             field = source.unwrap_or(quote! { 0 });
         }

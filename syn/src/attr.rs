@@ -126,10 +126,10 @@ pub struct ParametrizedAttr {
 impl Attr {
     /// Constructs [`Attr`] from a vector of all syn-parsed attributes,
     /// selecting attributes matching the provided name.
-    pub fn with(name: impl ToString + AsRef<str>, attrs: &Vec<Attribute>) -> Result<Self, Error> {
+    pub fn with(name: impl ToString + AsRef<str>, attrs: &[Attribute]) -> Result<Self, Error> {
         SingularAttr::with(name.to_string(), attrs)
-            .map(|singular| Attr::Singular(singular))
-            .or_else(|_| ParametrizedAttr::with(name, attrs).map(|param| Attr::Parametrized(param)))
+            .map(Attr::Singular)
+            .or_else(|_| ParametrizedAttr::with(name, attrs).map(Attr::Parametrized))
     }
 
     /// Constructor parsing [`Attribute`] value and returning either
@@ -142,10 +142,8 @@ impl Attr {
     ///   not an [`Ident`] but is a complex path value
     pub fn from_attribute(attr: &Attribute) -> Result<Self, Error> {
         SingularAttr::from_attribute(attr)
-            .map(|singular| Attr::Singular(singular))
-            .or_else(|_| {
-                ParametrizedAttr::from_attribute(attr).map(|param| Attr::Parametrized(param))
-            })
+            .map(Attr::Singular)
+            .or_else(|_| ParametrizedAttr::from_attribute(attr).map(Attr::Parametrized))
     }
 
     /// Returns inner value \in form of [`SingularAttr`] for [`Attr::Singular`]
@@ -219,7 +217,7 @@ impl SingularAttr {
     /// selecting single attribute matching the provided name. If there are
     /// multiple instances of the same attribute, fails with
     /// [`Error::SingularAttrRequired`]
-    pub fn with(name: impl ToString, attrs: &Vec<Attribute>) -> Result<Self, Error> {
+    pub fn with(name: impl ToString, attrs: &[Attribute]) -> Result<Self, Error> {
         let name = name.to_string();
         let mut filtered_attrs = attrs.iter().filter(|attr| attr.path.is_ident(&name));
         let res = if let Some(attr) = filtered_attrs.next() {
@@ -300,7 +298,7 @@ impl SingularAttr {
     ///   `other` has a named argument with the same name but different values.
     pub fn merge(&mut self, other: Self) -> Result<(), Error> {
         if self.name != other.name {
-            return Err(Error::NamesDontMatch(self.name.clone(), other.name.clone()));
+            return Err(Error::NamesDontMatch(self.name.clone(), other.name));
         }
         match (&self.value, &other.value) {
             (_, ArgValue::None) => {}
@@ -379,7 +377,7 @@ impl ParametrizedAttr {
 
     /// Constructs [`ParametrizedAttr`] from a vector of all syn-parsed
     /// attributes, selecting attributes matching the provided name.
-    pub fn with(name: impl ToString + AsRef<str>, attrs: &Vec<Attribute>) -> Result<Self, Error> {
+    pub fn with(name: impl ToString + AsRef<str>, attrs: &[Attribute]) -> Result<Self, Error> {
         let mut me = ParametrizedAttr::new(name.to_string());
         for attr in attrs.iter().filter(|attr| attr.path.is_ident(&name)) {
             me.fuse(attr)?;
@@ -417,10 +415,7 @@ impl ParametrizedAttr {
     /// verbatim2]`, i.e. path arguments containing single path segment and no
     /// value or nested arguments.
     pub fn has_verbatim(&self, verbatim: &str) -> bool {
-        self.paths
-            .iter()
-            .find(|path| path.is_ident(verbatim))
-            .is_some()
+        self.paths.iter().any(|path| path.is_ident(verbatim))
     }
 
     /// Returns set of verbatim attribute arguments.
@@ -446,7 +441,7 @@ impl ParametrizedAttr {
     ///   `other` has a literals which values are not equal.
     pub fn merge(&mut self, other: Self) -> Result<(), Error> {
         if self.name != other.name {
-            return Err(Error::NamesDontMatch(self.name.clone(), other.name.clone()));
+            return Err(Error::NamesDontMatch(self.name.clone(), other.name));
         }
 
         self.args.extend(other.args);
@@ -613,7 +608,9 @@ impl ParametrizedAttr {
         for (name, req) in &req.arg_req {
             if let Some(pos) = self.paths.iter().position(|path| path.is_ident(name)) {
                 self.paths.remove(pos);
-                self.args.entry(name.clone()).or_insert(req.default_value());
+                self.args
+                    .entry(name.clone())
+                    .or_insert_with(|| req.default_value());
             }
 
             if !self.args.contains_key(name) && req.is_required() {
@@ -805,7 +802,7 @@ impl Debug for ParametrizedAttr {
             self.bool
                 .as_ref()
                 .map(|b| format!("Some({:?})", b.value))
-                .unwrap_or("None".to_owned())
+                .unwrap_or_else(|| "None".to_owned())
         )?;
         if f.alternate() {
             f.write_str("\n\t")?;
@@ -817,7 +814,7 @@ impl Debug for ParametrizedAttr {
             self.string
                 .as_ref()
                 .map(|s| format!("Some({:?})", s.value()))
-                .unwrap_or("None".to_owned())
+                .unwrap_or_else(|| "None".to_owned())
         )?;
         if f.alternate() {
             f.write_str("\n\t")?;
@@ -829,7 +826,7 @@ impl Debug for ParametrizedAttr {
             self.bytes
                 .as_ref()
                 .map(|s| format!("Some({:?})", s.value()))
-                .unwrap_or("None".to_owned())
+                .unwrap_or_else(|| "None".to_owned())
         )?;
         if f.alternate() {
             f.write_str("\n\t")?;
