@@ -50,6 +50,20 @@ jobs:
         with:
           command: build
           args: --workspace --all-targets --all-features
+  ancient:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install rust 1.36.0
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: 1.36.0
+          override: true
+      - name: All features
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --all-features
   dependency:
     runs-on: ubuntu-latest
     steps:
