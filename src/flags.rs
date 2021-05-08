@@ -269,9 +269,16 @@ impl FlagVec {
         }
     }
 
-    /// Returns byte slice representation of the inner data
-    pub fn as_slice(&self) -> &[u8] {
+    /// Returns byte slice representation of the inner data (slice of bytes,
+    /// with 8 bit flags per each byte)
+    pub fn as_inner(&self) -> &[u8] {
         &self.0
+    }
+
+    /// Constructs flag vector from inner representation (slice of bytes, with
+    /// 8 bit flags per each byte)
+    pub fn from_inner(slice: Vec<u8>) -> Self {
+        Self(slice)
     }
 
     /// Returns a shrunk copy of the self
