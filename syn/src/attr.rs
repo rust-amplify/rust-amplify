@@ -558,7 +558,7 @@ impl ParametrizedAttr {
                 MetaArg::Literal(Lit::Bool(_)) if self.bool.is_some() => {
                     return Err(Error::MultipleLiteralValues(self.name.clone()))
                 }
-                MetaArg::Literal(Lit::Bool(lit)) if self.bool.is_none() => {
+                MetaArg::Literal(Lit::Bool(ref lit)) if self.bool.is_none() => {
                     self.bool = Some(lit.clone())
                 }
 

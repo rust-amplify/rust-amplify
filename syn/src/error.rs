@@ -13,6 +13,8 @@
 // along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
+#![allow(deprecated)] // We need this at mod level to support rustc 1.26.0
+
 use std::fmt::{Display, Formatter, self};
 use std::convert::Infallible;
 use proc_macro2::Span;
@@ -229,7 +231,6 @@ impl Display for Error {
                     name = name
                 )
             }
-            #[allow(deprecated)]
             Error::NestedListsNotSupported(name) => write!(
                 f,
                 "Attribute `{name}` must be in `{name} = ...` form and a nested list",
@@ -281,7 +282,6 @@ impl std::error::Error for Error {
             | Error::AttributeUnknownArgument { .. }
             | Error::ArgNumberExceedsMax { .. }
             | Error::ArgValueTypeMismatch { .. } => None,
-            #[allow(deprecated)]
             Error::NestedListsNotSupported(_) => None,
         }
     }

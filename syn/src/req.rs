@@ -152,14 +152,14 @@ impl ArgValueReq {
         arg: impl ToString,
     ) -> Result<(), Error> {
         let value = match (value, self) {
-            (val, ArgValueReq::Required { default: None, .. }) if val.is_none() => {
+            (ref val, ArgValueReq::Required { default: None, .. }) if val.is_none() => {
                 return Err(Error::ArgValueRequired {
                     attr: attr.to_string(),
                     arg: arg.to_string(),
                 })
             }
 
-            (val, ArgValueReq::Prohibited) if val.is_some() => {
+            (ref val, ArgValueReq::Prohibited) if val.is_some() => {
                 return Err(Error::ArgMustNotHaveValue {
                     attr: attr.to_string(),
                     arg: arg.to_string(),
@@ -167,7 +167,7 @@ impl ArgValueReq {
             }
 
             (
-                val,
+                ref val,
                 ArgValueReq::Required {
                     default: Some(d), ..
                 },
@@ -181,18 +181,17 @@ impl ArgValueReq {
                 );
             }
 
-            (
-                val,
-                ArgValueReq::Required {
-                    default: Some(d), ..
-                },
-            ) if val.is_none() => {
-                *val = d.clone();
+            (val, req) => {
+                if val.is_none() {
+                    if let ArgValueReq::Required {
+                        default: Some(d), ..
+                    } = req
+                    {
+                        *val = d.clone();
+                    }
+                }
                 val
             }
-
-            // We are fine here
-            (val, _) => val,
         };
 
         if let Some(value_class) = self.value_class() {
@@ -241,24 +240,23 @@ impl ValueReq {
         arg: impl ToString,
     ) -> Result<(), Error>
     where
-        T: Clone + Into<ArgValue>,
-        ArgValue: TryInto<T>,
+        T: Clone,
+        ArgValue: From<T> + TryInto<T>,
         Error: From<<ArgValue as TryInto<T>>::Error>,
     {
         let attr = attr.to_string();
+        let arg_value = ArgValue::from(value.clone());
         match (self, value) {
-            (ValueReq::Required, v) if v.clone().into().is_none() => Err(Error::ArgValueRequired {
+            (ValueReq::Required, _) if arg_value.is_none() => Err(Error::ArgValueRequired {
                 attr,
                 arg: arg.to_string(),
             }),
-            (ValueReq::Prohibited, v) if v.clone().into().is_some() => {
-                Err(Error::ArgMustNotHaveValue {
-                    attr,
-                    arg: arg.to_string(),
-                })
-            }
-            (ValueReq::Default(ref val), v) if v.clone().into().is_none() => {
-                *v = val.clone().try_into()?;
+            (ValueReq::Prohibited, _) if arg_value.is_some() => Err(Error::ArgMustNotHaveValue {
+                attr,
+                arg: arg.to_string(),
+            }),
+            (ValueReq::Default(ref val), ref mut v) if arg_value.is_none() => {
+                **v = val.clone().try_into()?;
                 Ok(())
             }
             _ => Ok(()),

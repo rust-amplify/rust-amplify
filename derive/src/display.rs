@@ -47,14 +47,14 @@ impl FormattingTrait {
             )),
             |segment| {
                 Ok(match segment.ident.to_string().as_str() {
-                    "Debug" => Some(Self::Debug),
-                    "Octal" => Some(Self::Octal),
-                    "Binary" => Some(Self::Binary),
-                    "Pointer" => Some(Self::Pointer),
-                    "LowerHex" => Some(Self::LowerHex),
-                    "UpperHex" => Some(Self::UpperHex),
-                    "LowerExp" => Some(Self::LowerExp),
-                    "UpperExp" => Some(Self::UpperExp),
+                    "Debug" => Some(FormattingTrait::Debug),
+                    "Octal" => Some(FormattingTrait::Octal),
+                    "Binary" => Some(FormattingTrait::Binary),
+                    "Pointer" => Some(FormattingTrait::Pointer),
+                    "LowerHex" => Some(FormattingTrait::LowerHex),
+                    "UpperHex" => Some(FormattingTrait::UpperHex),
+                    "LowerExp" => Some(FormattingTrait::LowerExp),
+                    "UpperExp" => Some(FormattingTrait::UpperExp),
                     _ => None,
                 })
             },
@@ -137,17 +137,17 @@ impl Technique {
                 let mut iter = list.nested.iter();
                 let mut res = match iter.next() {
                     Some(NestedMeta::Lit(Lit::Str(format))) => {
-                        Some(Self::WithFormat(format.clone(), None))
+                        Some(Technique::WithFormat(format.clone(), None))
                     }
                     Some(NestedMeta::Meta(Meta::Path(path))) if path.is_ident("doc_comments") => {
-                        Some(Self::DocComments(String::new()))
+                        Some(Technique::DocComments(String::new()))
                     }
                     Some(NestedMeta::Meta(Meta::Path(path))) if path.is_ident("inner") => {
-                        Some(Self::Inner)
+                        Some(Technique::Inner)
                     }
                     Some(NestedMeta::Meta(Meta::Path(path))) => Some(
                         FormattingTrait::from_path(path, list.span())?
-                            .map_or(Self::FromMethod(path.clone()), Self::FromTrait),
+                            .map_or(Technique::FromMethod(path.clone()), Technique::FromTrait),
                     ),
                     Some(_) => return Err(attr_err!(span, "argument must be a string literal")),
                     None => return Err(attr_err!(span, "argument is required")),
@@ -182,7 +182,7 @@ impl Technique {
             Some(Meta::NameValue(MetaNameValue {
                 lit: Lit::Str(format),
                 ..
-            })) => Some(Self::WithFormat(format, None)),
+            })) => Some(Technique::WithFormat(format, None)),
             Some(_) => return Err(attr_err!(span, "argument must be a string literal")),
             None => None,
         };
@@ -199,9 +199,9 @@ impl Technique {
 
     pub fn to_fmt(&self, alt: bool) -> TokenStream2 {
         match self {
-            Self::FromTrait(fmt) => fmt.to_fmt(alt),
-            Self::FromMethod(_) => quote! { "{}" },
-            Self::WithFormat(fmt, fmt_alt) => {
+            Technique::FromTrait(fmt) => fmt.to_fmt(alt),
+            Technique::FromMethod(_) => quote! { "{}" },
+            Technique::WithFormat(fmt, fmt_alt) => {
                 if alt && fmt_alt.is_some() {
                     let alt = fmt_alt
                         .as_ref()
@@ -211,8 +211,8 @@ impl Technique {
                     quote! {#fmt}
                 }
             }
-            Self::DocComments(doc) => quote! { #doc },
-            Self::Inner => {
+            Technique::DocComments(doc) => quote! { #doc },
+            Technique::Inner => {
                 if alt {
                     quote! { "{_0:#}" }
                 } else {
@@ -316,20 +316,20 @@ impl Technique {
                 .replace("{9", "{_9")
         }
 
-        if let Self::WithFormat(fmt, x) = self {
-            *self = Self::WithFormat(
+        if let Technique::WithFormat(fmt, x) = self {
+            *self = Technique::WithFormat(
                 LitStr::new(&fix(&fmt.value()), Span::call_site()),
                 x.clone(),
             );
         }
-        if let Self::WithFormat(x, Some(fmt)) = self {
-            *self = Self::WithFormat(
+        if let Technique::WithFormat(x, Some(fmt)) = self {
+            *self = Technique::WithFormat(
                 x.clone(),
                 Some(LitStr::new(&fix(&fmt.value()), Span::call_site())),
             );
         }
-        if let Self::DocComments(fmt) = self {
-            *self = Self::DocComments(fix(fmt))
+        if let Technique::DocComments(fmt) = self {
+            *self = Technique::DocComments(fix(fmt))
         }
     }
 }
