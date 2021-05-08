@@ -65,8 +65,21 @@ macro_rules! construct_uint {
 
             #[inline]
             /// Returns the length of the object as an array
+            pub fn array_len(&self) -> usize {
+                $n_words
+            }
+
+            #[inline]
+            /// Returns the length of the object as an array
+            #[deprecated(since = "3.5.2", note = "use `array_len` instead")]
             pub fn len(&self) -> usize {
                 $n_words
+            }
+
+            #[inline]
+            /// Returns the length of the object as an array
+            pub fn byte_len(&self) -> usize {
+                $n_words * 8
             }
 
             #[inline]
@@ -79,12 +92,6 @@ macro_rules! construct_uint {
             /// Returns the underlying array of words constituting large integer
             pub fn as_array(&self) -> &[u64; $n_words] {
                 &self.0
-            }
-
-            #[inline]
-            /// Returns the underlying array of words constituting large integer
-            pub fn to_array(&self) -> [u64; $n_words] {
-                self.0.clone()
             }
 
             #[inline]
@@ -233,7 +240,7 @@ macro_rules! construct_uint {
             }
 
             /// Convert the integer into a byte array using big-endian encoding
-            pub fn to_be_bytes(&self) -> [u8; $n_words * 8] {
+            pub fn to_be_bytes(self) -> [u8; $n_words * 8] {
                 let mut res = [0; $n_words * 8];
                 for i in 0..$n_words {
                     let start = i * 8;
@@ -244,7 +251,7 @@ macro_rules! construct_uint {
             }
 
             /// Convert a integer into a byte array using lottle-endian encoding
-            pub fn to_le_bytes(&self) -> [u8; $n_words * 8] {
+            pub fn to_le_bytes(self) -> [u8; $n_words * 8] {
                 let mut res = [0; $n_words * 8];
                 for i in 0..$n_words {
                     let start = i * 8;

@@ -22,14 +22,8 @@ use syn::{
     FieldsNamed, FieldsUnnamed, Ident, Result, Type,
 };
 
-const NAME: &'static str = "from";
-const EXAMPLE: &'static str = r#"#[from(::std::fmt::Error)]"#;
-
-macro_rules! err {
-    ( $span:expr, $msg:literal ) => {
-        Err(attr_err!($span, NAME, $msg, EXAMPLE))?
-    };
-}
+const NAME: &str = "from";
+const EXAMPLE: &str = r#"#[from(::std::fmt::Error)]"#;
 
 #[derive(Clone, PartialEq, Eq, Debug)]
 enum InstructionEntity {
@@ -193,7 +187,7 @@ impl InstructionEntry {
 
     pub fn parse(
         fields: &Fields,
-        attrs: &Vec<Attribute>,
+        attrs: &[Attribute],
         entity: InstructionEntity,
     ) -> Result<Vec<InstructionEntry>> {
         let mut list = Vec::<InstructionEntry>::new();
@@ -202,12 +196,14 @@ impl InstructionEntry {
             if attr.tokens.is_empty() {
                 match (fields.len(), fields.iter().next()) {
                     (1, Some(field)) => list.push(InstructionEntry::with_type(&field.ty, &entity)),
-                    _ => err!(
-                        attr,
-                        "empty attribute is allowed only for entities \
+                    _ => {
+                        return Err(attr_err!(
+                            attr,
+                            "empty attribute is allowed only for entities \
                          with a single field; for multi-field entities \
                          specify the attribute right ahead of the target field"
-                    ),
+                        ))
+                    }
                 }
             } else {
                 list.push(InstructionEntry::with_type(&attr.parse_args()?, &entity));
@@ -228,7 +224,7 @@ impl InstructionTable {
     pub fn parse(
         &mut self,
         fields: &Fields,
-        attrs: &Vec<Attribute>,
+        attrs: &[Attribute],
         variant: Option<Ident>,
     ) -> Result<&Self> {
         let entity = InstructionEntity::with_fields(fields, variant.clone())?;
@@ -253,7 +249,7 @@ impl InstructionTable {
                 InstructionEntity::with_field(index, fields.len(), field, &fields, variant.clone()),
             )?)?;
         }
-        if variant.is_none() && fields.len() == 1 && self.0.len() == 0 {
+        if variant.is_none() && fields.len() == 1 && self.0.is_empty() {
             let field = fields
                 .into_iter()
                 .next()

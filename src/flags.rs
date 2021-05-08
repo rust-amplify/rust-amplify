@@ -45,7 +45,7 @@ impl BitOr for FlagVec {
         lhs.enlarge(size);
         rhs.enlarge(size);
         for i in 0..rhs.0.len() {
-            rhs.0[i] = lhs.0[i] | rhs.0[i];
+            rhs.0[i] |= lhs.0[i];
         }
         rhs
     }
@@ -60,7 +60,7 @@ impl BitAnd for FlagVec {
         lhs.enlarge(size);
         rhs.enlarge(size);
         for i in 0..rhs.0.len() {
-            rhs.0[i] = lhs.0[i] & rhs.0[i];
+            rhs.0[i] &= lhs.0[i];
         }
         rhs
     }
@@ -75,7 +75,7 @@ impl BitXor for FlagVec {
         lhs.enlarge(size);
         rhs.enlarge(size);
         for i in 0..rhs.0.len() {
-            rhs.0[i] = lhs.0[i] ^ rhs.0[i];
+            rhs.0[i] ^= lhs.0[i];
         }
         rhs
     }
@@ -269,6 +269,11 @@ impl FlagVec {
         }
     }
 
+    /// Returns byte slice representation of the inner data
+    pub fn as_slice(&self) -> &[u8] {
+        &self.0
+    }
+
     /// Returns a shrunk copy of the self
     pub fn shrunk(&self) -> Self {
         let mut shrinked = self.clone();
@@ -321,7 +326,7 @@ impl FlagVec {
         let old = self.0.clone();
         self.0 = vec![0u8; Self::bits_to_bytes(upto)];
         self.0[..old.len()].copy_from_slice(&old);
-        return true;
+        true
     }
 
     /// Reduces the size of the internal buffer to the smallest capacity
@@ -346,7 +351,7 @@ impl FlagVec {
             self.0.copy_from_slice(&old[..used]);
             return true;
         }
-        return false;
+        false
     }
 
     /// Returns reference to the byte responsible for the feature flag
@@ -384,7 +389,7 @@ impl FlagVec {
         let byte = self.mut_byte_at(flag_no);
         let mask = 1u8 << (flag_no % 8);
         let was = *byte & mask;
-        *byte = *byte | mask;
+        *byte |= mask;
         was > 0
     }
 
@@ -396,7 +401,7 @@ impl FlagVec {
         let byte = self.mut_byte_at(flag_no);
         let mask = 1u8 << (flag_no % 8);
         let was = *byte & mask;
-        *byte = *byte & (!mask);
+        *byte &= !mask;
         was > 0
     }
 

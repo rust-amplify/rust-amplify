@@ -21,8 +21,8 @@ use syn::{
     LitStr, Meta, MetaNameValue, NestedMeta, Path, Result, Index,
 };
 
-const NAME: &'static str = "display";
-const EXAMPLE: &'static str = r#"#[display("format {} string" | Trait | Type::function)]"#;
+const NAME: &str = "display";
+const EXAMPLE: &str = r#"#[display("format {} string" | Trait | Type::function)]"#;
 
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
 enum FormattingTrait {
@@ -132,7 +132,7 @@ impl Technique {
         {
             Some(Meta::List(list)) => {
                 if list.nested.len() > 2 {
-                    err!(span, "too many arguments")
+                    return Err(attr_err!(span, "too many arguments"));
                 }
                 let mut iter = list.nested.iter();
                 let mut res = match iter.next() {
@@ -147,10 +147,10 @@ impl Technique {
                     }
                     Some(NestedMeta::Meta(Meta::Path(path))) => Some(
                         FormattingTrait::from_path(path, list.span())?
-                            .map_or(Self::FromMethod(path.clone()), |fmt| Self::FromTrait(fmt)),
+                            .map_or(Self::FromMethod(path.clone()), Self::FromTrait),
                     ),
-                    Some(_) => err!(span, "argument must be a string literal"),
-                    None => err!(span, "argument is required"),
+                    Some(_) => return Err(attr_err!(span, "argument must be a string literal")),
+                    None => return Err(attr_err!(span, "argument is required")),
                 };
                 res = match iter.next() {
                     Some(NestedMeta::Meta(Meta::NameValue(MetaNameValue {
@@ -159,21 +159,23 @@ impl Technique {
                         ..
                     }))) if Some("alt".to_string()) == path.get_ident().map(Ident::to_string) => {
                         if iter.count() > 0 {
-                            err!(span, "excessive arguments")
+                            return Err(attr_err!(span, "excessive arguments"));
                         }
                         match res {
                             Some(Technique::WithFormat(fmt, _)) => {
                                 Some(Technique::WithFormat(fmt, Some(alt.clone())))
                             }
-                            _ => err!(
-                                span,
-                                "alternative formatting can be given only if \
+                            _ => {
+                                return Err(attr_err!(
+                                    span,
+                                    "alternative formatting can be given only if \
                                  the first argument is a format string"
-                            ),
+                                ))
+                            }
                         }
                     }
                     None => res,
-                    _ => err!(span, "unrecognizable second argument"),
+                    _ => return Err(attr_err!(span, "unrecognizable second argument")),
                 };
                 res
             }
@@ -181,12 +183,16 @@ impl Technique {
                 lit: Lit::Str(format),
                 ..
             })) => Some(Self::WithFormat(format, None)),
-            Some(_) => err!(span, "argument must be a string literal"),
+            Some(_) => return Err(attr_err!(span, "argument must be a string literal")),
             None => None,
         };
 
-        res.as_mut().map(|r| r.apply_docs(attrs));
-        res.as_mut().map(|r| r.fix_fmt());
+        if let Some(r) = res.as_mut() {
+            r.apply_docs(attrs)
+        }
+        if let Some(r) = res.as_mut() {
+            r.fix_fmt()
+        };
 
         Ok(res)
     }
@@ -297,7 +303,7 @@ impl Technique {
     }
 
     fn fix_fmt(&mut self) {
-        fn fix(s: &String) -> String {
+        fn fix(s: &str) -> String {
             s.replace("{0", "{_0")
                 .replace("{1", "{_1")
                 .replace("{2", "{_2")
@@ -346,13 +352,15 @@ fn inner_struct(input: &DeriveInput, data: &DataStruct) -> Result<TokenStream2> 
     let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
     let ident_name = &input.ident;
 
-    let mut technique = Technique::from_attrs(&input.attrs, input.span())?.ok_or(Error::new(
-        input.span(),
-        format!(
-            "Deriving `Display`: required attribute `{}` is missing.\n{}",
-            NAME, EXAMPLE
-        ),
-    ))?;
+    let mut technique = Technique::from_attrs(&input.attrs, input.span())?.ok_or_else(|| {
+        Error::new(
+            input.span(),
+            format!(
+                "Deriving `Display`: required attribute `{}` is missing.\n{}",
+                NAME, EXAMPLE
+            ),
+        )
+    })?;
     technique.apply_docs(&input.attrs);
 
     let tokens_fmt = technique.to_fmt(false);
@@ -378,10 +386,10 @@ fn inner_struct(input: &DeriveInput, data: &DataStruct) -> Result<TokenStream2> 
         }
         (Fields::Named(fields), Technique::Inner) => {
             if fields.named.len() != 1 {
-                err!(
+                return Err(attr_err!(
                     fields.span(),
                     "display(inner) requires only single field in the structure"
-                );
+                ));
             }
             let field = fields
                 .named
@@ -416,7 +424,7 @@ fn inner_struct(input: &DeriveInput, data: &DataStruct) -> Result<TokenStream2> 
             }
         }
         (Fields::Unnamed(fields), _) => {
-            let f = (0..fields.unnamed.len()).map(|i| Index::from(i));
+            let f = (0..fields.unnamed.len()).map(Index::from);
             let idents = f
                 .clone()
                 .filter(|ident| has_formatters(format!("_{}", ident.index), &str_fmt));
@@ -462,10 +470,9 @@ fn inner_enum(input: &DeriveInput, data: &DataEnum) -> Result<TokenStream2> {
     let mut display = TokenStream2::new();
 
     let global = Technique::from_attrs(&input.attrs, input.span())?;
-    let mut use_global = if let Some(Technique::Inner) = global {
-        false
-    } else {
-        true
+    let mut use_global = match global {
+        Some(Technique::Inner) => false,
+        _ => true,
     };
 
     for v in &data.variants {
@@ -474,7 +481,7 @@ fn inner_enum(input: &DeriveInput, data: &DataEnum) -> Result<TokenStream2> {
 
         let mut local = Technique::from_attrs(&v.attrs, v.span())?;
         let mut parent = global.clone();
-        let current = local.as_mut().or(parent.as_mut());
+        let current = local.as_mut().or_else(|| parent.as_mut());
         let mut current = current
             .map(|r| {
                 r.apply_docs(&v.attrs);
@@ -488,11 +495,11 @@ fn inner_enum(input: &DeriveInput, data: &DataEnum) -> Result<TokenStream2> {
 
         if let Some(Technique::DocComments(_)) = current {
             use_global = false;
-            current.as_mut().map(|t| {
+            if let Some(t) = current.as_mut() {
                 *t = Technique::DocComments(String::new());
                 t.apply_docs(&v.attrs);
                 t.fix_fmt();
-            });
+            }
         }
 
         let tokens_fmt = current.as_ref().map(|t| t.to_fmt(false));
@@ -517,10 +524,10 @@ fn inner_enum(input: &DeriveInput, data: &DataEnum) -> Result<TokenStream2> {
             (Fields::Named(fields), Some(tokens_fmt), Some(tokens_alt)) => {
                 if let Some(Technique::Inner) = current {
                     if fields.named.len() != 1 {
-                        err!(
+                        return Err(attr_err!(
                             fields.span(),
                             "display(inner) requires only single field in the structure"
-                        );
+                        ));
                     }
                     let field = fields
                         .named
@@ -666,7 +673,7 @@ fn inner_union(input: &DeriveInput, data: &DataUnion) -> Result<TokenStream2> {
         let type_str = format!("{}", type_name);
 
         let format = Technique::from_attrs(&field.attrs, field.span())?
-            .or(global.clone())
+            .or_else(|| global.clone())
             .map(|t| (t.to_fmt(false), t.to_fmt(true)));
 
         match format {
