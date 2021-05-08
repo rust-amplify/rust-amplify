@@ -77,44 +77,44 @@ impl WrapperDerives {
             )),
             |segment| {
                 Ok(match segment.ident.to_string().as_str() {
-                    "FromStr" => Some(Self::FromStr),
-                    "Display" => Some(Self::Display),
-                    "Debug" => Some(Self::Debug),
-                    "Octal" => Some(Self::Octal),
-                    "LowerHex" => Some(Self::LowerHex),
-                    "UpperHex" => Some(Self::UpperHex),
-                    "LowerExp" => Some(Self::LowerExp),
-                    "UpperExp" => Some(Self::UpperExp),
-                    "BorrowSlice" => Some(Self::BorrowSlice),
-                    "Index" => Some(Self::Index),
-                    "IndexMut" => Some(Self::IndexMut),
-                    "IndexRange" => Some(Self::IndexRange),
-                    "IndexFull" => Some(Self::IndexFull),
-                    "IndexFrom" => Some(Self::IndexFrom),
-                    "IndexTo" => Some(Self::IndexTo),
-                    "IndexInclusive" => Some(Self::IndexInclusive),
-                    "Add" => Some(Self::Add),
-                    "Neg" => Some(Self::Neg),
-                    "Not" => Some(Self::Not),
-                    "Sub" => Some(Self::Sub),
-                    "Mul" => Some(Self::Mul),
-                    "Div" => Some(Self::Div),
-                    "Rem" => Some(Self::Rem),
-                    "Shl" => Some(Self::Shl),
-                    "Shr" => Some(Self::Shr),
-                    "BitAnd" => Some(Self::BitAnd),
-                    "BitOr" => Some(Self::BitOr),
-                    "BitXor" => Some(Self::BitXor),
-                    "AddAssign" => Some(Self::AddAssign),
-                    "SubAssign" => Some(Self::SubAssign),
-                    "MulAssign" => Some(Self::MulAssign),
-                    "DivAssign" => Some(Self::DivAssign),
-                    "RemAssign" => Some(Self::RemAssign),
-                    "ShlAssign" => Some(Self::ShlAssign),
-                    "ShrAssign" => Some(Self::ShrAssign),
-                    "BitAndAssign" => Some(Self::BitAndAssign),
-                    "BitOrAssign" => Some(Self::BitOrAssign),
-                    "BitXorAssign" => Some(Self::BitXorAssign),
+                    "FromStr" => Some(WrapperDerives::FromStr),
+                    "Display" => Some(WrapperDerives::Display),
+                    "Debug" => Some(WrapperDerives::Debug),
+                    "Octal" => Some(WrapperDerives::Octal),
+                    "LowerHex" => Some(WrapperDerives::LowerHex),
+                    "UpperHex" => Some(WrapperDerives::UpperHex),
+                    "LowerExp" => Some(WrapperDerives::LowerExp),
+                    "UpperExp" => Some(WrapperDerives::UpperExp),
+                    "BorrowSlice" => Some(WrapperDerives::BorrowSlice),
+                    "Index" => Some(WrapperDerives::Index),
+                    "IndexMut" => Some(WrapperDerives::IndexMut),
+                    "IndexRange" => Some(WrapperDerives::IndexRange),
+                    "IndexFull" => Some(WrapperDerives::IndexFull),
+                    "IndexFrom" => Some(WrapperDerives::IndexFrom),
+                    "IndexTo" => Some(WrapperDerives::IndexTo),
+                    "IndexInclusive" => Some(WrapperDerives::IndexInclusive),
+                    "Add" => Some(WrapperDerives::Add),
+                    "Neg" => Some(WrapperDerives::Neg),
+                    "Not" => Some(WrapperDerives::Not),
+                    "Sub" => Some(WrapperDerives::Sub),
+                    "Mul" => Some(WrapperDerives::Mul),
+                    "Div" => Some(WrapperDerives::Div),
+                    "Rem" => Some(WrapperDerives::Rem),
+                    "Shl" => Some(WrapperDerives::Shl),
+                    "Shr" => Some(WrapperDerives::Shr),
+                    "BitAnd" => Some(WrapperDerives::BitAnd),
+                    "BitOr" => Some(WrapperDerives::BitOr),
+                    "BitXor" => Some(WrapperDerives::BitXor),
+                    "AddAssign" => Some(WrapperDerives::AddAssign),
+                    "SubAssign" => Some(WrapperDerives::SubAssign),
+                    "MulAssign" => Some(WrapperDerives::MulAssign),
+                    "DivAssign" => Some(WrapperDerives::DivAssign),
+                    "RemAssign" => Some(WrapperDerives::RemAssign),
+                    "ShlAssign" => Some(WrapperDerives::ShlAssign),
+                    "ShrAssign" => Some(WrapperDerives::ShrAssign),
+                    "BitAndAssign" => Some(WrapperDerives::BitAndAssign),
+                    "BitOrAssign" => Some(WrapperDerives::BitOrAssign),
+                    "BitXorAssign" => Some(WrapperDerives::BitXorAssign),
                     _ => None,
                 })
             },
@@ -128,7 +128,7 @@ impl WrapperDerives {
         let amplify_crate = get_amplify_crate(&input);
 
         match self {
-            Self::FromStr => quote! {
+            WrapperDerives::FromStr => quote! {
                 impl #impl_generics ::std::str::FromStr for #ident_name #ty_generics #where_clause
                 {
                     type Err = <<Self as #amplify_crate::Wrapper>::Inner as ::std::str::FromStr>::Err;
@@ -143,7 +143,7 @@ impl WrapperDerives {
                     }
                 }
             },
-            Self::Display => quote! {
+            WrapperDerives::Display => quote! {
                 impl #impl_generics ::std::fmt::Display for #ident_name #ty_generics #where_clause
                 {
                     #[inline]
@@ -153,7 +153,7 @@ impl WrapperDerives {
                     }
                 }
             },
-            Self::Debug => quote! {
+            WrapperDerives::Debug => quote! {
                 impl #impl_generics ::std::fmt::Debug for #ident_name #ty_generics #where_clause
                 {
                     #[inline]
@@ -163,7 +163,7 @@ impl WrapperDerives {
                     }
                 }
             },
-            Self::Octal => quote! {
+            WrapperDerives::Octal => quote! {
                 impl #impl_generics ::std::fmt::Octal for #ident_name #ty_generics #where_clause
                 {
                     #[inline]
@@ -173,7 +173,7 @@ impl WrapperDerives {
                     }
                 }
             },
-            Self::LowerHex => quote! {
+            WrapperDerives::LowerHex => quote! {
                 impl #impl_generics ::std::fmt::LowerHex for #ident_name #ty_generics #where_clause
                 {
                     #[inline]
@@ -183,7 +183,7 @@ impl WrapperDerives {
                     }
                 }
             },
-            Self::UpperHex => quote! {
+            WrapperDerives::UpperHex => quote! {
                 impl #impl_generics ::std::fmt::UpperHex for #ident_name #ty_generics #where_clause
                 {
                     #[inline]
@@ -193,7 +193,7 @@ impl WrapperDerives {
                     }
                 }
             },
-            Self::LowerExp => quote! {
+            WrapperDerives::LowerExp => quote! {
                 impl #impl_generics ::std::fmt::LowerExp for #ident_name #ty_generics #where_clause
                 {
                     #[inline]
@@ -203,7 +203,7 @@ impl WrapperDerives {
                     }
                 }
             },
-            Self::UpperExp => quote! {
+            WrapperDerives::UpperExp => quote! {
                 impl #impl_generics ::std::fmt::UpperExp for #ident_name #ty_generics #where_clause
                 {
                     #[inline]
@@ -213,7 +213,7 @@ impl WrapperDerives {
                     }
                 }
             },
-            Self::BorrowSlice => quote! {
+            WrapperDerives::BorrowSlice => quote! {
                 impl #impl_generics ::core::borrow::Borrow<[u8]> for #ident_name #ty_generics #where_clause
                 {
                     #[inline]
@@ -223,7 +223,7 @@ impl WrapperDerives {
                     }
                 }
             },
-            Self::Index => {
+            WrapperDerives::Index => {
                 let where_clause = match where_clause {
                     None => quote! { where },
                     Some(_) => quote! { #where_clause },
@@ -241,7 +241,7 @@ impl WrapperDerives {
                     }
                 }
             }
-            Self::IndexMut => {
+            WrapperDerives::IndexMut => {
                 let where_clause = match where_clause {
                     None => quote! { where },
                     Some(_) => quote! { #where_clause },
@@ -257,7 +257,7 @@ impl WrapperDerives {
                     }
                 }
             }
-            Self::IndexRange => {
+            WrapperDerives::IndexRange => {
                 quote! {
                     impl <#impl_generics_params> ::core::ops::Index<::core::ops::Range<usize>> for #ident_name #ty_generics #where_clause
                     {
@@ -271,7 +271,7 @@ impl WrapperDerives {
                     }
                 }
             }
-            Self::IndexFrom => {
+            WrapperDerives::IndexFrom => {
                 quote! {
                     impl <#impl_generics_params> ::core::ops::Index<::core::ops::RangeFrom<usize>> for #ident_name #ty_generics #where_clause
                     {
@@ -285,7 +285,7 @@ impl WrapperDerives {
                     }
                 }
             }
-            Self::IndexTo => {
+            WrapperDerives::IndexTo => {
                 quote! {
                     impl <#impl_generics_params> ::core::ops::Index<::core::ops::RangeTo<usize>> for #ident_name #ty_generics #where_clause
                     {
@@ -299,7 +299,7 @@ impl WrapperDerives {
                     }
                 }
             }
-            Self::IndexInclusive => {
+            WrapperDerives::IndexInclusive => {
                 quote! {
                     impl <#impl_generics_params> ::core::ops::Index<::core::ops::RangeInclusive<usize>> for #ident_name #ty_generics #where_clause
                     {
@@ -313,7 +313,7 @@ impl WrapperDerives {
                     }
                 }
             }
-            Self::IndexFull => {
+            WrapperDerives::IndexFull => {
                 quote! {
                     impl <#impl_generics_params> ::core::ops::Index<::core::ops::RangeFull> for #ident_name #ty_generics #where_clause
                     {
@@ -327,7 +327,7 @@ impl WrapperDerives {
                     }
                 }
             }
-            Self::Neg => quote! {
+            WrapperDerives::Neg => quote! {
                 impl #impl_generics ::core::ops::Neg for #ident_name #ty_generics #where_clause
                 {
                     type Output = Self;
@@ -339,7 +339,7 @@ impl WrapperDerives {
                     }
                 }
             },
-            Self::Not => quote! {
+            WrapperDerives::Not => quote! {
                 impl #impl_generics ::core::ops::Not for #ident_name #ty_generics #where_clause
                 {
                     type Output = Self;
@@ -351,7 +351,7 @@ impl WrapperDerives {
                     }
                 }
             },
-            Self::Add => quote! {
+            WrapperDerives::Add => quote! {
                 impl #impl_generics ::core::ops::Add for #ident_name #ty_generics #where_clause
                 {
                     type Output = Self;
@@ -363,7 +363,7 @@ impl WrapperDerives {
                     }
                 }
             },
-            Self::Sub => quote! {
+            WrapperDerives::Sub => quote! {
                 impl #impl_generics ::core::ops::Sub for #ident_name #ty_generics #where_clause
                 {
                     type Output = Self;
@@ -375,7 +375,7 @@ impl WrapperDerives {
                     }
                 }
             },
-            Self::Mul => quote! {
+            WrapperDerives::Mul => quote! {
                 impl #impl_generics ::core::ops::Mul for #ident_name #ty_generics #where_clause
                 {
                     type Output = Self;
@@ -387,7 +387,7 @@ impl WrapperDerives {
                     }
                 }
             },
-            Self::Div => quote! {
+            WrapperDerives::Div => quote! {
                 impl #impl_generics ::core::ops::Div for #ident_name #ty_generics #where_clause
                 {
                     type Output = Self;
@@ -399,7 +399,7 @@ impl WrapperDerives {
                     }
                 }
             },
-            Self::Rem => quote! {
+            WrapperDerives::Rem => quote! {
                 impl #impl_generics ::core::ops::Rem for #ident_name #ty_generics #where_clause
                 {
                     type Output = Self;
@@ -411,7 +411,7 @@ impl WrapperDerives {
                     }
                 }
             },
-            Self::Shl => quote! {
+            WrapperDerives::Shl => quote! {
                 impl #impl_generics ::core::ops::Shl for #ident_name #ty_generics #where_clause
                 {
                     type Output = Self;
@@ -423,7 +423,7 @@ impl WrapperDerives {
                     }
                 }
             },
-            Self::Shr => quote! {
+            WrapperDerives::Shr => quote! {
                 impl #impl_generics ::core::ops::Shr for #ident_name #ty_generics #where_clause
                 {
                     type Output = Self;
@@ -435,7 +435,7 @@ impl WrapperDerives {
                     }
                 }
             },
-            Self::BitAnd => quote! {
+            WrapperDerives::BitAnd => quote! {
                 impl #impl_generics ::core::ops::BitAnd for #ident_name #ty_generics #where_clause
                 {
                     type Output = Self;
@@ -447,7 +447,7 @@ impl WrapperDerives {
                     }
                 }
             },
-            Self::BitOr => quote! {
+            WrapperDerives::BitOr => quote! {
                 impl #impl_generics ::core::ops::BitOr for #ident_name #ty_generics #where_clause
                 {
                     type Output = Self;
@@ -459,7 +459,7 @@ impl WrapperDerives {
                     }
                 }
             },
-            Self::BitXor => quote! {
+            WrapperDerives::BitXor => quote! {
                 impl #impl_generics ::core::ops::BitXor for #ident_name #ty_generics #where_clause
                 {
                     type Output = Self;
@@ -471,7 +471,7 @@ impl WrapperDerives {
                     }
                 }
             },
-            Self::AddAssign => quote! {
+            WrapperDerives::AddAssign => quote! {
                 impl #impl_generics ::core::ops::AddAssign for #ident_name #ty_generics #where_clause
                 {
                     #[inline]
@@ -481,7 +481,7 @@ impl WrapperDerives {
                     }
                 }
             },
-            Self::SubAssign => quote! {
+            WrapperDerives::SubAssign => quote! {
                 impl #impl_generics ::core::ops::SubAssign for #ident_name #ty_generics #where_clause
                 {
                     #[inline]
@@ -491,7 +491,7 @@ impl WrapperDerives {
                     }
                 }
             },
-            Self::MulAssign => quote! {
+            WrapperDerives::MulAssign => quote! {
                 impl #impl_generics ::core::ops::MulAssign for #ident_name #ty_generics #where_clause
                 {
                     #[inline]
@@ -501,7 +501,7 @@ impl WrapperDerives {
                     }
                 }
             },
-            Self::DivAssign => quote! {
+            WrapperDerives::DivAssign => quote! {
                 impl #impl_generics ::core::ops::DivAssign for #ident_name #ty_generics #where_clause
                 {
                     #[inline]
@@ -511,7 +511,7 @@ impl WrapperDerives {
                     }
                 }
             },
-            Self::RemAssign => quote! {4
+            WrapperDerives::RemAssign => quote! {4
                 impl #impl_generics ::core::ops::RemAssign for #ident_name #ty_generics #where_clause
                 {
                     #[inline]
@@ -521,7 +521,7 @@ impl WrapperDerives {
                     }
                 }
             },
-            Self::ShlAssign => quote! {
+            WrapperDerives::ShlAssign => quote! {
                 impl #impl_generics ::core::ops::ShlAssign for #ident_name #ty_generics #where_clause
                 {
                     #[inline]
@@ -531,7 +531,7 @@ impl WrapperDerives {
                     }
                 }
             },
-            Self::ShrAssign => quote! {
+            WrapperDerives::ShrAssign => quote! {
                 impl #impl_generics ::core::ops::ShrAssign for #ident_name #ty_generics #where_clause
                 {
                     #[inline]
@@ -541,7 +541,7 @@ impl WrapperDerives {
                     }
                 }
             },
-            Self::BitAndAssign => quote! {
+            WrapperDerives::BitAndAssign => quote! {
                 impl #impl_generics ::core::ops::BitAndAssign for #ident_name #ty_generics #where_clause
                 {
                     #[inline]
@@ -551,7 +551,7 @@ impl WrapperDerives {
                     }
                 }
             },
-            Self::BitOrAssign => quote! {
+            WrapperDerives::BitOrAssign => quote! {
                 impl #impl_generics ::core::ops::BitOrAssign for #ident_name #ty_generics #where_clause
                 {
                     #[inline]
@@ -561,7 +561,7 @@ impl WrapperDerives {
                     }
                 }
             },
-            Self::BitXorAssign => quote! {
+            WrapperDerives::BitXorAssign => quote! {
                 impl #impl_generics ::core::ops::BitXorAssign for #ident_name #ty_generics #where_clause
                 {
                     #[inline]

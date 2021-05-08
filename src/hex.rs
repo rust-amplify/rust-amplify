@@ -17,7 +17,6 @@
 //! # Hex encoding and decoding
 
 use core::{fmt, str};
-use Hash;
 
 /// Hex decoding error
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]

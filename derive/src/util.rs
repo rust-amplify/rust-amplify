@@ -47,13 +47,13 @@ pub(crate) fn get_amplify_crate(input: &DeriveInput) -> Path {
     let example = "#[amplify_crate(amplify_crate_path)]";
     let default = Path::from(Ident::new("amplify", input.span()));
 
-    let list = match attr_list(&input.attrs, name, example).ok().flatten() {
+    let list = match attr_list(&input.attrs, name, example).ok().unwrap_or(None) {
         Some(x) => x,
         None => return default,
     };
     nested_one_path(&list, name, example)
         .ok()
-        .flatten()
+        .unwrap_or(None)
         .unwrap_or(default)
 }
 
