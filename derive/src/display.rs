@@ -369,21 +369,9 @@ fn inner_struct(input: &DeriveInput, data: &DataStruct) -> Result<TokenStream2> 
     let str_alt = tokens_alt.to_string();
 
     let display = match (&data.fields, &technique) {
-        (_, Technique::FromTrait(_)) | (_, Technique::FromMethod(_)) => {
-            let a = technique
-                .clone()
-                .into_token_stream2(&data.fields, input.span(), false);
-            let b = technique
-                .clone()
-                .into_token_stream2(&data.fields, input.span(), true);
-            quote_spanned! { input.span() =>
-                if !f.alternate() {
-                    #a
-                } else {
-                    #b
-                }
-            }
-        }
+        (_, Technique::FromTrait(_)) | (_, Technique::FromMethod(_)) => technique
+            .clone()
+            .into_token_stream2(&data.fields, input.span(), false),
         (Fields::Named(fields), Technique::Inner) => {
             if fields.named.len() != 1 {
                 return Err(attr_err!(
@@ -399,11 +387,7 @@ fn inner_struct(input: &DeriveInput, data: &DataStruct) -> Result<TokenStream2> 
                 .as_ref()
                 .expect("named fields always have ident with the name");
             quote_spanned! { field.span() =>
-                if !f.alternate() {
-                    write!(f, #tokens_fmt, _0 = self.#field)
-                } else {
-                    write!(f, #tokens_alt, _0 = self.#field)
-                }
+                write!(f, #tokens_fmt, _0 = self.#field)
             }
         }
         (Fields::Named(fields), _) => {
@@ -412,14 +396,20 @@ fn inner_struct(input: &DeriveInput, data: &DataStruct) -> Result<TokenStream2> 
                 .clone()
                 .filter(|ident| has_formatters(ident, &str_fmt))
                 .collect::<Vec<_>>();
-            let idents_alt = f
-                .filter(|ident| has_formatters(ident, &str_alt))
-                .collect::<Vec<_>>();
-            quote_spanned! { fields.span() =>
-                if !f.alternate() {
+            if str_fmt == str_alt {
+                quote_spanned! { fields.span() =>
                     write!(f, #tokens_fmt, #( #idents = self.#idents, )*)
-                } else {
-                    write!(f, #tokens_alt, #( #idents_alt = self.#idents_alt, )*)
+                }
+            } else {
+                let idents_alt = f
+                    .filter(|ident| has_formatters(ident, &str_alt))
+                    .collect::<Vec<_>>();
+                quote_spanned! { fields.span() =>
+                    if !f.alternate() {
+                        write!(f, #tokens_fmt, #( #idents = self.#idents, )*)
+                    } else {
+                        write!(f, #tokens_alt, #( #idents_alt = self.#idents_alt, )*)
+                    }
                 }
             }
         }
@@ -433,24 +423,36 @@ fn inner_struct(input: &DeriveInput, data: &DataStruct) -> Result<TokenStream2> 
                 .map(|ident| Ident::new(&format!("_{}", ident.index), fields.span()))
                 .collect::<Vec<_>>();
             let idents = idents.collect::<Vec<_>>();
-            let idents_alt =
-                f.filter(|ident| has_formatters(format!("_{}", ident.index), &str_alt));
-            let nums_alt = idents_alt
-                .clone()
-                .map(|ident| Ident::new(&format!("_{}", ident.index), fields.span()))
-                .collect::<Vec<_>>();
-            let idents_alt = idents_alt.collect::<Vec<_>>();
-            quote_spanned! { fields.span() =>
-                if !f.alternate() {
+            if str_fmt == str_alt {
+                quote_spanned! { fields.span() =>
                     write!(f, #tokens_fmt, #( #nums = self.#idents, )*)
-                } else {
-                    write!(f, #tokens_alt, #( #nums_alt = self.#idents_alt, )*)
+                }
+            } else {
+                let idents_alt =
+                    f.filter(|ident| has_formatters(format!("_{}", ident.index), &str_alt));
+                let nums_alt = idents_alt
+                    .clone()
+                    .map(|ident| Ident::new(&format!("_{}", ident.index), fields.span()))
+                    .collect::<Vec<_>>();
+                let idents_alt = idents_alt.collect::<Vec<_>>();
+                quote_spanned! { fields.span() =>
+                    if !f.alternate() {
+                        write!(f, #tokens_fmt, #( #nums = self.#idents, )*)
+                    } else {
+                        write!(f, #tokens_alt, #( #nums_alt = self.#idents_alt, )*)
+                    }
                 }
             }
         }
         (Fields::Unit, _) => {
-            quote_spanned! { data.fields.span() =>
-                f.write_str(if !f.alternate() { #tokens_fmt } else { #tokens_alt })
+            if str_fmt == str_alt {
+                quote_spanned! { data.fields.span() =>
+                    f.write_str(#tokens_fmt)
+                }
+            } else {
+                quote_spanned! { data.fields.span() =>
+                    f.write_str(if !f.alternate() { #tokens_fmt } else { #tokens_alt })
+                }
             }
         }
     };
@@ -538,23 +540,15 @@ fn inner_enum(input: &DeriveInput, data: &DataEnum) -> Result<TokenStream2> {
                         .expect("named fields always have ident with the name");
                     display.extend(quote_spanned! { v.span() =>
                         Self::#type_name { #field, .. } => {
-                            if !f.alternate() {
-                                write!(f, #tokens_fmt, _0 = #field)
-                            } else {
-                                write!(f, #tokens_alt, _0 = #field)
-                            }
+                            write!(f, #tokens_fmt, _0 = #field)
                         }
                     });
                 } else if let Some(Technique::FromTrait(tr)) = current {
-                    let a = Technique::FromTrait(tr).into_token_stream2(&v.fields, v.span(), false);
-                    let b = Technique::FromTrait(tr).into_token_stream2(&v.fields, v.span(), true);
+                    let stream =
+                        Technique::FromTrait(tr).into_token_stream2(&v.fields, v.span(), false);
                     display.extend(quote_spanned! { v.span() =>
                         Self::#type_name { .. } => {
-                            if !f.alternate() {
-                                #a
-                            } else {
-                                #b
-                            }
+                            #stream
                         }
                     })
                 } else {
@@ -579,15 +573,11 @@ fn inner_enum(input: &DeriveInput, data: &DataEnum) -> Result<TokenStream2> {
             }
             (Fields::Unnamed(fields), Some(tokens_fmt), Some(tokens_alt)) => {
                 if let Some(Technique::FromTrait(tr)) = current {
-                    let a = Technique::FromTrait(tr).into_token_stream2(&v.fields, v.span(), false);
-                    let b = Technique::FromTrait(tr).into_token_stream2(&v.fields, v.span(), true);
+                    let stream =
+                        Technique::FromTrait(tr).into_token_stream2(&v.fields, v.span(), false);
                     display.extend(quote_spanned! { v.span() =>
                         Self::#type_name(..) => {
-                            if !f.alternate() {
-                                #a
-                            } else {
-                                #b
-                            }
+                            #stream
                         }
                     })
                 } else {
@@ -651,6 +641,7 @@ fn inner_enum(input: &DeriveInput, data: &DataEnum) -> Result<TokenStream2> {
 
     Ok(quote! {
         impl #impl_generics ::std::fmt::Display for #ident_name #ty_generics #where_clause {
+            #![allow(clippy::if_same_then_else)]
             fn fmt(&self, mut f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
                 #content
             }
@@ -713,6 +704,7 @@ fn inner_union(input: &DeriveInput, data: &DataUnion) -> Result<TokenStream2> {
     };
     Ok(quote! {
         impl #impl_generics ::std::fmt::Display for #ident_name #ty_generics #where_clause {
+            #![allow(clippy::if_same_then_else)]
             fn fmt(&self, mut f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
                 #content
             }

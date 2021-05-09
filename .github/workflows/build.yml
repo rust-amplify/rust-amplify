@@ -59,11 +59,23 @@ jobs:
         with:
           toolchain: 1.36.0
           override: true
-      - name: All features
+      - name: Clean Cargo.lock
+        run: rm -f Cargo.lock
+      - name: Main repo
         uses: actions-rs/cargo@v1
         with:
           command: build
           args: --all-features
+      - name: Derive
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --manifest-path ./derive/Cargo.toml
+      - name: Syn
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --manifest-path ./syn/Cargo.toml
   dependency:
     runs-on: ubuntu-latest
     steps:
