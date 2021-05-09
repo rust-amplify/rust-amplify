@@ -431,6 +431,8 @@ impl ArgValue {
     /// Tests whether the self is set to [`ArgValue::None`]
     #[inline]
     pub fn is_none(&self) -> bool {
+        #[allow(clippy::match_like_matches_macro)]
+        // Ancient rust versions do not known about `matches!` macro
         match self {
             ArgValue::None => true,
             _ => false,
@@ -440,6 +442,8 @@ impl ArgValue {
     /// Tests whether the self is not set to [`ArgValue::None`]
     #[inline]
     pub fn is_some(&self) -> bool {
+        // Ancient rust versions do not known about `matches!` macro
+        #[allow(clippy::match_like_matches_macro)]
         match self {
             ArgValue::None => false,
             _ => true,

@@ -137,6 +137,8 @@ impl ArgValueReq {
 
     /// Determines whether argument is required to have a value
     pub fn is_required(&self) -> bool {
+        // Ancient rust versions do not known about `matches!` macro
+        #[allow(clippy::match_like_matches_macro)]
         match self {
             ArgValueReq::Required { default: None, .. } => true,
             _ => false,
@@ -225,6 +227,8 @@ impl ValueReq {
     /// Detects if the presence of the value is required
     #[inline]
     pub fn is_required(&self) -> bool {
+        // Ancient rust versions do not known about `matches!` macro
+        #[allow(clippy::match_like_matches_macro)]
         match self {
             ValueReq::Required => true,
             _ => false,

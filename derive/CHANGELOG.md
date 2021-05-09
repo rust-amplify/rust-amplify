@@ -1,6 +1,10 @@
 Change Log
 ==========
 
+2.7.1
+-----
+- Making display derivation macro not to produce clippy::if_same_then_else
+
 2.4.4
 -----
 - Fixed display derivation with enums using inner representation specified at

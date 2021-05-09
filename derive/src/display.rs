@@ -472,6 +472,8 @@ fn inner_enum(input: &DeriveInput, data: &DataEnum) -> Result<TokenStream2> {
     let mut display = TokenStream2::new();
 
     let global = Technique::from_attrs(&input.attrs, input.span())?;
+    // Ancient rust versions do not known about `matches!` macro
+    #[allow(clippy::match_like_matches_macro)]
     let mut use_global = match global {
         Some(Technique::Inner) => false,
         _ => true,
