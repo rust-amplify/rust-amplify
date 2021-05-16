@@ -20,11 +20,10 @@
 //! Implementation of a various large-but-fixed sized unsigned integer types.
 //! The functions here are designed to be fast.
 
-/* TODO: #76 Complete operator overloading for `u5` and other small-int types
 use core::ops::{
     Add, AddAssign, Sub, SubAssign, Mul, MulAssign, Div, DivAssign, Rem, RemAssign, BitAnd,
-    BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Neg, Shl, ShlAssign, Shr, ShrAssign,
-};*/
+    BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Shl, ShlAssign, Shr, ShrAssign,
+};
 use core::ops::Deref;
 
 /// A trait which allows numbers to act as fixed-size bit arrays
@@ -48,46 +47,139 @@ pub trait BitArray {
     fn one() -> Self;
 }
 
-/// Integer in the range `0..32`.
-#[derive(PartialEq, Eq, Debug, Copy, Clone, Default, PartialOrd, Ord, Hash)]
-#[allow(non_camel_case_types)]
-pub struct u5(u8);
+macro_rules! construct_bitint {
+    ($ty:ident, $inner:ident, $max:expr, $doc:meta) => {
+        #[$doc]
+        #[derive(PartialEq, Eq, Debug, Copy, Clone, Default, PartialOrd, Ord, Hash, Display)]
+        #[display(inner)]
+        #[allow(non_camel_case_types)]
+        pub struct $ty($inner);
 
-impl u5 {
-    /// Convert a `u8` to `u5` if in range, returning `Option::None` otherwise
-    pub fn from_u8(value: u8) -> Option<u5> {
-        if value > 31 {
-            None
-        } else {
-            Some(u5(value))
+        impl ::core::convert::TryFrom<$inner> for $ty {
+            type Error = ();
+            fn try_from(value: $inner) -> Result<Self, Self::Error> {
+                if value >= $max {
+                    Err(())
+                } else {
+                    Ok(Self(value))
+                }
+            }
         }
-    }
 
-    /// Returns a copy of the underlying `u8` value
-    pub fn as_u8(self) -> u8 {
-        self.0
-    }
+        impl From<$ty> for $inner {
+            fn from(val: $ty) -> Self {
+                val.0
+            }
+        }
+
+        impl AsRef<$inner> for $ty {
+            fn as_ref(&self) -> &$inner {
+                &self.0
+            }
+        }
+
+        impl Deref for $ty {
+            type Target = $inner;
+
+            fn deref(&self) -> &Self::Target {
+                &self.0
+            }
+        }
+
+        impl_op!($ty, Add, add, AddAssign, add_assign, +);
+        impl_op!($ty, Sub, sub, SubAssign, sub_assign, -);
+        impl_op!($ty, Mul, mul, MulAssign, mul_assign, *);
+        impl_op!($ty, Div, div, DivAssign, div_assign, /);
+        impl_op!($ty, Rem, rem, RemAssign, rem_assign, %);
+        impl_op!($ty, BitAnd, bitand, BitAndAssign, bitand_assign, &);
+        impl_op!($ty, BitOr, bitor, BitOrAssign, bitor_assign, |);
+        impl_op!($ty, BitXor, bitxor, BitXorAssign, bitxor_assign, ^);
+        impl_op!($ty, Shl, shl, ShlAssign, shl_assign, <<);
+        impl_op!($ty, Shr, shr, ShrAssign, shr_assign, >>);
+    };
 }
 
-impl From<u5> for u8 {
-    fn from(val: u5) -> Self {
-        val.0
-    }
+macro_rules! impl_op {
+    ($ty:ty, $op:ident, $fn:ident, $op_assign:ident, $fn_assign:ident, $sign:tt) => {
+        impl $op for $ty {
+            type Output = $ty;
+            fn $fn(self, rhs: Self) -> Self::Output {
+                use ::core::convert::TryFrom;
+                Self::try_from(self.0.$fn(rhs.0)).expect(stringify!(
+                    "integer overflow during ",
+                    $fn,
+                    " operation"
+                ))
+            }
+        }
+        impl $op for &$ty {
+            type Output = $ty;
+            fn $fn(self, rhs: Self) -> Self::Output {
+                *self $sign *rhs
+            }
+        }
+        impl $op<&$ty> for $ty {
+            type Output = $ty;
+            fn $fn(self, rhs: &$ty) -> Self::Output {
+                self $sign *rhs
+            }
+        }
+        impl $op<$ty> for &$ty {
+            type Output = $ty;
+            fn $fn(self, rhs: $ty) -> Self::Output {
+                *self $sign rhs
+            }
+        }
+
+        impl $op_assign for $ty {
+            fn $fn_assign(&mut self, rhs: Self) {
+                self.0 = (*self $sign rhs).0
+            }
+        }
+        impl $op_assign<&$ty> for $ty {
+            fn $fn_assign(&mut self, rhs: &$ty) {
+                self.0 = (*self $sign *rhs).0
+            }
+        }
+    };
 }
 
-impl AsRef<u8> for u5 {
-    fn as_ref(&self) -> &u8 {
-        &self.0
-    }
-}
-
-impl Deref for u5 {
-    type Target = u8;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
+construct_bitint!(
+    u3,
+    u8,
+    8,
+    doc = "5-bit unsigned integer in the range `0..8`"
+);
+construct_bitint!(
+    u4,
+    u8,
+    16,
+    doc = "5-bit unsigned integer in the range `0..16`"
+);
+construct_bitint!(
+    u5,
+    u8,
+    32,
+    doc = "5-bit unsigned integer in the range `0..32`"
+);
+construct_bitint!(
+    u6,
+    u8,
+    64,
+    doc = "6-bit unsigned integer in the range `0..64`"
+);
+construct_bitint!(
+    u7,
+    u8,
+    128,
+    doc = "7-bit unsigned integer in the range `0..128`"
+);
+construct_bitint!(
+    u24,
+    u32,
+    1u32 << 24,
+    doc = "24-bit unsigned integer in the range `0..16_777_216`"
+);
 
 macro_rules! construct_uint {
     ($name:ident, $n_words:expr) => {
