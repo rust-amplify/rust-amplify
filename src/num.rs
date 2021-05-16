@@ -25,6 +25,7 @@ use core::ops::{
     BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Shl, ShlAssign, Shr, ShrAssign,
 };
 use core::ops::Deref;
+use core::convert::TryFrom;
 
 /// A trait which allows numbers to act as fixed-size bit arrays
 pub trait BitArray {
@@ -50,8 +51,8 @@ pub trait BitArray {
 macro_rules! construct_bitint {
     ($ty:ident, $inner:ident, $max:expr, $doc:meta) => {
         #[$doc]
-        #[derive(PartialEq, Eq, Debug, Copy, Clone, Default, PartialOrd, Ord, Hash, Display)]
-        #[display(inner)]
+        #[derive(PartialEq, Eq, Debug, Copy, Clone, Default, PartialOrd, Ord, Hash)]
+        #[cfg_attr(feature = "std", derive(Display), display(inner))]
         #[allow(non_camel_case_types)]
         pub struct $ty($inner);
 
@@ -86,6 +87,14 @@ macro_rules! construct_bitint {
             }
         }
 
+        #[cfg(feature = "std")]
+        impl ::std::str::FromStr for $ty {
+            type Err = ::std::num::ParseIntError;
+            fn from_str(s: &str) -> Result<Self, Self::Err> {
+                Self::try_from($inner::from_str(s)?).map_err(|_| u8::from_str("257").unwrap_err())
+            }
+        }
+
         impl_op!($ty, Add, add, AddAssign, add_assign, +);
         impl_op!($ty, Sub, sub, SubAssign, sub_assign, -);
         impl_op!($ty, Mul, mul, MulAssign, mul_assign, *);
@@ -98,13 +107,11 @@ macro_rules! construct_bitint {
         impl_op!($ty, Shr, shr, ShrAssign, shr_assign, >>);
     };
 }
-
 macro_rules! impl_op {
     ($ty:ty, $op:ident, $fn:ident, $op_assign:ident, $fn_assign:ident, $sign:tt) => {
         impl $op for $ty {
             type Output = $ty;
             fn $fn(self, rhs: Self) -> Self::Output {
-                use ::core::convert::TryFrom;
                 Self::try_from(self.0.$fn(rhs.0)).expect(stringify!(
                     "integer overflow during ",
                     $fn,
