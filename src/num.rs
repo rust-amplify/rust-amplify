@@ -48,19 +48,48 @@ pub trait BitArray {
     fn one() -> Self;
 }
 
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display, Error)]
+#[display(
+    "Unable to construct bit-sized integer from a value `{value}` overflowing maximum value `{max}`"
+)]
+/// Error indicating that a value does not fit integer dimension
+pub struct ValueOverflow {
+    /// Integer bit size
+    pub max: usize,
+    /// Value that overflows
+    pub value: usize,
+}
+
 macro_rules! construct_bitint {
-    ($ty:ident, $inner:ident, $max:expr, $doc:meta) => {
+    ($ty:ident, $inner:ident, $bits:literal, $max:expr, $doc:meta) => {
         #[$doc]
         #[derive(PartialEq, Eq, Debug, Copy, Clone, Default, PartialOrd, Ord, Hash)]
         #[cfg_attr(feature = "std", derive(Display), display(inner))]
+        #[cfg_attr(
+            feature = "serde",
+            derive(Serialize, Deserialize),
+            serde(crate = "serde_crate", transparent)
+        )]
         #[allow(non_camel_case_types)]
         pub struct $ty($inner);
 
+        impl $ty {
+            /// Bit dimension
+            pub const BITS: u32 = $bits;
+
+            /// Minimum value
+            pub const MIN: Self = Self(0);
+
+            /// Maximal value
+            pub const MAX: Self = Self($max);
+        }
+
         impl ::core::convert::TryFrom<$inner> for $ty {
-            type Error = ();
+            type Error = ValueOverflow;
+            #[inline]
             fn try_from(value: $inner) -> Result<Self, Self::Error> {
                 if value >= $max {
-                    Err(())
+                    Err(ValueOverflow { max: $max as usize - 1, value: value as usize })
                 } else {
                     Ok(Self(value))
                 }
@@ -68,12 +97,14 @@ macro_rules! construct_bitint {
         }
 
         impl From<$ty> for $inner {
+            #[inline]
             fn from(val: $ty) -> Self {
                 val.0
             }
         }
 
         impl AsRef<$inner> for $ty {
+            #[inline]
             fn as_ref(&self) -> &$inner {
                 &self.0
             }
@@ -82,6 +113,7 @@ macro_rules! construct_bitint {
         impl Deref for $ty {
             type Target = $inner;
 
+            #[inline]
             fn deref(&self) -> &Self::Target {
                 &self.0
             }
@@ -90,29 +122,31 @@ macro_rules! construct_bitint {
         #[cfg(feature = "std")]
         impl ::std::str::FromStr for $ty {
             type Err = ::std::num::ParseIntError;
+            #[inline]
             fn from_str(s: &str) -> Result<Self, Self::Err> {
                 Self::try_from($inner::from_str(s)?).map_err(|_| u8::from_str("257").unwrap_err())
             }
         }
 
-        impl_op!($ty, Add, add, AddAssign, add_assign, +);
-        impl_op!($ty, Sub, sub, SubAssign, sub_assign, -);
-        impl_op!($ty, Mul, mul, MulAssign, mul_assign, *);
-        impl_op!($ty, Div, div, DivAssign, div_assign, /);
-        impl_op!($ty, Rem, rem, RemAssign, rem_assign, %);
-        impl_op!($ty, BitAnd, bitand, BitAndAssign, bitand_assign, &);
-        impl_op!($ty, BitOr, bitor, BitOrAssign, bitor_assign, |);
-        impl_op!($ty, BitXor, bitxor, BitXorAssign, bitxor_assign, ^);
-        impl_op!($ty, Shl, shl, ShlAssign, shl_assign, <<);
-        impl_op!($ty, Shr, shr, ShrAssign, shr_assign, >>);
+        impl_op!($ty, $inner, Add, add, AddAssign, add_assign, +);
+        impl_op!($ty, $inner, Sub, sub, SubAssign, sub_assign, -);
+        impl_op!($ty, $inner, Mul, mul, MulAssign, mul_assign, *);
+        impl_op!($ty, $inner, Div, div, DivAssign, div_assign, /);
+        impl_op!($ty, $inner, Rem, rem, RemAssign, rem_assign, %);
+        impl_op!($ty, $inner, BitAnd, bitand, BitAndAssign, bitand_assign, &);
+        impl_op!($ty, $inner, BitOr, bitor, BitOrAssign, bitor_assign, |);
+        impl_op!($ty, $inner, BitXor, bitxor, BitXorAssign, bitxor_assign, ^);
+        impl_op!($ty, $inner, Shl, shl, ShlAssign, shl_assign, <<);
+        impl_op!($ty, $inner, Shr, shr, ShrAssign, shr_assign, >>);
     };
 }
 macro_rules! impl_op {
-    ($ty:ty, $op:ident, $fn:ident, $op_assign:ident, $fn_assign:ident, $sign:tt) => {
+    ($ty:ty, $inner:ty, $op:ident, $fn:ident, $op_assign:ident, $fn_assign:ident, $sign:tt) => {
         impl $op for $ty {
             type Output = $ty;
+            #[inline]
             fn $fn(self, rhs: Self) -> Self::Output {
-                Self::try_from(self.0.$fn(rhs.0)).expect(stringify!(
+                Self::try_from((self.0).$fn(rhs.0)).expect(stringify!(
                     "integer overflow during ",
                     $fn,
                     " operation"
@@ -121,30 +155,80 @@ macro_rules! impl_op {
         }
         impl $op for &$ty {
             type Output = $ty;
+            #[inline]
             fn $fn(self, rhs: Self) -> Self::Output {
                 *self $sign *rhs
             }
         }
         impl $op<&$ty> for $ty {
             type Output = $ty;
+            #[inline]
             fn $fn(self, rhs: &$ty) -> Self::Output {
                 self $sign *rhs
             }
         }
         impl $op<$ty> for &$ty {
             type Output = $ty;
+            #[inline]
             fn $fn(self, rhs: $ty) -> Self::Output {
                 *self $sign rhs
             }
         }
 
+        impl $op<$inner> for $ty {
+            type Output = $ty;
+            #[inline]
+            fn $fn(self, rhs: $inner) -> Self::Output {
+                Self::try_from((self.0).$fn(rhs)).expect(stringify!(
+                    "integer overflow during ",
+                    $fn,
+                    " operation"
+                ))
+            }
+        }
+        impl $op<&$inner> for &$ty {
+            type Output = $ty;
+            #[inline]
+            fn $fn(self, rhs: &$inner) -> Self::Output {
+                *self $sign *rhs
+            }
+        }
+        impl $op<&$inner> for $ty {
+            type Output = $ty;
+            #[inline]
+            fn $fn(self, rhs: &$inner) -> Self::Output {
+                self $sign *rhs
+            }
+        }
+        impl $op<$inner> for &$ty {
+            type Output = $ty;
+            #[inline]
+            fn $fn(self, rhs: $inner) -> Self::Output {
+                *self $sign rhs
+            }
+        }
+
         impl $op_assign for $ty {
+            #[inline]
             fn $fn_assign(&mut self, rhs: Self) {
                 self.0 = (*self $sign rhs).0
             }
         }
         impl $op_assign<&$ty> for $ty {
+            #[inline]
             fn $fn_assign(&mut self, rhs: &$ty) {
+                self.0 = (*self $sign *rhs).0
+            }
+        }
+        impl $op_assign<$inner> for $ty {
+            #[inline]
+            fn $fn_assign(&mut self, rhs: $inner) {
+                self.0 = (*self $sign rhs).0
+            }
+        }
+        impl $op_assign<&$inner> for $ty {
+            #[inline]
+            fn $fn_assign(&mut self, rhs: &$inner) {
                 self.0 = (*self $sign *rhs).0
             }
         }
@@ -154,36 +238,42 @@ macro_rules! impl_op {
 construct_bitint!(
     u3,
     u8,
+    3,
     8,
     doc = "5-bit unsigned integer in the range `0..8`"
 );
 construct_bitint!(
     u4,
     u8,
+    4,
     16,
     doc = "5-bit unsigned integer in the range `0..16`"
 );
 construct_bitint!(
     u5,
     u8,
+    5,
     32,
     doc = "5-bit unsigned integer in the range `0..32`"
 );
 construct_bitint!(
     u6,
     u8,
+    6,
     64,
     doc = "6-bit unsigned integer in the range `0..64`"
 );
 construct_bitint!(
     u7,
     u8,
+    7,
     128,
     doc = "7-bit unsigned integer in the range `0..128`"
 );
 construct_bitint!(
     u24,
     u32,
+    24,
     1u32 << 24,
     doc = "24-bit unsigned integer in the range `0..16_777_216`"
 );
@@ -963,12 +1053,85 @@ impl u1024 {
 mod tests {
     #![allow(unused)]
 
-    use super::{u256, BitArray, ParseLengthError};
+    use super::*;
 
     construct_uint!(Uint128, 2);
 
     #[test]
-    pub fn u256_bits_test() {
+    fn ubit_test() {
+        let mut u_5 = u5::try_from(*u5::MAX - 1).unwrap();
+        let mut u_6 = u6::try_from(*u6::MAX - 1).unwrap();
+        let mut u_7 = u7::try_from(*u7::MAX - 1).unwrap();
+        let mut u_24 = u24::try_from(*u24::MAX - 1).unwrap();
+
+        assert_eq!(*u_5, 31u8);
+        assert_eq!(*u_6, 63u8);
+        assert_eq!(*u_7, 127u8);
+        assert_eq!(*u_24, (1 << 24) - 1);
+
+        u_5 -= 1;
+        u_6 -= 1;
+        u_7 -= 1;
+        u_24 -= 1;
+
+        assert_eq!(*u_5, 30u8);
+        assert_eq!(*u_6, 62u8);
+        assert_eq!(*u_7, 126u8);
+        assert_eq!(*u_24, (1 << 24) - 2);
+
+        u_5 /= 2;
+        u_5 *= 2;
+        u_5 += 1;
+
+        u_6 /= 2;
+        u_6 *= 2;
+        u_6 += 1;
+
+        u_7 /= 2;
+        u_7 *= 2;
+        u_7 += 1;
+
+        u_24 /= 2;
+        u_24 *= 2;
+        u_24 += 1;
+
+        assert_eq!(*u_5, 31u8);
+        assert_eq!(*u_6, 63u8);
+        assert_eq!(*u_7, 127u8);
+        assert_eq!(*u_24, (1 << 24) - 1);
+
+        assert_eq!(*u_5 % 2, 1);
+        assert_eq!(*u_6 % 2, 1);
+        assert_eq!(*u_7 % 2, 1);
+        assert_eq!(*u_24 % 2, 1);
+    }
+
+    #[test]
+    #[should_panic(expected = "ValueOverflow { max: 31, value: 32 }")]
+    fn u5_overflow_test() {
+        u5::try_from(32).unwrap();
+    }
+
+    #[test]
+    #[should_panic(expected = "ValueOverflow { max: 63, value: 64 }")]
+    fn u6_overflow_test() {
+        u6::try_from(64).unwrap();
+    }
+
+    #[test]
+    #[should_panic(expected = "ValueOverflow { max: 127, value: 128 }")]
+    fn u7_overflow_test() {
+        u7::try_from(128).unwrap();
+    }
+
+    #[test]
+    #[should_panic(expected = "ValueOverflow { max: 16777215, value: 16777216 }")]
+    fn u24_overflow_test() {
+        u24::try_from(1 << 24).unwrap();
+    }
+
+    #[test]
+    fn u256_bits_test() {
         assert_eq!(u256::from_u64(255).unwrap().bits(), 8);
         assert_eq!(u256::from_u64(256).unwrap().bits(), 9);
         assert_eq!(u256::from_u64(300).unwrap().bits(), 9);
@@ -993,7 +1156,7 @@ mod tests {
     }
 
     #[test]
-    pub fn u256_display_test() {
+    fn u256_display_test() {
         assert_eq!(
             format!("{}", u256::from_u64(0xDEADBEEF).unwrap()),
             "0x00000000000000000000000000000000000000000000000000000000deadbeef"
@@ -1016,7 +1179,7 @@ mod tests {
     }
 
     #[test]
-    pub fn u256_comp_test() {
+    fn u256_comp_test() {
         let small = u256([10u64, 0, 0, 0]);
         let big = u256([0x8C8C3EE70C644118u64, 0x0209E7378231E632, 0, 0]);
         let bigger = u256([0x9C8C3EE70C644118u64, 0x0209E7378231E632, 0, 0]);
@@ -1033,7 +1196,7 @@ mod tests {
     }
 
     #[test]
-    pub fn uint_from_be_bytes() {
+    fn uint_from_be_bytes() {
         assert_eq!(
             Uint128::from_be_bytes([
                 0x1b, 0xad, 0xca, 0xfe, 0xde, 0xad, 0xbe, 0xef, 0xde, 0xaf, 0xba, 0xbe, 0x2b, 0xed,
@@ -1058,7 +1221,7 @@ mod tests {
     }
 
     #[test]
-    pub fn uint_from_le_bytes() {
+    fn uint_from_le_bytes() {
         let mut be = [
             0x1b, 0xad, 0xca, 0xfe, 0xde, 0xad, 0xbe, 0xef, 0xde, 0xaf, 0xba, 0xbe, 0x2b, 0xed,
             0xfe, 0xed,
@@ -1087,7 +1250,7 @@ mod tests {
     }
 
     #[test]
-    pub fn uint_to_be_bytes() {
+    fn uint_to_be_bytes() {
         assert_eq!(
             Uint128([0xdeafbabe2bedfeed, 0x1badcafedeadbeef]).to_be_bytes(),
             [
@@ -1113,7 +1276,7 @@ mod tests {
     }
 
     #[test]
-    pub fn uint_to_le_bytes() {
+    fn uint_to_le_bytes() {
         assert_eq!(
             Uint128([0xdeafbabe2bedfeed, 0x1badcafedeadbeef]).to_le_bytes(),
             [
@@ -1139,7 +1302,7 @@ mod tests {
     }
 
     #[test]
-    pub fn u256_arithmetic_test() {
+    fn u256_arithmetic_test() {
         let init = u256::from_u64(0xDEADBEEFDEADBEEF).unwrap();
         let copy = init;
 
@@ -1191,7 +1354,7 @@ mod tests {
     }
 
     #[test]
-    pub fn mul_u32_test() {
+    fn mul_u32_test() {
         let u64_val = u256::from_u64(0xDEADBEEFDEADBEEF).unwrap();
 
         let u96_res = u64_val.mul_u32(0xFFFFFFFF);
@@ -1240,7 +1403,7 @@ mod tests {
     }
 
     #[test]
-    pub fn multiplication_test() {
+    fn multiplication_test() {
         let u64_val = u256::from_u64(0xDEADBEEFDEADBEEF).unwrap();
 
         let u128_res = u64_val * u64_val;
@@ -1264,7 +1427,7 @@ mod tests {
     }
 
     #[test]
-    pub fn u256_bitslice_test() {
+    fn u256_bitslice_test() {
         let init = u256::from_u64(0xDEADBEEFDEADBEEF).unwrap();
         let add = init + (init << 64);
         assert_eq!(add.bit_slice(64, 128), init);
@@ -1272,7 +1435,7 @@ mod tests {
     }
 
     #[test]
-    pub fn u256_extreme_bitshift_test() {
+    fn u256_extreme_bitshift_test() {
         // Shifting a u64 by 64 bits gives an undefined value, so make sure that
         // we're doing the Right Thing here
         let init = u256::from_u64(0xDEADBEEFDEADBEEF).unwrap();
@@ -1297,7 +1460,7 @@ mod tests {
 
     #[cfg(feature = "serde")]
     #[test]
-    pub fn u256_serde_test() {
+    fn u256_serde_test() {
         let check = |uint, hex| {
             let json = format!("\"{}\"", hex);
             assert_eq!(::serde_json::to_string(&uint).unwrap(), json);
