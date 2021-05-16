@@ -20,6 +20,13 @@
 //! Implementation of a various large-but-fixed sized unsigned integer types.
 //! The functions here are designed to be fast.
 
+/* TODO: #76 Complete operator overloading for `u5` and other small-int types
+use core::ops::{
+    Add, AddAssign, Sub, SubAssign, Mul, MulAssign, Div, DivAssign, Rem, RemAssign, BitAnd,
+    BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Neg, Shl, ShlAssign, Shr, ShrAssign,
+};*/
+use core::ops::Deref;
+
 /// A trait which allows numbers to act as fixed-size bit arrays
 pub trait BitArray {
     /// Is bit set?
@@ -39,6 +46,47 @@ pub trait BitArray {
 
     /// Create value representing one
     fn one() -> Self;
+}
+
+/// Integer in the range `0..32`.
+#[derive(PartialEq, Eq, Debug, Copy, Clone, Default, PartialOrd, Ord, Hash)]
+#[allow(non_camel_case_types)]
+pub struct u5(u8);
+
+impl u5 {
+    /// Convert a `u8` to `u5` if in range, returning `Option::None` otherwise
+    pub fn from_u8(value: u8) -> Option<u5> {
+        if value > 31 {
+            None
+        } else {
+            Some(u5(value))
+        }
+    }
+
+    /// Returns a copy of the underlying `u8` value
+    pub fn as_u8(self) -> u8 {
+        self.0
+    }
+}
+
+impl From<u5> for u8 {
+    fn from(val: u5) -> Self {
+        val.0
+    }
+}
+
+impl AsRef<u8> for u5 {
+    fn as_ref(&self) -> &u8 {
+        &self.0
+    }
+}
+
+impl Deref for u5 {
+    type Target = u8;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
 }
 
 macro_rules! construct_uint {
