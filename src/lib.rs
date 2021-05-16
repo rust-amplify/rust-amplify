@@ -38,6 +38,7 @@ extern crate amplify_derive;
 pub use amplify_derive::{Wrapper, Display, AsAny, From, Getters, Error};
 
 #[cfg(feature = "serde")]
+#[macro_use]
 extern crate serde_crate as serde;
 #[cfg(feature = "stringly_conversions")]
 pub extern crate stringly_conversions;
