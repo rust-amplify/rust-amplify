@@ -1,6 +1,13 @@
 Change Log
 ==========
 
+3.6.0
+-----
+- Bit-sized precise integers (`u5`, `u6`, `u7`, `u24`)
+- Little-endian conversion functions to large numeric types
+- Clippy code linting
+- MSRV reduced to 1.36.0
+
 3.5.0
 -----
 - Introducing large unsigned integer types based on `bitcoin` crate original 

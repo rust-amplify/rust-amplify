@@ -15,9 +15,14 @@
 // along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
-//! Big unsigned integer types
+//! Custom-sized numeric types
 //!
-//! Implementation of a various large-but-fixed sized unsigned integer types.
+//! Implementation of a various integer types with custom bit dimension. These
+//! includes:
+//! * large signed and unsigned integers (256, 512, 1024-bit)
+//! * custom sub-8 bit unsigned ingegers (5-, 6-, 7-bit)
+//! * 24-bit usigned integer.
+//!
 //! The functions here are designed to be fast.
 
 use core::ops::{
@@ -48,9 +53,13 @@ pub trait BitArray {
     fn one() -> Self;
 }
 
-#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display, Error)]
-#[display(
-    "Unable to construct bit-sized integer from a value `{value}` overflowing maximum value `{max}`"
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
+#[cfg_attr(
+    feature = "std",
+    derive(Display, Error),
+    display(
+        "Unable to construct bit-sized integer from a value `{value}` overflowing max value `{max}`"
+    )
 )]
 /// Error indicating that a value does not fit integer dimension
 pub struct ValueOverflow {
@@ -64,7 +73,6 @@ macro_rules! construct_bitint {
     ($ty:ident, $inner:ident, $bits:literal, $max:expr, $doc:meta) => {
         #[$doc]
         #[derive(PartialEq, Eq, Debug, Copy, Clone, Default, PartialOrd, Ord, Hash)]
-        #[cfg_attr(feature = "std", derive(Display), display(inner))]
         #[cfg_attr(
             feature = "serde",
             derive(Serialize, Deserialize),
@@ -125,6 +133,13 @@ macro_rules! construct_bitint {
             #[inline]
             fn from_str(s: &str) -> Result<Self, Self::Err> {
                 Self::try_from($inner::from_str(s)?).map_err(|_| u8::from_str("257").unwrap_err())
+            }
+        }
+
+        #[cfg(feature = "std")]
+        impl ::std::fmt::Display for $ty {
+            fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+                self.0.fmt(f)
             }
         }
 
