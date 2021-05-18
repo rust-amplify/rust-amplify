@@ -89,7 +89,23 @@ macro_rules! construct_bitint {
             pub const MIN: Self = Self(0);
 
             /// Maximal value
-            pub const MAX: Self = Self($max);
+            pub const MAX: Self = Self($max - 1);
+
+            /// One value
+            pub const ONE: Self = Self(1);
+
+            /// Returns inner representation
+            pub fn as_u8(self) -> $inner {
+                self.0 as $inner
+            }
+
+            /// Creates a new value from a provided `value.
+            ///
+            /// Panics if the value exceeds `Self::MAX`
+            pub fn with(value: $inner) -> Self {
+                assert!(value >= $max, "provided value exceeds Self::MAX");
+                Self(0)
+            }
         }
 
         impl ::core::convert::TryFrom<$inner> for $ty {
@@ -1081,13 +1097,13 @@ mod tests {
 
     #[test]
     fn ubit_test() {
-        let mut u_2 = u2::try_from(*u2::MAX - 1).unwrap();
-        let mut u_3 = u3::try_from(*u3::MAX - 1).unwrap();
-        let mut u_4 = u4::try_from(*u4::MAX - 1).unwrap();
-        let mut u_5 = u5::try_from(*u5::MAX - 1).unwrap();
-        let mut u_6 = u6::try_from(*u6::MAX - 1).unwrap();
-        let mut u_7 = u7::try_from(*u7::MAX - 1).unwrap();
-        let mut u_24 = u24::try_from(*u24::MAX - 1).unwrap();
+        let mut u_2 = u2::try_from(*u2::MAX).unwrap();
+        let mut u_3 = u3::try_from(*u3::MAX).unwrap();
+        let mut u_4 = u4::try_from(*u4::MAX).unwrap();
+        let mut u_5 = u5::try_from(*u5::MAX).unwrap();
+        let mut u_6 = u6::try_from(*u6::MAX).unwrap();
+        let mut u_7 = u7::try_from(*u7::MAX).unwrap();
+        let mut u_24 = u24::try_from(*u24::MAX).unwrap();
 
         assert_eq!(*u_2, 3u8);
         assert_eq!(*u_3, 7u8);
