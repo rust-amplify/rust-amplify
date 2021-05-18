@@ -251,6 +251,13 @@ macro_rules! impl_op {
 }
 
 construct_bitint!(
+    u2,
+    u8,
+    2,
+    4,
+    doc = "5-bit unsigned integer in the range `0..4`"
+);
+construct_bitint!(
     u3,
     u8,
     3,
@@ -1074,25 +1081,49 @@ mod tests {
 
     #[test]
     fn ubit_test() {
+        let mut u_2 = u2::try_from(*u2::MAX - 1).unwrap();
+        let mut u_3 = u3::try_from(*u3::MAX - 1).unwrap();
+        let mut u_4 = u4::try_from(*u4::MAX - 1).unwrap();
         let mut u_5 = u5::try_from(*u5::MAX - 1).unwrap();
         let mut u_6 = u6::try_from(*u6::MAX - 1).unwrap();
         let mut u_7 = u7::try_from(*u7::MAX - 1).unwrap();
         let mut u_24 = u24::try_from(*u24::MAX - 1).unwrap();
 
+        assert_eq!(*u_2, 3u8);
+        assert_eq!(*u_3, 7u8);
+        assert_eq!(*u_4, 15u8);
         assert_eq!(*u_5, 31u8);
         assert_eq!(*u_6, 63u8);
         assert_eq!(*u_7, 127u8);
         assert_eq!(*u_24, (1 << 24) - 1);
 
+        u_2 -= 1;
+        u_3 -= 1;
+        u_4 -= 1;
         u_5 -= 1;
         u_6 -= 1;
         u_7 -= 1;
         u_24 -= 1;
 
+        assert_eq!(*u_2, 2u8);
+        assert_eq!(*u_3, 6u8);
+        assert_eq!(*u_4, 14u8);
         assert_eq!(*u_5, 30u8);
         assert_eq!(*u_6, 62u8);
         assert_eq!(*u_7, 126u8);
         assert_eq!(*u_24, (1 << 24) - 2);
+
+        u_2 /= 2;
+        u_2 *= 2;
+        u_2 += 1;
+
+        u_3 /= 2;
+        u_3 *= 2;
+        u_3 += 1;
+
+        u_4 /= 2;
+        u_4 *= 2;
+        u_4 += 1;
 
         u_5 /= 2;
         u_5 *= 2;
@@ -1110,15 +1141,39 @@ mod tests {
         u_24 *= 2;
         u_24 += 1;
 
+        assert_eq!(*u_2, 3u8);
+        assert_eq!(*u_3, 7u8);
+        assert_eq!(*u_4, 15u8);
         assert_eq!(*u_5, 31u8);
         assert_eq!(*u_6, 63u8);
         assert_eq!(*u_7, 127u8);
         assert_eq!(*u_24, (1 << 24) - 1);
 
+        assert_eq!(*u_2 % 2, 1);
+        assert_eq!(*u_3 % 2, 1);
+        assert_eq!(*u_4 % 2, 1);
         assert_eq!(*u_5 % 2, 1);
         assert_eq!(*u_6 % 2, 1);
         assert_eq!(*u_7 % 2, 1);
         assert_eq!(*u_24 % 2, 1);
+    }
+
+    #[test]
+    #[should_panic(expected = "ValueOverflow { max: 3, value: 4 }")]
+    fn u2_overflow_test() {
+        u2::try_from(4).unwrap();
+    }
+
+    #[test]
+    #[should_panic(expected = "ValueOverflow { max: 7, value: 8 }")]
+    fn u3_overflow_test() {
+        u3::try_from(8).unwrap();
+    }
+
+    #[test]
+    #[should_panic(expected = "ValueOverflow { max: 15, value: 16 }")]
+    fn u4_overflow_test() {
+        u4::try_from(16).unwrap();
     }
 
     #[test]
