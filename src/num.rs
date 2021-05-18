@@ -93,6 +93,19 @@ macro_rules! construct_bitint {
 
             /// One value
             pub const ONE: Self = Self(1);
+
+            /// Returns inner representation
+            pub fn as_u8(self) -> $inner {
+                self.0 as $inner
+            }
+
+            /// Creates a new value from a provided `value.
+            ///
+            /// Panics if the value exceeds `Self::MAX`
+            pub fn with(value: $inner) -> Self {
+                assert!(value >= $max, "provided value exceeds Self::MAX");
+                Self(0)
+            }
         }
 
         impl ::core::convert::TryFrom<$inner> for $ty {

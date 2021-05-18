@@ -4,7 +4,7 @@ version = 3
 
 [[package]]
 name = "amplify"
-version = "3.6.1"
+version = "3.6.2"
 dependencies = [
  "amplify_derive",
  "amplify_syn",
