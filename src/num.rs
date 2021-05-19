@@ -103,8 +103,8 @@ macro_rules! construct_bitint {
             ///
             /// Panics if the value exceeds `Self::MAX`
             pub fn with(value: $inner) -> Self {
-                assert!(value >= $max, "provided value exceeds Self::MAX");
-                Self(0)
+                assert!(value < $max, "provided value exceeds Self::MAX");
+                Self(value)
             }
         }
 
@@ -1104,6 +1104,13 @@ mod tests {
         let mut u_6 = u6::try_from(*u6::MAX).unwrap();
         let mut u_7 = u7::try_from(*u7::MAX).unwrap();
         let mut u_24 = u24::try_from(*u24::MAX).unwrap();
+
+        assert_eq!(u_2, u2::with(3));
+        assert_eq!(u_3, u3::with(7));
+        assert_eq!(u_4, u4::with(15));
+        assert_eq!(u_5, u5::with(31));
+        assert_eq!(u_6, u6::with(63));
+        assert_eq!(u_7, u7::with(127));
 
         assert_eq!(*u_2, 3u8);
         assert_eq!(*u_3, 7u8);
