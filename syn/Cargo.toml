@@ -10,10 +10,6 @@ homepage = "https://github.com/LNP-BP"
 license = "MIT"
 readme = "README.md"
 edition = "2018"
-include = [
-    "**/*.rs",
-    "Cargo.toml",
-]
 
 [dependencies]
 syn = "1"

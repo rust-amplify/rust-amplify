@@ -4,11 +4,11 @@ version = 3
 
 [[package]]
 name = "amplify"
-version = "3.6.2"
+version = "3.7.0"
 dependencies = [
  "amplify_derive",
+ "amplify_num",
  "amplify_syn",
- "bincode",
  "libc",
  "parse_arg",
  "serde",
@@ -27,6 +27,16 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
+]
+
+[[package]]
+name = "amplify_num"
+version = "0.1.0"
+dependencies = [
+ "bincode",
+ "serde",
+ "serde_json",
+ "serde_yaml",
 ]
 
 [[package]]
