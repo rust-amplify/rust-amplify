@@ -365,24 +365,33 @@ macro_rules! construct_uint {
 
             #[inline]
             /// Returns the underlying array of words constituting large integer
-            pub fn as_array(&self) -> &[u64; $n_words] {
+            pub fn as_inner(&self) -> &[u64; $n_words] {
                 &self.0
             }
 
             #[inline]
             /// Returns the underlying array of words constituting large integer
-            pub fn into_array(self) -> [u64; $n_words] {
+            pub fn into_inner(self) -> [u64; $n_words] {
                 self.0
             }
 
             #[inline]
             /// Constructs integer type from the underlying array of words.
-            pub fn from_array(array: [u64; $n_words]) -> Self {
+            pub fn from_inner(array: [u64; $n_words]) -> Self {
                 Self(array)
             }
         }
 
         impl $name {
+            /// Minimum value
+            pub const MIN: $name = $name([0u64; $n_words]);
+
+            /// Maximum value
+            pub const MAX: $name = $name([u64::MAX; $n_words]);
+
+            /// Bit dimension
+            pub const BITS: u32 = $n_words * 64;
+
             /// Conversion to u32
             #[inline]
             pub fn low_u32(&self) -> u32 {
@@ -399,7 +408,7 @@ macro_rules! construct_uint {
 
             /// Return the least number of bits needed to represent the number
             #[inline]
-            pub fn bits(&self) -> usize {
+            pub fn bits_required(&self) -> usize {
                 let &$name(ref arr) = self;
                 for i in 1..$n_words {
                     if arr[$n_words - i] > 0 {
@@ -542,8 +551,8 @@ macro_rules! construct_uint {
                 let mut shift_copy = other;
                 let mut ret = [0u64; $n_words];
 
-                let my_bits = self.bits();
-                let your_bits = other.bits();
+                let my_bits = self.bits_required();
+                let your_bits = other.bits_required();
 
                 // Check for division by 0
                 assert!(your_bits != 0);
@@ -583,7 +592,7 @@ macro_rules! construct_uint {
                 } else {
                     let mut bytes = [0u64; $n_words];
                     bytes.copy_from_slice(data);
-                    Ok(Self::from_array(bytes))
+                    Ok(Self::from_inner(bytes))
                 }
             }
         }
@@ -1225,20 +1234,20 @@ mod tests {
 
     #[test]
     fn u256_bits_test() {
-        assert_eq!(u256::from_u64(255).unwrap().bits(), 8);
-        assert_eq!(u256::from_u64(256).unwrap().bits(), 9);
-        assert_eq!(u256::from_u64(300).unwrap().bits(), 9);
-        assert_eq!(u256::from_u64(60000).unwrap().bits(), 16);
-        assert_eq!(u256::from_u64(70000).unwrap().bits(), 17);
+        assert_eq!(u256::from_u64(255).unwrap().bits_required(), 8);
+        assert_eq!(u256::from_u64(256).unwrap().bits_required(), 9);
+        assert_eq!(u256::from_u64(300).unwrap().bits_required(), 9);
+        assert_eq!(u256::from_u64(60000).unwrap().bits_required(), 16);
+        assert_eq!(u256::from_u64(70000).unwrap().bits_required(), 17);
 
         // Try to read the following lines out loud quickly
         let mut shl = u256::from_u64(70000).unwrap();
         shl = shl << 100;
-        assert_eq!(shl.bits(), 117);
+        assert_eq!(shl.bits_required(), 117);
         shl = shl << 100;
-        assert_eq!(shl.bits(), 217);
+        assert_eq!(shl.bits_required(), 217);
         shl = shl << 100;
-        assert_eq!(shl.bits(), 0);
+        assert_eq!(shl.bits_required(), 0);
 
         // Bit set check
         assert!(!u256::from_u64(10).unwrap().bit(0));
@@ -1392,6 +1401,19 @@ mod tests {
                 0xfe, 0xca, 0xad, 0x1b,
             ]
         );
+    }
+
+    #[test]
+    fn bigint_min_max() {
+        assert_eq!(u256::MIN.as_inner(), &[0u64; 4]);
+        assert_eq!(u512::MIN.as_inner(), &[0u64; 8]);
+        assert_eq!(u1024::MIN.as_inner(), &[0u64; 16]);
+        assert_eq!(u256::MAX.as_inner(), &[u64::MAX; 4]);
+        assert_eq!(u512::MAX.as_inner(), &[u64::MAX; 8]);
+        assert_eq!(u1024::MAX.as_inner(), &[u64::MAX; 16]);
+        assert_eq!(u256::BITS, 4 * 64);
+        assert_eq!(u512::BITS, 8 * 64);
+        assert_eq!(u1024::BITS, 16 * 64);
     }
 
     #[test]
