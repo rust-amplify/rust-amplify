@@ -19,7 +19,6 @@ use core::ops::{
     Add, AddAssign, Sub, SubAssign, Mul, MulAssign, Div, DivAssign, Rem, RemAssign, BitAnd,
     BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Shl, ShlAssign, Shr, ShrAssign,
 };
-use core::ops::Deref;
 use core::convert::TryFrom;
 
 use crate::error::OverflowError;
@@ -52,17 +51,17 @@ macro_rules! construct_smallint {
             /// One value
             pub const ZERO: Self = Self(0);
 
-            /// Returns inner `u8` representation, which is always less or equal to `Self::MAX`
-            pub fn as_u8(self) -> $inner {
-                self.0 as $inner
-            }
-
             /// Creates a new value from a provided `value.
             ///
             /// Panics if the value exceeds `Self::MAX`
             pub fn with(value: $inner) -> Self {
                 assert!(value < $max, "provided value exceeds Self::MAX");
                 Self(value)
+            }
+
+            /// Returns inner `u8` representation, which is always less or equal to `Self::MAX`
+            pub fn as_u8(self) -> $inner {
+                self.0 as $inner
             }
         }
 
@@ -88,15 +87,6 @@ macro_rules! construct_smallint {
         impl AsRef<$inner> for $ty {
             #[inline]
             fn as_ref(&self) -> &$inner {
-                &self.0
-            }
-        }
-
-        impl Deref for $ty {
-            type Target = $inner;
-
-            #[inline]
-            fn deref(&self) -> &Self::Target {
                 &self.0
             }
         }
@@ -280,13 +270,13 @@ mod test {
 
     #[test]
     fn ubit_test() {
-        let mut u_2 = u2::try_from(*u2::MAX).unwrap();
-        let mut u_3 = u3::try_from(*u3::MAX).unwrap();
-        let mut u_4 = u4::try_from(*u4::MAX).unwrap();
-        let mut u_5 = u5::try_from(*u5::MAX).unwrap();
-        let mut u_6 = u6::try_from(*u6::MAX).unwrap();
-        let mut u_7 = u7::try_from(*u7::MAX).unwrap();
-        let mut u_24 = u24::try_from(*u24::MAX).unwrap();
+        let mut u_2 = u2::try_from(u2::MAX.as_u8()).unwrap();
+        let mut u_3 = u3::try_from(u3::MAX.as_u8()).unwrap();
+        let mut u_4 = u4::try_from(u4::MAX.as_u8()).unwrap();
+        let mut u_5 = u5::try_from(u5::MAX.as_u8()).unwrap();
+        let mut u_6 = u6::try_from(u6::MAX.as_u8()).unwrap();
+        let mut u_7 = u7::try_from(u7::MAX.as_u8()).unwrap();
+        let mut u_24 = u24::try_from(u24::MAX.as_u8()).unwrap();
 
         assert_eq!(u_2, u2::with(3));
         assert_eq!(u_3, u3::with(7));
@@ -295,13 +285,13 @@ mod test {
         assert_eq!(u_6, u6::with(63));
         assert_eq!(u_7, u7::with(127));
 
-        assert_eq!(*u_2, 3u8);
-        assert_eq!(*u_3, 7u8);
-        assert_eq!(*u_4, 15u8);
-        assert_eq!(*u_5, 31u8);
-        assert_eq!(*u_6, 63u8);
-        assert_eq!(*u_7, 127u8);
-        assert_eq!(*u_24, (1 << 24) - 1);
+        assert_eq!(u_2.as_u8(), 3u8);
+        assert_eq!(u_3.as_u8(), 7u8);
+        assert_eq!(u_4.as_u8(), 15u8);
+        assert_eq!(u_5.as_u8(), 31u8);
+        assert_eq!(u_6.as_u8(), 63u8);
+        assert_eq!(u_7.as_u8(), 127u8);
+        assert_eq!(u_24.as_u8(), (1 << 24) - 1);
 
         u_2 -= 1;
         u_3 -= 1;
@@ -311,13 +301,13 @@ mod test {
         u_7 -= 1;
         u_24 -= 1;
 
-        assert_eq!(*u_2, 2u8);
-        assert_eq!(*u_3, 6u8);
-        assert_eq!(*u_4, 14u8);
-        assert_eq!(*u_5, 30u8);
-        assert_eq!(*u_6, 62u8);
-        assert_eq!(*u_7, 126u8);
-        assert_eq!(*u_24, (1 << 24) - 2);
+        assert_eq!(u_2.as_u8(), 2u8);
+        assert_eq!(u_3.as_u8(), 6u8);
+        assert_eq!(u_4.as_u8(), 14u8);
+        assert_eq!(u_5.as_u8(), 30u8);
+        assert_eq!(u_6.as_u8(), 62u8);
+        assert_eq!(u_7.as_u8(), 126u8);
+        assert_eq!(u_24.as_u8(), (1 << 24) - 2);
 
         u_2 /= 2;
         u_2 *= 2;
@@ -347,21 +337,21 @@ mod test {
         u_24 *= 2;
         u_24 += 1;
 
-        assert_eq!(*u_2, 3u8);
-        assert_eq!(*u_3, 7u8);
-        assert_eq!(*u_4, 15u8);
-        assert_eq!(*u_5, 31u8);
-        assert_eq!(*u_6, 63u8);
-        assert_eq!(*u_7, 127u8);
-        assert_eq!(*u_24, (1 << 24) - 1);
+        assert_eq!(u_2.as_u8(), 3u8);
+        assert_eq!(u_3.as_u8(), 7u8);
+        assert_eq!(u_4.as_u8(), 15u8);
+        assert_eq!(u_5.as_u8(), 31u8);
+        assert_eq!(u_6.as_u8(), 63u8);
+        assert_eq!(u_7.as_u8(), 127u8);
+        assert_eq!(u_24.as_u8(), (1 << 24) - 1);
 
-        assert_eq!(*u_2 % 2, 1);
-        assert_eq!(*u_3 % 2, 1);
-        assert_eq!(*u_4 % 2, 1);
-        assert_eq!(*u_5 % 2, 1);
-        assert_eq!(*u_6 % 2, 1);
-        assert_eq!(*u_7 % 2, 1);
-        assert_eq!(*u_24 % 2, 1);
+        assert_eq!(u_2.as_u8() % 2, 1);
+        assert_eq!(u_3.as_u8() % 2, 1);
+        assert_eq!(u_4.as_u8() % 2, 1);
+        assert_eq!(u_5.as_u8() % 2, 1);
+        assert_eq!(u_6.as_u8() % 2, 1);
+        assert_eq!(u_7.as_u8() % 2, 1);
+        assert_eq!(u_24.as_u8() % 2, 1);
     }
 
     #[test]

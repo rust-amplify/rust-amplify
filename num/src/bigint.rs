@@ -329,7 +329,7 @@ macro_rules! construct_bigint {
             }
         }
 
-        impl ::core::ops::Index<::std::ops::Range<usize>> for $name {
+        impl ::core::ops::Index<::core::ops::Range<usize>> for $name {
             type Output = [u64];
 
             #[inline]
@@ -338,7 +338,7 @@ macro_rules! construct_bigint {
             }
         }
 
-        impl ::core::ops::Index<::std::ops::RangeTo<usize>> for $name {
+        impl ::core::ops::Index<::core::ops::RangeTo<usize>> for $name {
             type Output = [u64];
 
             #[inline]
@@ -367,26 +367,26 @@ macro_rules! construct_bigint {
 
         impl PartialOrd for $name {
             #[inline]
-            fn partial_cmp(&self, other: &$name) -> Option<::std::cmp::Ordering> {
+            fn partial_cmp(&self, other: &$name) -> Option<::core::cmp::Ordering> {
                 Some(self.cmp(&other))
             }
         }
 
         impl Ord for $name {
             #[inline]
-            fn cmp(&self, other: &$name) -> ::std::cmp::Ordering {
+            fn cmp(&self, other: &$name) -> ::core::cmp::Ordering {
                 // We need to manually implement ordering because we use little-endian
                 // and the auto derive is a lexicographic ordering(i.e. memcmp)
                 // which with numbers is equivilant to big-endian
                 for i in 0..$n_words {
                     if self[$n_words - 1 - i] < other[$n_words - 1 - i] {
-                        return ::std::cmp::Ordering::Less;
+                        return ::core::cmp::Ordering::Less;
                     }
                     if self[$n_words - 1 - i] > other[$n_words - 1 - i] {
-                        return ::std::cmp::Ordering::Greater;
+                        return ::core::cmp::Ordering::Greater;
                     }
                 }
-                ::std::cmp::Ordering::Equal
+                ::core::cmp::Ordering::Equal
             }
         }
 
