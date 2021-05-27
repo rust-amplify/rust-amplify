@@ -88,6 +88,9 @@ macro_rules! construct_bitint {
             /// One value
             pub const ONE: Self = Self(1);
 
+            /// One value
+            pub const ZERO: Self = Self(0);
+
             /// Returns inner representation
             pub fn as_u8(self) -> $inner {
                 self.0 as $inner
@@ -333,31 +336,6 @@ macro_rules! construct_uint {
             }
 
             #[inline]
-            /// Returns the length of the object as an array
-            pub fn array_len(&self) -> usize {
-                $n_words
-            }
-
-            #[inline]
-            /// Returns the length of the object as an array
-            #[deprecated(since = "3.5.2", note = "use `array_len` instead")]
-            pub fn len(&self) -> usize {
-                $n_words
-            }
-
-            #[inline]
-            /// Returns the length of the object as an array
-            pub fn byte_len(&self) -> usize {
-                $n_words * 8
-            }
-
-            #[inline]
-            /// Returns whether the object, as an array, is empty. Always false.
-            pub fn is_empty(&self) -> bool {
-                false
-            }
-
-            #[inline]
             /// Returns the underlying array of words constituting large integer
             pub fn as_inner(&self) -> &[u64; $n_words] {
                 &self.0
@@ -396,6 +374,12 @@ macro_rules! construct_uint {
             /// Bit dimension
             pub const BITS: u32 = $n_words * 64;
 
+            /// Length of the integer in bytes
+            pub const BYTES: u8 = $n_words * 8;
+
+            /// Length of the inner representation in 64-bit words
+            pub const INNER_LEN: u8 = $n_words;
+
             /// Returns lower 32 bits of the number as `u32`
             #[inline]
             pub fn low_u32(&self) -> u32 {
@@ -421,27 +405,6 @@ macro_rules! construct_uint {
                     }
                 }
                 0x40 - arr[0].leading_zeros() as usize
-            }
-
-            /// Multiplication by u32
-            pub fn mul_u32(self, other: u32) -> $name {
-                let $name(ref arr) = self;
-                let mut carry = [0u64; $n_words];
-                let mut ret = [0u64; $n_words];
-                for i in 0..$n_words {
-                    let not_last_word = i < $n_words - 1;
-                    let upper = other as u64 * (arr[i] >> 32);
-                    let lower = other as u64 * (arr[i] & 0xFFFFFFFF);
-                    if not_last_word {
-                        carry[i + 1] += upper >> 32;
-                    }
-                    let (sum, overflow) = lower.overflowing_add(upper << 32);
-                    ret[i] = sum;
-                    if overflow && not_last_word {
-                        carry[i + 1] += 1;
-                    }
-                }
-                $name(ret) + $name(carry)
             }
 
             /// Creates the integer value from a byte array using big-endian
@@ -528,6 +491,27 @@ macro_rules! construct_uint {
                     res[start..start + 8].copy_from_slice(&self.0[i].to_le_bytes());
                 }
                 res
+            }
+
+            /// Multiplication by u32
+            fn mul_u32(self, other: u32) -> $name {
+                let $name(ref arr) = self;
+                let mut carry = [0u64; $n_words];
+                let mut ret = [0u64; $n_words];
+                for i in 0..$n_words {
+                    let not_last_word = i < $n_words - 1;
+                    let upper = other as u64 * (arr[i] >> 32);
+                    let lower = other as u64 * (arr[i] & 0xFFFFFFFF);
+                    if not_last_word {
+                        carry[i + 1] += upper >> 32;
+                    }
+                    let (sum, overflow) = lower.overflowing_add(upper << 32);
+                    ret[i] = sum;
+                    if overflow && not_last_word {
+                        carry[i + 1] += 1;
+                    }
+                }
+                $name(ret) + $name(carry)
             }
 
             // divmod like operation, returns (quotient, remainder)
