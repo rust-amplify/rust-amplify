@@ -40,14 +40,11 @@ mod smallint;
 mod traits;
 
 pub use bigint::{u256, u512, u1024};
-pub use smallint::{u2, u3, u4, u5, u6, u7, u24};
+pub use smallint::{u1, u2, u3, u4, u5, u6, u7, u24};
 pub use traits::BitArray;
 
-// TODO: Impl serde for small ints
 // TODO: Do a `u1` type
 // TODO: Impl arithmetics for small ints with arbitrary int types
 // TODO: Impl bit array for small ints
 // TODO: Create arbitrary precision types
-// TODO: Do `oveflowing_*` and other types of arithmetic operations
-// TODO: Remove `Deref` impl for smallint type
 // TODO: Move from using `u64` to `u128` for big int types

@@ -512,7 +512,6 @@ macro_rules! construct_bigint {
                         overflow = true
                     }
                 }
-                println!("");
                 (Self(ret), overflow)
             }
 

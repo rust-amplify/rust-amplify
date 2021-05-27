@@ -284,12 +284,20 @@ macro_rules! impl_op {
 }
 
 construct_smallint!(
+    u1,
+    u8,
+    as_u8,
+    1,
+    2,
+    doc = "1-bit unsigned integer in the range `0..1`. It can be used instead of `bool` when 1-bit numeric (and not boolean) arithmetic is required"
+);
+construct_smallint!(
     u2,
     u8,
     as_u8,
     2,
     4,
-    doc = "5-bit unsigned integer in the range `0..4`"
+    doc = "2-bit unsigned integer in the range `0..4`"
 );
 construct_smallint!(
     u3,
@@ -297,7 +305,7 @@ construct_smallint!(
     as_u8,
     3,
     8,
-    doc = "5-bit unsigned integer in the range `0..8`"
+    doc = "3-bit unsigned integer in the range `0..8`"
 );
 construct_smallint!(
     u4,
@@ -305,7 +313,7 @@ construct_smallint!(
     as_u8,
     4,
     16,
-    doc = "5-bit unsigned integer in the range `0..16`"
+    doc = "4-bit unsigned integer in the range `0..16`"
 );
 construct_smallint!(
     u5,
