@@ -223,94 +223,29 @@ macro_rules! construct_smallint {
 }
 macro_rules! impl_op {
     ($ty:ty, $inner:ty, $op:ident, $fn:ident, $op_assign:ident, $fn_assign:ident, $sign:tt) => {
-        impl $op for $ty {
+        impl<T> $op<T> for $ty where T: Into<$inner> {
             type Output = $ty;
             #[inline]
-            fn $fn(self, rhs: Self) -> Self::Output {
-                Self::try_from((self.0).$fn(rhs.0)).expect(stringify!(
+            fn $fn(self, rhs: T) -> Self::Output {
+                Self::try_from((self.0).$fn(rhs.into())).expect(stringify!(
                     "attempt to ",
                     $fn,
                     " with overflow"
                 ))
             }
         }
-        impl $op for &$ty {
+        impl<T> $op<T> for &$ty where T: Into<$inner> {
             type Output = $ty;
             #[inline]
-            fn $fn(self, rhs: Self) -> Self::Output {
-                *self $sign *rhs
-            }
-        }
-        impl $op<&$ty> for $ty {
-            type Output = $ty;
-            #[inline]
-            fn $fn(self, rhs: &$ty) -> Self::Output {
-                self $sign *rhs
-            }
-        }
-        impl $op<$ty> for &$ty {
-            type Output = $ty;
-            #[inline]
-            fn $fn(self, rhs: $ty) -> Self::Output {
+            fn $fn(self, rhs: T) -> Self::Output {
                 *self $sign rhs
             }
         }
 
-        impl $op<$inner> for $ty {
-            type Output = $ty;
+        impl<T> $op_assign<T> for $ty where T: Into<$inner> {
             #[inline]
-            fn $fn(self, rhs: $inner) -> Self::Output {
-                Self::try_from((self.0).$fn(rhs)).expect(stringify!(
-                    "attempt to ",
-                    $fn,
-                    " with overflow"
-                ))
-            }
-        }
-        impl $op<&$inner> for &$ty {
-            type Output = $ty;
-            #[inline]
-            fn $fn(self, rhs: &$inner) -> Self::Output {
-                *self $sign *rhs
-            }
-        }
-        impl $op<&$inner> for $ty {
-            type Output = $ty;
-            #[inline]
-            fn $fn(self, rhs: &$inner) -> Self::Output {
-                self $sign *rhs
-            }
-        }
-        impl $op<$inner> for &$ty {
-            type Output = $ty;
-            #[inline]
-            fn $fn(self, rhs: $inner) -> Self::Output {
-                *self $sign rhs
-            }
-        }
-
-        impl $op_assign for $ty {
-            #[inline]
-            fn $fn_assign(&mut self, rhs: Self) {
+            fn $fn_assign(&mut self, rhs: T) {
                 self.0 = (*self $sign rhs).0
-            }
-        }
-        impl $op_assign<&$ty> for $ty {
-            #[inline]
-            fn $fn_assign(&mut self, rhs: &$ty) {
-                self.0 = (*self $sign *rhs).0
-            }
-        }
-        impl $op_assign<$inner> for $ty {
-            #[inline]
-            fn $fn_assign(&mut self, rhs: $inner) {
-                self.0 = (*self $sign rhs).0
-            }
-        }
-        impl $op_assign<&$inner> for $ty {
-            #[inline]
-            fn $fn_assign(&mut self, rhs: &$inner) {
-                self.0 = (*self $sign *rhs).0
             }
         }
     };
@@ -416,7 +351,7 @@ mod test {
         u_5 -= 1;
         u_6 -= 1;
         u_7 -= 1;
-        u_24 -= 1;
+        u_24 -= 1u32;
 
         assert_eq!(u_2.as_u8(), 2u8);
         assert_eq!(u_3.as_u8(), 6u8);
@@ -450,9 +385,9 @@ mod test {
         u_7 *= 2;
         u_7 += 1;
 
-        u_24 /= 2;
-        u_24 *= 2;
-        u_24 += 1;
+        u_24 /= 2u32;
+        u_24 *= 2u32;
+        u_24 += 1u32;
 
         assert_eq!(u_2.as_u8(), 3u8);
         assert_eq!(u_3.as_u8(), 7u8);

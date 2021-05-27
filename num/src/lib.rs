@@ -41,6 +41,5 @@ mod smallint;
 pub use bigint::{u256, u512, u1024};
 pub use smallint::{u1, u2, u3, u4, u5, u6, u7, u24};
 
-// TODO: Impl arithmetics for small ints with arbitrary int types
 // TODO: Create arbitrary precision types
 // TODO: Move from using `u64` to `u128` for big int types
