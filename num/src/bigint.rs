@@ -3,7 +3,7 @@
 //
 // Written in 2014 by
 //     Andrew Poelstra <apoelstra@wpsoftware.net>
-// Updated in 2020-2021 by
+// Refactored & fixed in 2021 by
 //     Dr. Maxim Orlovsky <orlovsky@pandoracore.com>
 //
 // To the extent possible under law, the author(s) have dedicated all
@@ -200,27 +200,6 @@ macro_rules! construct_bigint {
                 res
             }
 
-            /// Multiplication by u32
-            fn mul_u32(self, other: u32) -> $name {
-                let $name(ref arr) = self;
-                let mut carry = [0u64; $n_words];
-                let mut ret = [0u64; $n_words];
-                for i in 0..$n_words {
-                    let not_last_word = i < $n_words - 1;
-                    let upper = other as u64 * (arr[i] >> 32);
-                    let lower = other as u64 * (arr[i] & 0xFFFFFFFF);
-                    if not_last_word {
-                        carry[i + 1] += upper >> 32;
-                    }
-                    let (sum, overflow) = lower.overflowing_add(upper << 32);
-                    ret[i] = sum;
-                    if overflow && not_last_word {
-                        carry[i + 1] += 1;
-                    }
-                }
-                $name(ret) + $name(carry)
-            }
-
             // divmod like operation, returns (quotient, remainder)
             #[inline]
             fn div_rem(self, other: Self) -> (Self, Self) {
@@ -385,6 +364,166 @@ macro_rules! construct_bigint {
             }
         }
 
+        impl $name {
+            pub fn checked_add<T>(self, other: T) -> Option<$name>
+            where
+                T: Into<$name>,
+            {
+                let (res, flag) = self.overflowing_add(other);
+                if flag {
+                    None
+                } else {
+                    Some(res)
+                }
+            }
+
+            pub fn saturating_add<T>(self, other: T) -> $name
+            where
+                T: Into<$name>,
+            {
+                let (res, flag) = self.overflowing_add(other);
+                if flag {
+                    Self::MAX
+                } else {
+                    res
+                }
+            }
+
+            pub fn overflowing_add<T>(self, other: T) -> ($name, bool)
+            where
+                T: Into<$name>,
+            {
+                let $name(ref me) = self;
+                let $name(ref you) = other.into();
+                let mut ret = [0u64; $n_words];
+                let mut carry = 0u64;
+                for i in 0..$n_words {
+                    let (res, flag) = me[i].overflowing_add(carry);
+                    carry = flag as u64;
+                    let (res, flag) = res.overflowing_add(you[i]);
+                    carry += flag as u64;
+                    ret[i] = res;
+                }
+                (Self(ret), carry > 0)
+            }
+
+            pub fn wrapping_add<T>(self, other: T) -> $name
+            where
+                T: Into<$name>,
+            {
+                self.overflowing_add(other).0
+            }
+
+            pub fn checked_sub<T>(self, other: T) -> Option<$name>
+            where
+                T: Into<$name>,
+            {
+                let (res, flag) = self.overflowing_sub(other);
+                if flag {
+                    None
+                } else {
+                    Some(res)
+                }
+            }
+
+            pub fn saturating_sub<T>(self, other: T) -> $name
+            where
+                T: Into<$name>,
+            {
+                let (res, flag) = self.overflowing_sub(other);
+                if flag {
+                    Self::MAX
+                } else {
+                    res
+                }
+            }
+
+            pub fn overflowing_sub<T>(self, other: T) -> ($name, bool)
+            where
+                T: Into<$name>,
+            {
+                let other = other.into();
+                (
+                    self.wrapping_add(!other).wrapping_add($name::ONE),
+                    self < other,
+                )
+            }
+
+            pub fn wrapping_sub<T>(self, other: T) -> $name
+            where
+                T: Into<$name>,
+            {
+                self.overflowing_sub(other).0
+            }
+
+            pub fn checked_mul<T>(self, other: T) -> Option<$name>
+            where
+                T: Into<$name>,
+            {
+                let (res, flag) = self.overflowing_mul(other);
+                if flag {
+                    None
+                } else {
+                    Some(res)
+                }
+            }
+
+            pub fn saturating_mul<T>(self, other: T) -> $name
+            where
+                T: Into<$name>,
+            {
+                let (res, flag) = self.overflowing_mul(other);
+                if flag {
+                    Self::MAX
+                } else {
+                    res
+                }
+            }
+
+            pub fn overflowing_mul<T>(self, other: T) -> ($name, bool)
+            where
+                T: Into<$name>,
+            {
+                let $name(ref me) = self;
+                let $name(ref you) = other.into();
+                let mut ret = [0u64; $n_words];
+                let mut overflow = false;
+                for i in 0..$n_words {
+                    let mut carry = 0u64;
+                    for j in 0..$n_words {
+                        if i + j >= $n_words {
+                            if me[i] > 0 && you[j] > 0 {
+                                overflow = true
+                            }
+                            continue;
+                        }
+                        let prev_carry = carry;
+                        let res = me[i] as u128 * you[j] as u128;
+                        carry = (res >> 64) as u64;
+                        let mul = (res & ::core::u64::MAX as u128) as u64;
+                        let (res, flag) = ret[i + j].overflowing_add(mul);
+                        carry += flag as u64;
+                        ret[i + j] = res;
+                        let (res, flag) = ret[i + j].overflowing_add(prev_carry);
+                        carry += flag as u64;
+                        ret[i + j] = res;
+                    }
+                    if carry > 0 {
+                        overflow = true
+                    }
+                }
+                println!("");
+                (Self(ret), overflow)
+            }
+
+            pub fn wrapping_mul<T>(self, other: T) -> $name
+            where
+                T: Into<$name>,
+            {
+                self.overflowing_mul(other).0
+            }
+        }
+
         impl<T> ::core::ops::Add<T> for $name
         where
             T: Into<$name>,
@@ -392,23 +531,9 @@ macro_rules! construct_bigint {
             type Output = $name;
 
             fn add(self, other: T) -> $name {
-                let $name(ref me) = self;
-                let $name(ref you) = other.into();
-                let mut ret = [0u64; $n_words];
-                let mut carry = [0u64; $n_words];
-                let mut b_carry = false;
-                for i in 0..$n_words {
-                    ret[i] = me[i].wrapping_add(you[i]);
-                    if i < $n_words - 1 && ret[i] < me[i] {
-                        carry[i + 1] = 1;
-                        b_carry = true;
-                    }
-                }
-                if b_carry {
-                    $name(ret) + $name(carry)
-                } else {
-                    $name(ret)
-                }
+                let (res, flag) = self.overflowing_add(other);
+                assert!(!flag, "attempt to add with overflow");
+                res
             }
         }
         impl<T> ::core::ops::AddAssign<T> for $name
@@ -429,7 +554,9 @@ macro_rules! construct_bigint {
 
             #[inline]
             fn sub(self, other: T) -> $name {
-                self + !other.into() + $name::ONE
+                let (res, flag) = self.overflowing_sub(other);
+                assert!(!flag, "attempt to subtract with overflow");
+                res
             }
         }
         impl<T> ::core::ops::SubAssign<T> for $name
@@ -449,14 +576,9 @@ macro_rules! construct_bigint {
             type Output = $name;
 
             fn mul(self, other: T) -> $name {
-                let other = other.into();
-                let mut me = $name::ZERO;
-                // TODO: be more efficient about this
-                for i in 0..(2 * $n_words) {
-                    let to_mul = (other >> (32 * i)).low_u32();
-                    me = me + (self.mul_u32(to_mul) << (32 * i));
-                }
-                me
+                let (res, flag) = self.overflowing_mul(other);
+                assert!(!flag, "attempt to mul with overflow");
+                res
             }
         }
         impl<T> ::core::ops::MulAssign<T> for $name
@@ -784,108 +906,6 @@ construct_bigint!(u256, 4);
 construct_bigint!(u512, 8);
 construct_bigint!(u1024, 16);
 
-impl u256 {
-    /// Increment by 1
-    #[inline]
-    pub fn increment(&mut self) {
-        let &mut u256(ref mut arr) = self;
-        arr[0] += 1;
-        if arr[0] == 0 {
-            arr[1] += 1;
-            if arr[1] == 0 {
-                arr[2] += 1;
-                if arr[2] == 0 {
-                    arr[3] += 1;
-                }
-            }
-        }
-    }
-}
-
-impl u512 {
-    /// Increment by 1
-    #[inline]
-    pub fn increment(&mut self) {
-        let &mut u512(ref mut arr) = self;
-        arr[0] += 1;
-        if arr[0] == 0 {
-            arr[1] += 1;
-            if arr[1] == 0 {
-                arr[2] += 1;
-                if arr[2] == 0 {
-                    arr[3] += 1;
-                    if arr[3] == 0 {
-                        arr[4] += 1;
-                        if arr[4] == 0 {
-                            arr[5] += 1;
-                            if arr[5] == 0 {
-                                arr[6] += 1;
-                                if arr[6] == 0 {
-                                    arr[7] += 1;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-impl u1024 {
-    /// Increment by 1
-    #[inline]
-    pub fn increment(&mut self) {
-        let &mut u1024(ref mut arr) = self;
-        arr[0] += 1;
-        if arr[0] == 0 {
-            arr[1] += 1;
-            if arr[1] == 0 {
-                arr[2] += 1;
-                if arr[2] == 0 {
-                    arr[3] += 1;
-                    if arr[3] == 0 {
-                        arr[4] += 1;
-                        if arr[4] == 0 {
-                            arr[5] += 1;
-                            if arr[5] == 0 {
-                                arr[6] += 1;
-                                if arr[6] == 0 {
-                                    arr[7] += 1;
-                                    if arr[7] == 0 {
-                                        arr[8] += 1;
-                                        if arr[8] == 0 {
-                                            arr[9] += 1;
-                                            if arr[9] == 0 {
-                                                arr[10] += 1;
-                                                if arr[10] == 0 {
-                                                    arr[11] += 1;
-                                                    if arr[11] == 0 {
-                                                        arr[12] += 1;
-                                                        if arr[12] == 0 {
-                                                            arr[13] += 1;
-                                                            if arr[13] == 0 {
-                                                                arr[14] += 1;
-                                                                if arr[14] == 0 {
-                                                                    arr[15] += 1;
-                                                                }
-                                                            }
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
     #![allow(unused)]
@@ -1093,7 +1113,7 @@ mod tests {
         assert_eq!(shr, u256([0x7DDE000000000000u64, 0x0001BD5B7DDFBD5B, 0, 0]));
         // Increment
         let mut incr = shr;
-        incr.increment();
+        incr += 1u32;
         assert_eq!(
             incr,
             u256([0x7DDE000000000001u64, 0x0001BD5B7DDFBD5B, 0, 0])
@@ -1102,7 +1122,7 @@ mod tests {
         let sub = incr - init;
         assert_eq!(sub, u256([0x9F30411021524112u64, 0x0001BD5B7DDFBD5A, 0, 0]));
         // Multiplication
-        let mult = sub.mul_u32(300);
+        let mult = sub * 300u32;
         assert_eq!(
             mult,
             u256([0x8C8C3EE70C644118u64, 0x0209E7378231E632, 0, 0])
@@ -1126,12 +1146,12 @@ mod tests {
     fn mul_u32_test() {
         let u64_val = u256::from(0xDEADBEEFDEADBEEFu64);
 
-        let u96_res = u64_val.mul_u32(0xFFFFFFFF);
-        let u128_res = u96_res.mul_u32(0xFFFFFFFF);
-        let u160_res = u128_res.mul_u32(0xFFFFFFFF);
-        let u192_res = u160_res.mul_u32(0xFFFFFFFF);
-        let u224_res = u192_res.mul_u32(0xFFFFFFFF);
-        let u256_res = u224_res.mul_u32(0xFFFFFFFF);
+        let u96_res = u64_val * 0xFFFFFFFFu32;
+        let u128_res = u96_res * 0xFFFFFFFFu32;
+        let u160_res = u128_res * 0xFFFFFFFFu32;
+        let u192_res = u160_res * 0xFFFFFFFFu32;
+        let u224_res = u192_res * 0xFFFFFFFFu32;
+        let u256_res = u224_res * 0xFFFFFFFFu32;
 
         assert_eq!(u96_res, u256([0xffffffff21524111u64, 0xDEADBEEE, 0, 0]));
         assert_eq!(

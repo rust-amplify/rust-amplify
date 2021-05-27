@@ -1,9 +1,7 @@
 // Rust language amplification library providing multiple generic trait
 // implementations, type wrappers, derive macros and other language enhancements
 //
-// Written in 2014 by
-//     Andrew Poelstra <apoelstra@wpsoftware.net>
-// Updated in 2020-2021 by
+// Written in 2021 by
 //     Dr. Maxim Orlovsky <orlovsky@pandoracore.com>
 //
 // To the extent possible under law, the author(s) have dedicated all
@@ -142,6 +140,29 @@ macro_rules! construct_smallint {
                 Self(self.0.wrapping_add(rhs.into()) % Self::MAX.0)
             }
 
+            pub fn checked_sub<T>(self, rhs: T) -> Option<Self> where T: Into<$inner> {
+                self.0.checked_sub(rhs.into()).and_then(|val| Self::try_from(val).ok())
+            }
+            pub fn saturating_sub<T>(self, rhs: T) -> Self where T: Into<$inner> {
+                let res = self.0.saturating_sub(rhs.into());
+                if res > Self::MAX.$as() {
+                    Self::MAX
+                } else {
+                    Self(res)
+                }
+            }
+            pub fn overflowing_sub<T>(self, rhs: T) -> (Self, bool) where T: Into<$inner> {
+                let mut ret = self.0.overflowing_sub(rhs.into());
+                if ret.0 > Self::MAX.0 {
+                    ret.0 %= Self::MAX.0;
+                    ret.1 = true;
+                }
+                (Self(ret.0), ret.1)
+            }
+            pub fn wrapping_sub<T>(self, rhs: T) -> Self where T: Into<$inner> {
+                Self(self.0.wrapping_sub(rhs.into()) % Self::MAX.0)
+            }
+
             pub fn checked_mul<T>(self, rhs: T) -> Option<Self> where T: Into<$inner> {
                 self.0.checked_mul(rhs.into()).and_then(|val| Self::try_from(val).ok())
             }
@@ -207,9 +228,9 @@ macro_rules! impl_op {
             #[inline]
             fn $fn(self, rhs: $inner) -> Self::Output {
                 Self::try_from((self.0).$fn(rhs)).expect(stringify!(
-                    "integer overflow during ",
+                    "attempt to ",
                     $fn,
-                    " operation"
+                    " with overflow"
                 ))
             }
         }
