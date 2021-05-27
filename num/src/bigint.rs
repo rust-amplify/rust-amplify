@@ -15,11 +15,6 @@
 // along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
-use core::ops::{
-    Add, AddAssign, Sub, SubAssign, Mul, MulAssign, Div, DivAssign, Rem, RemAssign, BitAnd,
-    BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Shl, ShlAssign, Shr, ShrAssign,
-};
-
 use crate::error::ParseLengthError;
 
 macro_rules! construct_bigint {
@@ -309,7 +304,7 @@ macro_rules! construct_bigint {
             type Error = $crate::error::ParseLengthError;
             fn try_from(data: &'a [u64]) -> Result<$name, Self::Error> {
                 if data.len() != $n_words {
-                    Err(ParseLengthError {
+                    Err($crate::error::ParseLengthError {
                         actual: data.len(),
                         expected: $n_words,
                     })
@@ -416,6 +411,15 @@ macro_rules! construct_bigint {
                 }
             }
         }
+        impl<T> ::core::ops::AddAssign<T> for $name
+        where
+            T: Into<$name>,
+        {
+            #[inline]
+            fn add_assign(&mut self, rhs: T) {
+                self.0 = (*self + rhs).0
+            }
+        }
 
         impl<T> ::core::ops::Sub<T> for $name
         where
@@ -426,6 +430,15 @@ macro_rules! construct_bigint {
             #[inline]
             fn sub(self, other: T) -> $name {
                 self + !other.into() + $name::ONE
+            }
+        }
+        impl<T> ::core::ops::SubAssign<T> for $name
+        where
+            T: Into<$name>,
+        {
+            #[inline]
+            fn sub_assign(&mut self, rhs: T) {
+                self.0 = (*self - rhs).0
             }
         }
 
@@ -446,6 +459,15 @@ macro_rules! construct_bigint {
                 me
             }
         }
+        impl<T> ::core::ops::MulAssign<T> for $name
+        where
+            T: Into<$name>,
+        {
+            #[inline]
+            fn mul_assign(&mut self, rhs: T) {
+                self.0 = (*self * rhs).0
+            }
+        }
 
         impl<T> ::core::ops::Div<T> for $name
         where
@@ -457,6 +479,15 @@ macro_rules! construct_bigint {
                 self.div_rem(other.into()).0
             }
         }
+        impl<T> ::core::ops::DivAssign<T> for $name
+        where
+            T: Into<$name>,
+        {
+            #[inline]
+            fn div_assign(&mut self, rhs: T) {
+                self.0 = (*self / rhs).0
+            }
+        }
 
         impl<T> ::core::ops::Rem<T> for $name
         where
@@ -466,6 +497,15 @@ macro_rules! construct_bigint {
 
             fn rem(self, other: T) -> $name {
                 self.div_rem(other.into()).1
+            }
+        }
+        impl<T> ::core::ops::RemAssign<T> for $name
+        where
+            T: Into<$name>,
+        {
+            #[inline]
+            fn rem_assign(&mut self, rhs: T) {
+                self.0 = (*self % rhs).0
             }
         }
 
@@ -486,6 +526,15 @@ macro_rules! construct_bigint {
                 $name(ret)
             }
         }
+        impl<T> ::core::ops::BitAndAssign<T> for $name
+        where
+            T: Into<$name>,
+        {
+            #[inline]
+            fn bitand_assign(&mut self, rhs: T) {
+                self.0 = (*self & rhs).0
+            }
+        }
 
         impl<T> ::core::ops::BitXor<T> for $name
         where
@@ -504,6 +553,15 @@ macro_rules! construct_bigint {
                 $name(ret)
             }
         }
+        impl<T> ::core::ops::BitXorAssign<T> for $name
+        where
+            T: Into<$name>,
+        {
+            #[inline]
+            fn bitxor_assign(&mut self, rhs: T) {
+                self.0 = (*self ^ rhs).0
+            }
+        }
 
         impl<T> ::core::ops::BitOr<T> for $name
         where
@@ -520,6 +578,15 @@ macro_rules! construct_bigint {
                     ret[i] = arr1[i] | arr2[i];
                 }
                 $name(ret)
+            }
+        }
+        impl<T> ::core::ops::BitOrAssign<T> for $name
+        where
+            T: Into<$name>,
+        {
+            #[inline]
+            fn bitor_assign(&mut self, rhs: T) {
+                self.0 = (*self | rhs).0
             }
         }
 
@@ -544,6 +611,12 @@ macro_rules! construct_bigint {
                 $name(ret)
             }
         }
+        impl ::core::ops::ShlAssign<usize> for $name {
+            #[inline]
+            fn shl_assign(&mut self, rhs: usize) {
+                self.0 = (*self << rhs).0
+            }
+        }
 
         impl ::core::ops::Shr<usize> for $name {
             type Output = $name;
@@ -562,6 +635,12 @@ macro_rules! construct_bigint {
                     }
                 }
                 $name(ret)
+            }
+        }
+        impl ::core::ops::ShrAssign<usize> for $name {
+            #[inline]
+            fn shr_assign(&mut self, rhs: usize) {
+                self.0 = (*self >> rhs).0
             }
         }
 
@@ -618,9 +697,8 @@ macro_rules! construct_bigint {
             }
         }
 
-        #[cfg(feature = "std")]
-        impl ::std::fmt::Debug for $name {
-            fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+        impl ::core::fmt::Debug for $name {
+            fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
                 let &$name(ref data) = self;
                 write!(f, "0x")?;
                 for ch in data.iter().rev() {
@@ -630,10 +708,9 @@ macro_rules! construct_bigint {
             }
         }
 
-        #[cfg(feature = "std")]
-        impl ::std::fmt::Display for $name {
-            fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
-                ::std::fmt::Debug::fmt(self, f)
+        impl ::core::fmt::Display for $name {
+            fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+                ::core::fmt::Debug::fmt(self, f)
             }
         }
 
