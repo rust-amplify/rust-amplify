@@ -30,7 +30,7 @@ macro_rules! construct_smallint {
         #[cfg_attr(
             feature = "serde",
             derive(Serialize, Deserialize),
-            serde(transparent)
+            serde(crate = "serde_crate", transparent)
         )]
         #[allow(non_camel_case_types)]
         pub struct $ty($inner);

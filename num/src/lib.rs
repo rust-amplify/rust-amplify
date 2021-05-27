@@ -30,7 +30,7 @@
 
 #[cfg(feature = "serde")]
 #[macro_use]
-extern crate serde;
+extern crate serde_crate as serde;
 
 mod bigint;
 pub mod error;
