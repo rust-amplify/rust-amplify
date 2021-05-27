@@ -45,12 +45,6 @@ pub trait BitArray {
 
     /// Trailing zeros
     fn trailing_zeros(&self) -> usize;
-
-    /// Create all-zeros value
-    fn zero() -> Self;
-
-    /// Create value representing one
-    fn one() -> Self;
 }
 
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
@@ -383,6 +377,16 @@ macro_rules! construct_uint {
         }
 
         impl $name {
+            /// Zero value
+            pub const ZERO: $name = $name([0u64; $n_words]);
+
+            /// Value for `1`
+            pub const ONE: $name = $name({
+                let mut one = [0u64; $n_words];
+                one[0] = 1u64;
+                one
+            });
+
             /// Minimum value
             pub const MIN: $name = $name([0u64; $n_words]);
 
@@ -690,12 +694,15 @@ macro_rules! construct_uint {
             }
         }
 
-        impl ::core::ops::Add<$name> for $name {
+        impl<T> ::core::ops::Add<T> for $name
+        where
+            T: Into<$name>,
+        {
             type Output = $name;
 
-            fn add(self, other: $name) -> $name {
+            fn add(self, other: T) -> $name {
                 let $name(ref me) = self;
-                let $name(ref you) = other;
+                let $name(ref you) = other.into();
                 let mut ret = [0u64; $n_words];
                 let mut carry = [0u64; $n_words];
                 let mut b_carry = false;
@@ -714,21 +721,27 @@ macro_rules! construct_uint {
             }
         }
 
-        impl ::core::ops::Sub<$name> for $name {
+        impl<T> ::core::ops::Sub<T> for $name
+        where
+            T: Into<$name>,
+        {
             type Output = $name;
 
             #[inline]
-            fn sub(self, other: $name) -> $name {
-                self + !other + $crate::num::BitArray::one()
+            fn sub(self, other: T) -> $name {
+                self + !other.into() + $name::ONE
             }
         }
 
-        impl ::core::ops::Mul<$name> for $name {
+        impl<T> ::core::ops::Mul<T> for $name
+        where
+            T: Into<$name>,
+        {
             type Output = $name;
 
-            fn mul(self, other: $name) -> $name {
-                use $crate::num::BitArray;
-                let mut me = $name::zero();
+            fn mul(self, other: T) -> $name {
+                let other = other.into();
+                let mut me = $name::ZERO;
                 // TODO: be more efficient about this
                 for i in 0..(2 * $n_words) {
                     let to_mul = (other >> (32 * i)).low_u32();
@@ -738,79 +751,38 @@ macro_rules! construct_uint {
             }
         }
 
-        impl ::core::ops::Div<$name> for $name {
+        impl<T> ::core::ops::Div<T> for $name
+        where
+            T: Into<$name>,
+        {
             type Output = $name;
 
-            fn div(self, other: $name) -> $name {
-                self.div_rem(other).0
+            fn div(self, other: T) -> $name {
+                self.div_rem(other.into()).0
             }
         }
 
-        impl ::core::ops::Rem<$name> for $name {
+        impl<T> ::core::ops::Rem<T> for $name
+        where
+            T: Into<$name>,
+        {
             type Output = $name;
 
-            fn rem(self, other: $name) -> $name {
-                self.div_rem(other).1
+            fn rem(self, other: T) -> $name {
+                self.div_rem(other.into()).1
             }
         }
 
-        impl $crate::num::BitArray for $name {
-            #[inline]
-            fn bit(&self, index: usize) -> bool {
-                let &$name(ref arr) = self;
-                arr[index / 64] & (1 << (index % 64)) != 0
-            }
-
-            #[inline]
-            fn bit_slice(&self, start: usize, end: usize) -> $name {
-                (*self >> start).mask(end - start)
-            }
-
-            #[inline]
-            fn mask(&self, n: usize) -> $name {
-                let &$name(ref arr) = self;
-                let mut ret = [0; $n_words];
-                for i in 0..$n_words {
-                    if n >= 0x40 * (i + 1) {
-                        ret[i] = arr[i];
-                    } else {
-                        ret[i] = arr[i] & ((1 << (n - 0x40 * i)) - 1);
-                        break;
-                    }
-                }
-                $name(ret)
-            }
-
-            #[inline]
-            fn trailing_zeros(&self) -> usize {
-                let &$name(ref arr) = self;
-                for i in 0..($n_words - 1) {
-                    if arr[i] > 0 {
-                        return (0x40 * i) + arr[i].trailing_zeros() as usize;
-                    }
-                }
-                (0x40 * ($n_words - 1)) + arr[$n_words - 1].trailing_zeros() as usize
-            }
-
-            fn zero() -> $name {
-                Default::default()
-            }
-            fn one() -> $name {
-                $name({
-                    let mut ret = [0; $n_words];
-                    ret[0] = 1;
-                    ret
-                })
-            }
-        }
-
-        impl ::core::ops::BitAnd<$name> for $name {
+        impl<T> ::core::ops::BitAnd<T> for $name
+        where
+            T: Into<$name>,
+        {
             type Output = $name;
 
             #[inline]
-            fn bitand(self, other: $name) -> $name {
+            fn bitand(self, other: T) -> $name {
                 let $name(ref arr1) = self;
-                let $name(ref arr2) = other;
+                let $name(ref arr2) = other.into();
                 let mut ret = [0u64; $n_words];
                 for i in 0..$n_words {
                     ret[i] = arr1[i] & arr2[i];
@@ -819,13 +791,16 @@ macro_rules! construct_uint {
             }
         }
 
-        impl ::core::ops::BitXor<$name> for $name {
+        impl<T> ::core::ops::BitXor<T> for $name
+        where
+            T: Into<$name>,
+        {
             type Output = $name;
 
             #[inline]
-            fn bitxor(self, other: $name) -> $name {
+            fn bitxor(self, other: T) -> $name {
                 let $name(ref arr1) = self;
-                let $name(ref arr2) = other;
+                let $name(ref arr2) = other.into();
                 let mut ret = [0u64; $n_words];
                 for i in 0..$n_words {
                     ret[i] = arr1[i] ^ arr2[i];
@@ -834,30 +809,19 @@ macro_rules! construct_uint {
             }
         }
 
-        impl ::core::ops::BitOr<$name> for $name {
+        impl<T> ::core::ops::BitOr<T> for $name
+        where
+            T: Into<$name>,
+        {
             type Output = $name;
 
             #[inline]
-            fn bitor(self, other: $name) -> $name {
+            fn bitor(self, other: T) -> $name {
                 let $name(ref arr1) = self;
-                let $name(ref arr2) = other;
+                let $name(ref arr2) = other.into();
                 let mut ret = [0u64; $n_words];
                 for i in 0..$n_words {
                     ret[i] = arr1[i] | arr2[i];
-                }
-                $name(ret)
-            }
-        }
-
-        impl ::core::ops::Not for $name {
-            type Output = $name;
-
-            #[inline]
-            fn not(self) -> $name {
-                let $name(ref arr) = self;
-                let mut ret = [0u64; $n_words];
-                for i in 0..$n_words {
-                    ret[i] = !arr[i];
                 }
                 $name(ret)
             }
@@ -902,6 +866,59 @@ macro_rules! construct_uint {
                     }
                 }
                 $name(ret)
+            }
+        }
+
+        impl ::core::ops::Not for $name {
+            type Output = $name;
+
+            #[inline]
+            fn not(self) -> $name {
+                let $name(ref arr) = self;
+                let mut ret = [0u64; $n_words];
+                for i in 0..$n_words {
+                    ret[i] = !arr[i];
+                }
+                $name(ret)
+            }
+        }
+
+        impl $crate::num::BitArray for $name {
+            #[inline]
+            fn bit(&self, index: usize) -> bool {
+                let &$name(ref arr) = self;
+                arr[index / 64] & (1 << (index % 64)) != 0
+            }
+
+            #[inline]
+            fn bit_slice(&self, start: usize, end: usize) -> $name {
+                (*self >> start).mask(end - start)
+            }
+
+            #[inline]
+            fn mask(&self, n: usize) -> $name {
+                let &$name(ref arr) = self;
+                let mut ret = [0; $n_words];
+                for i in 0..$n_words {
+                    if n >= 0x40 * (i + 1) {
+                        ret[i] = arr[i];
+                    } else {
+                        ret[i] = arr[i] & ((1 << (n - 0x40 * i)) - 1);
+                        break;
+                    }
+                }
+                $name(ret)
+            }
+
+            #[inline]
+            fn trailing_zeros(&self) -> usize {
+                let &$name(ref arr) = self;
+                for i in 0..($n_words - 1) {
+                    if arr[i] > 0 {
+                        return (0x40 * i) + arr[i].trailing_zeros() as usize;
+                    }
+                }
+                (0x40 * ($n_words - 1)) + arr[$n_words - 1].trailing_zeros() as usize
             }
         }
 
