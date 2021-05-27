@@ -117,9 +117,13 @@ macro_rules! construct_smallint {
         impl_op!($ty, $inner, Shr, shr, ShrAssign, shr_assign, >>);
 
         impl $ty {
+            /// Checked integer addition. Computes `self + rhs`, returning `None` if
+            /// overflow occurred.
             pub fn checked_add<T>(self, rhs: T) -> Option<Self> where T: Into<$inner> {
                 self.0.checked_add(rhs.into()).and_then(|val| Self::try_from(val).ok())
             }
+            /// Saturating integer addition. Computes `self + rhs`, saturating at the
+            /// numeric bounds instead of overflowing.
             pub fn saturating_add<T>(self, rhs: T) -> Self where T: Into<$inner> {
                 let res = self.0.saturating_add(rhs.into());
                 if res > Self::MAX.$as() {
@@ -128,6 +132,11 @@ macro_rules! construct_smallint {
                     Self(res)
                 }
             }
+            /// Calculates `self + rhs`
+            ///
+            /// Returns a tuple of the addition along with a boolean indicating whether
+            /// an arithmetic overflow would occur. If an overflow would have occurred
+            /// then the wrapped value is returned.
             pub fn overflowing_add<T>(self, rhs: T) -> (Self, bool) where T: Into<$inner> {
                 let mut ret = self.0.overflowing_add(rhs.into());
                 if ret.0 > Self::MAX.0 {
@@ -136,13 +145,19 @@ macro_rules! construct_smallint {
                 }
                 (Self(ret.0), ret.1)
             }
+            /// Wrapping (modular) addition. Computes `self + rhs`, wrapping around at
+            /// the boundary of the type.
             pub fn wrapping_add<T>(self, rhs: T) -> Self where T: Into<$inner> {
                 Self(self.0.wrapping_add(rhs.into()) % Self::MAX.0)
             }
 
+            /// Checked integer subtraction. Computes `self - rhs`, returning `None` if
+            /// overflow occurred.
             pub fn checked_sub<T>(self, rhs: T) -> Option<Self> where T: Into<$inner> {
                 self.0.checked_sub(rhs.into()).and_then(|val| Self::try_from(val).ok())
             }
+            /// Saturating integer subtraction. Computes `self - rhs`, saturating at the
+            /// numeric bounds instead of overflowing.
             pub fn saturating_sub<T>(self, rhs: T) -> Self where T: Into<$inner> {
                 let res = self.0.saturating_sub(rhs.into());
                 if res > Self::MAX.$as() {
@@ -151,6 +166,11 @@ macro_rules! construct_smallint {
                     Self(res)
                 }
             }
+            /// Calculates `self - rhs`
+            ///
+            /// Returns a tuple of the subtraction along with a boolean indicating whether
+            /// an arithmetic overflow would occur. If an overflow would have occurred
+            /// then the wrapped value is returned.
             pub fn overflowing_sub<T>(self, rhs: T) -> (Self, bool) where T: Into<$inner> {
                 let mut ret = self.0.overflowing_sub(rhs.into());
                 if ret.0 > Self::MAX.0 {
@@ -159,13 +179,19 @@ macro_rules! construct_smallint {
                 }
                 (Self(ret.0), ret.1)
             }
+            /// Wrapping (modular) subtraction. Computes `self - rhs`, wrapping around at
+            /// the boundary of the type.
             pub fn wrapping_sub<T>(self, rhs: T) -> Self where T: Into<$inner> {
                 Self(self.0.wrapping_sub(rhs.into()) % Self::MAX.0)
             }
 
+            /// Checked integer multiplication. Computes `self * rhs`, returning `None` if
+            /// overflow occurred.
             pub fn checked_mul<T>(self, rhs: T) -> Option<Self> where T: Into<$inner> {
                 self.0.checked_mul(rhs.into()).and_then(|val| Self::try_from(val).ok())
             }
+            /// Saturating integer multiplication. Computes `self * rhs`, saturating at the
+            /// numeric bounds instead of overflowing.
             pub fn saturating_mul<T>(self, rhs: T) -> Self where T: Into<$inner> {
                 let res = self.0.saturating_mul(rhs.into());
                 if res > Self::MAX.0 {
@@ -174,6 +200,11 @@ macro_rules! construct_smallint {
                     Self(res)
                 }
             }
+            /// Calculates `self * rhs`
+            ///
+            /// Returns a tuple of the multiplication along with a boolean indicating whether
+            /// an arithmetic overflow would occur. If an overflow would have occurred
+            /// then the wrapped value is returned.
             pub fn overflowing_mul<T>(self, rhs: T) -> (Self, bool) where T: Into<$inner> {
                 let mut ret = self.0.overflowing_mul(rhs.into());
                 if ret.0 > Self::MAX.0 {
@@ -182,6 +213,8 @@ macro_rules! construct_smallint {
                 }
                 (Self(ret.0), ret.1)
             }
+            /// Wrapping (modular) multiplication. Computes `self * rhs`, wrapping around at
+            /// the boundary of the type.
             pub fn wrapping_mul<T>(self, rhs: T) -> Self where T: Into<$inner> {
                 Self(self.0.wrapping_mul(rhs.into()) % Self::MAX.0)
             }

@@ -87,6 +87,13 @@ macro_rules! construct_bigint {
             /// Length of the inner representation in 64-bit words
             pub const INNER_LEN: u8 = $n_words;
 
+            /// Returns whether specific bit number is set to `1` or not
+            #[inline]
+            pub fn bit(&self, index: usize) -> bool {
+                let &$name(ref arr) = self;
+                arr[index / 64] & (1 << (index % 64)) != 0
+            }
+
             /// Returns lower 32 bits of the number as `u32`
             #[inline]
             pub fn low_u32(&self) -> u32 {
@@ -365,6 +372,8 @@ macro_rules! construct_bigint {
         }
 
         impl $name {
+            /// Checked integer addition. Computes `self + rhs`, returning `None` if
+            /// overflow occurred.
             pub fn checked_add<T>(self, other: T) -> Option<$name>
             where
                 T: Into<$name>,
@@ -377,6 +386,8 @@ macro_rules! construct_bigint {
                 }
             }
 
+            /// Saturating integer addition. Computes `self + rhs`, saturating at the
+            /// numeric bounds instead of overflowing.
             pub fn saturating_add<T>(self, other: T) -> $name
             where
                 T: Into<$name>,
@@ -389,6 +400,11 @@ macro_rules! construct_bigint {
                 }
             }
 
+            /// Calculates `self + rhs`
+            ///
+            /// Returns a tuple of the addition along with a boolean indicating whether
+            /// an arithmetic overflow would occur. If an overflow would have occurred
+            /// then the wrapped value is returned.
             pub fn overflowing_add<T>(self, other: T) -> ($name, bool)
             where
                 T: Into<$name>,
@@ -407,6 +423,8 @@ macro_rules! construct_bigint {
                 (Self(ret), carry > 0)
             }
 
+            /// Wrapping (modular) addition. Computes `self + rhs`, wrapping around at
+            /// the boundary of the type.
             pub fn wrapping_add<T>(self, other: T) -> $name
             where
                 T: Into<$name>,
@@ -414,6 +432,8 @@ macro_rules! construct_bigint {
                 self.overflowing_add(other).0
             }
 
+            /// Checked integer subtraction. Computes `self - rhs`, returning `None` if
+            /// overflow occurred.
             pub fn checked_sub<T>(self, other: T) -> Option<$name>
             where
                 T: Into<$name>,
@@ -426,6 +446,8 @@ macro_rules! construct_bigint {
                 }
             }
 
+            /// Saturating integer subtraction. Computes `self - rhs`, saturating at the
+            /// numeric bounds instead of overflowing.
             pub fn saturating_sub<T>(self, other: T) -> $name
             where
                 T: Into<$name>,
@@ -438,6 +460,11 @@ macro_rules! construct_bigint {
                 }
             }
 
+            /// Calculates `self - rhs`
+            ///
+            /// Returns a tuple of the subtraction along with a boolean indicating
+            /// whether an arithmetic overflow would occur. If an overflow would
+            /// have occurred then the wrapped value is returned.
             pub fn overflowing_sub<T>(self, other: T) -> ($name, bool)
             where
                 T: Into<$name>,
@@ -449,6 +476,8 @@ macro_rules! construct_bigint {
                 )
             }
 
+            /// Wrapping (modular) subtraction. Computes `self - rhs`, wrapping around
+            /// at the boundary of the type.
             pub fn wrapping_sub<T>(self, other: T) -> $name
             where
                 T: Into<$name>,
@@ -456,6 +485,8 @@ macro_rules! construct_bigint {
                 self.overflowing_sub(other).0
             }
 
+            /// Checked integer multiplication. Computes `self * rhs`, returning `None`
+            /// if overflow occurred.
             pub fn checked_mul<T>(self, other: T) -> Option<$name>
             where
                 T: Into<$name>,
@@ -468,6 +499,8 @@ macro_rules! construct_bigint {
                 }
             }
 
+            /// Saturating integer multiplication. Computes `self * rhs`, saturating at
+            /// the numeric bounds instead of overflowing.
             pub fn saturating_mul<T>(self, other: T) -> $name
             where
                 T: Into<$name>,
@@ -480,6 +513,11 @@ macro_rules! construct_bigint {
                 }
             }
 
+            /// Calculates `self * rhs`
+            ///
+            /// Returns a tuple of the multiplication along with a boolean indicating
+            /// whether an arithmetic overflow would occur. If an overflow would
+            /// have occurred then the wrapped value is returned.
             pub fn overflowing_mul<T>(self, other: T) -> ($name, bool)
             where
                 T: Into<$name>,
@@ -515,6 +553,8 @@ macro_rules! construct_bigint {
                 (Self(ret), overflow)
             }
 
+            /// Wrapping (modular) multiplication. Computes `self * rhs`, wrapping
+            /// around at the boundary of the type.
             pub fn wrapping_mul<T>(self, other: T) -> $name
             where
                 T: Into<$name>,
@@ -779,45 +819,6 @@ macro_rules! construct_bigint {
             }
         }
 
-        impl $crate::BitArray for $name {
-            #[inline]
-            fn bit(&self, index: usize) -> bool {
-                let &$name(ref arr) = self;
-                arr[index / 64] & (1 << (index % 64)) != 0
-            }
-
-            #[inline]
-            fn bit_slice(&self, start: usize, end: usize) -> $name {
-                (*self >> start).mask(end - start)
-            }
-
-            #[inline]
-            fn mask(&self, n: usize) -> $name {
-                let &$name(ref arr) = self;
-                let mut ret = [0; $n_words];
-                for i in 0..$n_words {
-                    if n >= 0x40 * (i + 1) {
-                        ret[i] = arr[i];
-                    } else {
-                        ret[i] = arr[i] & ((1 << (n - 0x40 * i)) - 1);
-                        break;
-                    }
-                }
-                $name(ret)
-            }
-
-            #[inline]
-            fn trailing_zeros(&self) -> usize {
-                let &$name(ref arr) = self;
-                for i in 0..($n_words - 1) {
-                    if arr[i] > 0 {
-                        return (0x40 * i) + arr[i].trailing_zeros() as usize;
-                    }
-                }
-                (0x40 * ($n_words - 1)) + arr[$n_words - 1].trailing_zeros() as usize
-            }
-        }
-
         impl ::core::fmt::Debug for $name {
             fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
                 let &$name(ref data) = self;
@@ -909,7 +910,6 @@ construct_bigint!(u1024, 16);
 mod tests {
     #![allow(unused)]
 
-    use crate::BitArray;
     use super::*;
 
     construct_bigint!(Uint128, 2);
@@ -1212,14 +1212,6 @@ mod tests {
                 0x928D92B4D7F5DF33u64
             ])
         );
-    }
-
-    #[test]
-    fn u256_bitslice_test() {
-        let init = u256::from(0xDEADBEEFDEADBEEFu64);
-        let add = init + (init << 64);
-        assert_eq!(add.bit_slice(64, 128), init);
-        assert_eq!(add.mask(64), init);
     }
 
     #[test]
