@@ -24,7 +24,7 @@ use core::convert::TryFrom;
 use crate::error::OverflowError;
 
 macro_rules! construct_smallint {
-    ($ty:ident, $inner:ident, $bits:literal, $max:expr, $doc:meta) => {
+    ($ty:ident, $inner:ident, $as:ident, $bits:literal, $max:expr, $doc:meta) => {
         #[$doc]
         #[derive(PartialEq, Eq, Debug, Copy, Clone, Default, PartialOrd, Ord, Hash)]
         #[cfg_attr(
@@ -60,7 +60,7 @@ macro_rules! construct_smallint {
             }
 
             /// Returns inner `u8` representation, which is always less or equal to `Self::MAX`
-            pub fn as_u8(self) -> $inner {
+            pub fn $as(self) -> $inner {
                 self.0 as $inner
             }
         }
@@ -117,6 +117,54 @@ macro_rules! construct_smallint {
         impl_op!($ty, $inner, BitXor, bitxor, BitXorAssign, bitxor_assign, ^);
         impl_op!($ty, $inner, Shl, shl, ShlAssign, shl_assign, <<);
         impl_op!($ty, $inner, Shr, shr, ShrAssign, shr_assign, >>);
+
+        impl $ty {
+            pub fn checked_add<T>(self, rhs: T) -> Option<Self> where T: Into<$inner> {
+                self.0.checked_add(rhs.into()).and_then(|val| Self::try_from(val).ok())
+            }
+            pub fn saturating_add<T>(self, rhs: T) -> Self where T: Into<$inner> {
+                let res = self.0.saturating_add(rhs.into());
+                if res > Self::MAX.$as() {
+                    Self::MAX
+                } else {
+                    Self(res)
+                }
+            }
+            pub fn overflowing_add<T>(self, rhs: T) -> (Self, bool) where T: Into<$inner> {
+                let mut ret = self.0.overflowing_add(rhs.into());
+                if ret.0 > Self::MAX.0 {
+                    ret.0 %= Self::MAX.0;
+                    ret.1 = true;
+                }
+                (Self(ret.0), ret.1)
+            }
+            pub fn wrapping_add<T>(self, rhs: T) -> Self where T: Into<$inner> {
+                Self(self.0.wrapping_add(rhs.into()) % Self::MAX.0)
+            }
+
+            pub fn checked_mul<T>(self, rhs: T) -> Option<Self> where T: Into<$inner> {
+                self.0.checked_mul(rhs.into()).and_then(|val| Self::try_from(val).ok())
+            }
+            pub fn saturating_mul<T>(self, rhs: T) -> Self where T: Into<$inner> {
+                let res = self.0.saturating_mul(rhs.into());
+                if res > Self::MAX.0 {
+                    Self::MAX
+                } else {
+                    Self(res)
+                }
+            }
+            pub fn overflowing_mul<T>(self, rhs: T) -> (Self, bool) where T: Into<$inner> {
+                let mut ret = self.0.overflowing_mul(rhs.into());
+                if ret.0 > Self::MAX.0 {
+                    ret.0 %= Self::MAX.0;
+                    ret.1 = true;
+                }
+                (Self(ret.0), ret.1)
+            }
+            pub fn wrapping_mul<T>(self, rhs: T) -> Self where T: Into<$inner> {
+                Self(self.0.wrapping_mul(rhs.into()) % Self::MAX.0)
+            }
+        }
     };
 }
 macro_rules! impl_op {
@@ -126,9 +174,9 @@ macro_rules! impl_op {
             #[inline]
             fn $fn(self, rhs: Self) -> Self::Output {
                 Self::try_from((self.0).$fn(rhs.0)).expect(stringify!(
-                    "integer overflow during ",
+                    "attempt to ",
                     $fn,
-                    " operation"
+                    " with overflow"
                 ))
             }
         }
@@ -217,6 +265,7 @@ macro_rules! impl_op {
 construct_smallint!(
     u2,
     u8,
+    as_u8,
     2,
     4,
     doc = "5-bit unsigned integer in the range `0..4`"
@@ -224,6 +273,7 @@ construct_smallint!(
 construct_smallint!(
     u3,
     u8,
+    as_u8,
     3,
     8,
     doc = "5-bit unsigned integer in the range `0..8`"
@@ -231,6 +281,7 @@ construct_smallint!(
 construct_smallint!(
     u4,
     u8,
+    as_u8,
     4,
     16,
     doc = "5-bit unsigned integer in the range `0..16`"
@@ -238,6 +289,7 @@ construct_smallint!(
 construct_smallint!(
     u5,
     u8,
+    as_u8,
     5,
     32,
     doc = "5-bit unsigned integer in the range `0..32`"
@@ -245,6 +297,7 @@ construct_smallint!(
 construct_smallint!(
     u6,
     u8,
+    as_u8,
     6,
     64,
     doc = "6-bit unsigned integer in the range `0..64`"
@@ -252,6 +305,7 @@ construct_smallint!(
 construct_smallint!(
     u7,
     u8,
+    as_u8,
     7,
     128,
     doc = "7-bit unsigned integer in the range `0..128`"
@@ -259,6 +313,7 @@ construct_smallint!(
 construct_smallint!(
     u24,
     u32,
+    as_u32,
     24,
     1u32 << 24,
     doc = "24-bit unsigned integer in the range `0..16_777_216`"
@@ -276,7 +331,7 @@ mod test {
         let mut u_5 = u5::try_from(u5::MAX.as_u8()).unwrap();
         let mut u_6 = u6::try_from(u6::MAX.as_u8()).unwrap();
         let mut u_7 = u7::try_from(u7::MAX.as_u8()).unwrap();
-        let mut u_24 = u24::try_from(u24::MAX.as_u8()).unwrap();
+        let mut u_24 = u24::try_from(u24::MAX.as_u32()).unwrap();
 
         assert_eq!(u_2, u2::with(3));
         assert_eq!(u_3, u3::with(7));
@@ -291,7 +346,7 @@ mod test {
         assert_eq!(u_5.as_u8(), 31u8);
         assert_eq!(u_6.as_u8(), 63u8);
         assert_eq!(u_7.as_u8(), 127u8);
-        assert_eq!(u_24.as_u8(), (1 << 24) - 1);
+        assert_eq!(u_24.as_u32(), (1 << 24) - 1);
 
         u_2 -= 1;
         u_3 -= 1;
@@ -307,7 +362,7 @@ mod test {
         assert_eq!(u_5.as_u8(), 30u8);
         assert_eq!(u_6.as_u8(), 62u8);
         assert_eq!(u_7.as_u8(), 126u8);
-        assert_eq!(u_24.as_u8(), (1 << 24) - 2);
+        assert_eq!(u_24.as_u32(), (1 << 24) - 2);
 
         u_2 /= 2;
         u_2 *= 2;
@@ -343,7 +398,7 @@ mod test {
         assert_eq!(u_5.as_u8(), 31u8);
         assert_eq!(u_6.as_u8(), 63u8);
         assert_eq!(u_7.as_u8(), 127u8);
-        assert_eq!(u_24.as_u8(), (1 << 24) - 1);
+        assert_eq!(u_24.as_u32(), (1 << 24) - 1);
 
         assert_eq!(u_2.as_u8() % 2, 1);
         assert_eq!(u_3.as_u8() % 2, 1);
@@ -351,7 +406,7 @@ mod test {
         assert_eq!(u_5.as_u8() % 2, 1);
         assert_eq!(u_6.as_u8() % 2, 1);
         assert_eq!(u_7.as_u8() % 2, 1);
-        assert_eq!(u_24.as_u8() % 2, 1);
+        assert_eq!(u_24.as_u32() % 2, 1);
     }
 
     #[test]
