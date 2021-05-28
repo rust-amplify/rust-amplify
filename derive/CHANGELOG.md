@@ -1,6 +1,10 @@
 Change Log
 ==========
 
+2.7.2
+-----
+- Using `core` instead of `std` in order to support no_std environment
+
 2.7.1
 -----
 - Making display derivation macro not to produce clippy::if_same_then_else
