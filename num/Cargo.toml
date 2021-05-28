@@ -8,7 +8,7 @@ categories = ["mathematics", "no-std", "embedded", "science"]
 repository = "https://github.com/LNP-BP/rust-amplify"
 homepage = "https://github.com/LNP-BP"
 license = "MIT"
-readme = "README.md"
+readme = "../README.md"
 edition = "2018"
 
 [dependencies]

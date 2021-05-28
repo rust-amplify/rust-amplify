@@ -82,28 +82,28 @@ impl FormattingTrait {
     pub fn into_token_stream2(self, span: Span) -> TokenStream2 {
         match self {
             FormattingTrait::Debug => quote_spanned! { span =>
-                ::std::fmt::Debug::fmt(&self, &mut f)
+                ::core::fmt::Debug::fmt(&self, &mut f)
             },
             FormattingTrait::Octal => quote_spanned! { span =>
-                ::std::fmt::Octal::fmt(&self, &mut f)
+                ::core::fmt::Octal::fmt(&self, &mut f)
             },
             FormattingTrait::Binary => quote_spanned! { span =>
-                ::std::fmt::Binary::fmt(&self, &mut f)
+                ::core::fmt::Binary::fmt(&self, &mut f)
             },
             FormattingTrait::Pointer => quote_spanned! { span =>
-                ::std::fmt::Pointer::fmt(&self, &mut f)
+                ::core::fmt::Pointer::fmt(&self, &mut f)
             },
             FormattingTrait::LowerHex => quote_spanned! { span =>
-                ::std::fmt::LowerHex::fmt(&self, &mut f)
+                ::core::fmt::LowerHex::fmt(&self, &mut f)
             },
             FormattingTrait::UpperHex => quote_spanned! { span =>
-                ::std::fmt::UpperHex::fmt(&self, &mut f)
+                ::core::fmt::UpperHex::fmt(&self, &mut f)
             },
             FormattingTrait::LowerExp => quote_spanned! { span =>
-                ::std::fmt::LowerExp::fmt(&self, &mut f)
+                ::core::fmt::LowerExp::fmt(&self, &mut f)
             },
             FormattingTrait::UpperExp => quote_spanned! { span =>
-                ::std::fmt::UpperExp::fmt(&self, &mut f)
+                ::core::fmt::UpperExp::fmt(&self, &mut f)
             },
         }
     }
@@ -458,8 +458,8 @@ fn inner_struct(input: &DeriveInput, data: &DataStruct) -> Result<TokenStream2> 
     };
 
     Ok(quote! {
-        impl #impl_generics ::std::fmt::Display for #ident_name #ty_generics #where_clause {
-            fn fmt(&self, mut f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        impl #impl_generics ::core::fmt::Display for #ident_name #ty_generics #where_clause {
+            fn fmt(&self, mut f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
                 #display
             }
         }
@@ -642,9 +642,9 @@ fn inner_enum(input: &DeriveInput, data: &DataEnum) -> Result<TokenStream2> {
     };
 
     Ok(quote! {
-        impl #impl_generics ::std::fmt::Display for #ident_name #ty_generics #where_clause {
+        impl #impl_generics ::core::fmt::Display for #ident_name #ty_generics #where_clause {
             #![allow(clippy::if_same_then_else)]
-            fn fmt(&self, mut f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+            fn fmt(&self, mut f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
                 #content
             }
         }
@@ -705,9 +705,9 @@ fn inner_union(input: &DeriveInput, data: &DataUnion) -> Result<TokenStream2> {
         },
     };
     Ok(quote! {
-        impl #impl_generics ::std::fmt::Display for #ident_name #ty_generics #where_clause {
+        impl #impl_generics ::core::fmt::Display for #ident_name #ty_generics #where_clause {
             #![allow(clippy::if_same_then_else)]
-            fn fmt(&self, mut f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+            fn fmt(&self, mut f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
                 #content
             }
         }
