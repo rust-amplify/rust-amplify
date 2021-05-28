@@ -89,18 +89,16 @@ macro_rules! construct_smallint {
             }
         }
 
-        #[cfg(feature = "std")]
-        impl ::std::str::FromStr for $ty {
-            type Err = ::std::num::ParseIntError;
+        impl ::core::str::FromStr for $ty {
+            type Err = ::core::num::ParseIntError;
             #[inline]
             fn from_str(s: &str) -> Result<Self, Self::Err> {
                 Self::try_from($inner::from_str(s)?).map_err(|_| u8::from_str("257").unwrap_err())
             }
         }
 
-        #[cfg(feature = "std")]
-        impl ::std::fmt::Display for $ty {
-            fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        impl ::core::fmt::Display for $ty {
+            fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
                 self.0.fmt(f)
             }
         }

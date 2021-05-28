@@ -1,6 +1,6 @@
 [package]
 name = "amplify_num"
-version = "0.1.0"
+version = "0.1.1"
 description = "Amplifying numeric types: big-sized and bit-sized integers"
 authors = ["Dr. Maxim Orlovsky <orlovsky@pandoracore.com>"]
 keywords = ["generics", "num", "wrap", "patterns"]
