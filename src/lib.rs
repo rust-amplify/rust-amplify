@@ -41,6 +41,8 @@ pub use amplify_derive::{Wrapper, Display, AsAny, From, Getters, Error};
 extern crate serde_crate as serde;
 
 pub extern crate amplify_num as num;
+#[cfg(feature = "std")]
+pub use num::hex;
 #[cfg(feature = "stringly_conversions")]
 pub extern crate stringly_conversions;
 #[cfg(feature = "stringly_conversions")]
