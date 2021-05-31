@@ -4,8 +4,8 @@ The LNP/BP project operates an open contributor model where anyone is
 welcome to contribute towards development in the form of peer review, documentation,
 testing and patches.
 
-Anyone is invited to contribute without regard to technical experience, "expertise", OSS
-experience, age, or other concern. However, the development of standards & reference implementations demands a
+Everyone is invited to contribute without regard to technical experience, "expertise", OSS
+experience, age, or other concerns. However, the development of standards & reference implementations demands a
 high-level of rigor, adversarial thinking, thorough testing and risk-minimization.
 Any bug may cost users real money. That being said, we deeply welcome people contributing
 for the first time to an open source project or pick up Rust while contributing. Don't be shy,
@@ -15,8 +15,10 @@ you'll learn.
 
 Communication about LNP/BP standards & imlementations happens primarily in Telegram group
 https://t.me/rgbtelegram (due to historical reasons), but also #lnp-pb on IRC Freenode.
+Some of the preliminary proposals and ideas are posted in [Discussions](https://github.com/LNP-BP/LNPBPs/discussions) of the 
+corresponding repository.
 
-Discussion about code base improvements happens in GitHub issues and on pull
+Discussion about code base improvements happens in GitHub issues and pull
 requests.
 
 Major projects are tracked [here](https://github.com/orgs/LNP-BP/projects).
@@ -42,7 +44,7 @@ and pass tests, in order to ensure git bisect and other automated tools
 function properly.
 
 When adding a new feature thought
-must be given to the long term technical debt. Every new features should
+must be given to the long term technical debt. Every new feature should
 be covered by unit tests.
 
 When refactoring, structure your PR to make it easy to review and don't
@@ -102,7 +104,7 @@ Mutation testing is planned; any contribution there would be warmly welcomed.
 Going further
 -------------
 
-You may be interested by Jon Atack guide on [How to review Bitcoin Core PRs](https://github.com/jonatack/bitcoin-development/blob/master/how-to-review-bitcoin-core-prs.md)
+You may be interested in Jon Atack guide on [How to review Bitcoin Core PRs](https://github.com/jonatack/bitcoin-development/blob/master/how-to-review-bitcoin-core-prs.md)
 and [How to make Bitcoin Core PRs](https://github.com/jonatack/bitcoin-development/blob/master/how-to-make-bitcoin-core-prs.md).
 While there are differences between the projects in terms of context and maturity, many
 of the suggestions offered apply to this project.
