@@ -38,8 +38,11 @@ extern crate amplify_derive;
 pub use amplify_derive::{Wrapper, Display, AsAny, From, Getters, Error};
 
 #[cfg(feature = "serde")]
-#[macro_use]
 extern crate serde_crate as serde;
+
+pub extern crate amplify_num as num;
+#[cfg(feature = "std")]
+pub use num::hex;
 #[cfg(feature = "stringly_conversions")]
 pub extern crate stringly_conversions;
 #[cfg(feature = "stringly_conversions")]
@@ -67,9 +70,6 @@ mod to_serde_string;
 
 #[cfg(feature = "std")]
 pub mod flags;
-#[cfg(feature = "std")]
-pub mod hex;
-pub mod num;
 
 pub use crate::as_any::AsAny;
 pub use crate::bipolar::Bipolar;

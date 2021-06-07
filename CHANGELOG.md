@@ -1,6 +1,12 @@
 Change Log
 ==========
 
+3.7.0
+-----
+- Numerics moved into dedicated `amplify_num` crate
+- Multiple fixes & improvements to numeric arithmetics
+- Numeric API finalization
+
 3.6.0
 -----
 - Bit-sized precise integers (`u5`, `u6`, `u7`, `u24`)

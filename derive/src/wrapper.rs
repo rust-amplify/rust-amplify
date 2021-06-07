@@ -129,13 +129,13 @@ impl WrapperDerives {
 
         match self {
             WrapperDerives::FromStr => quote! {
-                impl #impl_generics ::std::str::FromStr for #ident_name #ty_generics #where_clause
+                impl #impl_generics ::core::str::FromStr for #ident_name #ty_generics #where_clause
                 {
-                    type Err = <<Self as #amplify_crate::Wrapper>::Inner as ::std::str::FromStr>::Err;
+                    type Err = <<Self as #amplify_crate::Wrapper>::Inner as ::core::str::FromStr>::Err;
 
                     #[inline]
                     fn from_str(s: &str) -> Result<Self, Self::Err> {
-                        use ::std::str::FromStr;
+                        use ::core::str::FromStr;
                         use #amplify_crate::Wrapper;
                         Ok(Wrapper::from_inner(
                             <Self as #amplify_crate::Wrapper>::Inner::from_str(s)?,
@@ -144,72 +144,72 @@ impl WrapperDerives {
                 }
             },
             WrapperDerives::Display => quote! {
-                impl #impl_generics ::std::fmt::Display for #ident_name #ty_generics #where_clause
+                impl #impl_generics ::core::fmt::Display for #ident_name #ty_generics #where_clause
                 {
                     #[inline]
-                    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+                    fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
                         use #amplify_crate::Wrapper;
-                        ::std::fmt::Display::fmt(Wrapper::as_inner(self), f)
+                        ::core::fmt::Display::fmt(Wrapper::as_inner(self), f)
                     }
                 }
             },
             WrapperDerives::Debug => quote! {
-                impl #impl_generics ::std::fmt::Debug for #ident_name #ty_generics #where_clause
+                impl #impl_generics ::core::fmt::Debug for #ident_name #ty_generics #where_clause
                 {
                     #[inline]
-                    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+                    fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
                         use #amplify_crate::Wrapper;
-                        ::std::fmt::Debug::fmt(Wrapper::as_inner(self), f)
+                        ::core::fmt::Debug::fmt(Wrapper::as_inner(self), f)
                     }
                 }
             },
             WrapperDerives::Octal => quote! {
-                impl #impl_generics ::std::fmt::Octal for #ident_name #ty_generics #where_clause
+                impl #impl_generics ::core::fmt::Octal for #ident_name #ty_generics #where_clause
                 {
                     #[inline]
-                    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+                    fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
                         use #amplify_crate::Wrapper;
-                        ::std::fmt::Octal::fmt(Wrapper::as_inner(self), f)
+                        ::core::fmt::Octal::fmt(Wrapper::as_inner(self), f)
                     }
                 }
             },
             WrapperDerives::LowerHex => quote! {
-                impl #impl_generics ::std::fmt::LowerHex for #ident_name #ty_generics #where_clause
+                impl #impl_generics ::core::fmt::LowerHex for #ident_name #ty_generics #where_clause
                 {
                     #[inline]
-                    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+                    fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
                         use #amplify_crate::Wrapper;
-                        ::std::fmt::LowerHex::fmt(Wrapper::as_inner(self), f)
+                        ::core::fmt::LowerHex::fmt(Wrapper::as_inner(self), f)
                     }
                 }
             },
             WrapperDerives::UpperHex => quote! {
-                impl #impl_generics ::std::fmt::UpperHex for #ident_name #ty_generics #where_clause
+                impl #impl_generics ::core::fmt::UpperHex for #ident_name #ty_generics #where_clause
                 {
                     #[inline]
-                    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+                    fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
                         use #amplify_crate::Wrapper;
-                        ::std::fmt::UpperHex::fmt(Wrapper::as_inner(self), f)
+                        ::core::fmt::UpperHex::fmt(Wrapper::as_inner(self), f)
                     }
                 }
             },
             WrapperDerives::LowerExp => quote! {
-                impl #impl_generics ::std::fmt::LowerExp for #ident_name #ty_generics #where_clause
+                impl #impl_generics ::core::fmt::LowerExp for #ident_name #ty_generics #where_clause
                 {
                     #[inline]
-                    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+                    fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
                         use #amplify_crate::Wrapper;
-                        ::std::fmt::LowerExp::fmt(Wrapper::as_inner(self), f)
+                        ::core::fmt::LowerExp::fmt(Wrapper::as_inner(self), f)
                     }
                 }
             },
             WrapperDerives::UpperExp => quote! {
-                impl #impl_generics ::std::fmt::UpperExp for #ident_name #ty_generics #where_clause
+                impl #impl_generics ::core::fmt::UpperExp for #ident_name #ty_generics #where_clause
                 {
                     #[inline]
-                    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+                    fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
                         use #amplify_crate::Wrapper;
-                        ::std::fmt::UpperExp::fmt(Wrapper::as_inner(self), f)
+                        ::core::fmt::UpperExp::fmt(Wrapper::as_inner(self), f)
                     }
                 }
             },

@@ -292,7 +292,7 @@ impl InstructionTable {
         self.0.into_iter().fold(TokenStream2::new(), |mut stream, InstructionEntry(from, entity)| {
             let convert = entity.into_token_stream2();
             stream.extend(quote! {
-                impl #impl_generics ::std::convert::From<#from> for #ident_name #ty_generics #where_clause {
+                impl #impl_generics ::core::convert::From<#from> for #ident_name #ty_generics #where_clause {
                     fn from(v: #from) -> Self {
                         #convert
                     }
