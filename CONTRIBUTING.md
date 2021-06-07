@@ -86,13 +86,13 @@ Security is the primary focus of Rust-LNPBP; disclosure of security vulnerabilit
 helps prevent user loss of funds. If you believe a vulnerability may affect other 
 implementations, please inform them.
 
-Note that Rust-LNPBP is currently considered "pre-production" during this time, there
+Note that rust-amplify is currently considered "pre-production" during this time, there
 is no special handling of security issues. Please simply open an issue on Github.
 
 Testing
 -------
 
-Related to the security aspect, Rust-LNPBP developers take testing
+Related to the security aspect, rust-amplify developers take testing
 very seriously. Due to the modular nature of the project, writing new functional
 tests is easy and good test coverage of the codebase is an important goal. Refactoring
 the project to enable fine-grained unit testing is also an ongoing effort.
