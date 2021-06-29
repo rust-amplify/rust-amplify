@@ -255,7 +255,9 @@ construct_smallint!(
     as_u8,
     1,
     2,
-    doc = "1-bit unsigned integer in the range `0..1`. It can be used instead of `bool` when 1-bit numeric (and not boolean) arithmetic is required"
+    doc =
+        "1-bit unsigned integer in the range `0..1`. It can be used instead of `bool` when 1-bit \
+    numeric (and not boolean) arithmetic is required"
 );
 construct_smallint!(
     u2,
@@ -313,6 +315,24 @@ construct_smallint!(
     1u32 << 24,
     doc = "24-bit unsigned integer in the range `0..16_777_216`"
 );
+
+impl u24 {
+    /// Create a native endian integer value from its representation as a byte
+    /// array in big endian.
+    pub fn from_le_bytes(bytes: [u8; 3]) -> u24 {
+        let mut inner = [0u8; 4];
+        inner[..3].copy_from_slice(&bytes);
+        Self(u32::from_le_bytes(inner))
+    }
+
+    /// Return the memory representation of this integer as a byte array in
+    /// little-endian byte order.
+    pub fn to_le_bytes(self) -> [u8; 3] {
+        let mut inner = [0u8; 3];
+        inner.copy_from_slice(&self.0.to_le_bytes()[..3]);
+        inner
+    }
+}
 
 #[cfg(test)]
 mod test {
@@ -444,5 +464,18 @@ mod test {
     #[should_panic(expected = "OverflowError { max: 16777215, value: 16777216 }")]
     fn u24_overflow_test() {
         u24::try_from(1 << 24).unwrap();
+    }
+
+    #[test]
+    fn u24_endianess() {
+        let val: u32 = 0x00adbeef;
+        let le = [0xef, 0xbe, 0xad];
+        let v1 = u24::with(val);
+        assert_eq!(v1.as_u32(), val);
+        assert_eq!(v1.to_le_bytes(), le);
+        let v2 = u24::from_le_bytes(le);
+        assert_eq!(v2.to_le_bytes(), le);
+        assert_eq!(v2, v1);
+        assert_eq!(v2.as_u32(), v1.as_u32());
     }
 }
