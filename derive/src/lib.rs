@@ -127,7 +127,12 @@ use syn::DeriveInput;
 ///     #[display(doc_comments)]
 ///     enum Variants {
 ///         /// Letter A.
-///         /// Multiline comments are also working
+///         /// Multiline comments are also working, but joined together
+///         ///
+///         /// Empty line is replaced with line break
+///         /// \nYou may also use this way
+///         /// \n
+///         /// The above will still result in a single line break
 ///         A,
 ///         /// Letter B
 ///         B,
@@ -144,7 +149,9 @@ use syn::DeriveInput;
 ///
 ///     assert_eq!(
 ///         format!("{}", Variants::A),
-///         "Letter A. Multiline comments are also working"
+///         "Letter A. Multiline comments are also working, but joined \
+///         together\nEmpty line is replaced with line break\nYou may also use \
+///         this way\nThe above will still result in a single line break"
 ///     );
 ///     assert_eq!(format!("{}", Variants::C), "Letter C");
 ///     assert_eq!(format!("{}", Variants::Letter(s!("K"))), "Letter K");
