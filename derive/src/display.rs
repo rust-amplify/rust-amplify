@@ -139,7 +139,9 @@ impl Technique {
                     Some(NestedMeta::Lit(Lit::Str(format))) => {
                         Some(Technique::WithFormat(format.clone(), None))
                     }
-                    Some(NestedMeta::Meta(Meta::Path(path))) if path.is_ident("doc_comments") => {
+                    Some(NestedMeta::Meta(Meta::Path(path)))
+                        if path.is_ident("doc_comments") || path.is_ident("docs") =>
+                    {
                         Some(Technique::DocComments(String::new()))
                     }
                     Some(NestedMeta::Meta(Meta::Path(path))) if path.is_ident("inner") => {
@@ -294,11 +296,16 @@ impl Technique {
                     lit: Lit::Str(s), ..
                 })) = attr.parse_meta()
                 {
-                    doc.push_str(&s.value().trim());
-                    doc.push(' ');
+                    let fragment = s.value().trim().replace("\\n", "\n");
+                    if fragment.is_empty() || fragment == "\n" {
+                        doc.push('\n');
+                    } else {
+                        doc.push_str(&fragment);
+                        doc.push(' ');
+                    }
                 }
             }
-            *doc = doc.trim().to_owned();
+            *doc = doc.trim().replace(" \n", "\n");
         }
     }
 
