@@ -110,41 +110,18 @@ macro_rules! construct_smallint {
             #[inline]
             fn div_rem(self, other: Self) -> (Self, Self) {
                 //quotient and remainder will always be smaller than self so they're going to be in bounds
+                assert!(other != Self(0));
                 let quotient = self / other;
                 (quotient, self - (quotient*other))
             }
-                /*let mut sub_copy = self;
-                let mut shift_copy = other;
-                let mut ret = [0u64; $n_words];
-
-                let my_bits = self.bits_required();
-                let your_bits = other.bits_required();
-
-                // Check for division by 0
-                assert!(your_bits != 0);
-
-                // Early return in case we are dividing by a larger number than us
-                if my_bits < your_bits {
-                    return ($name(ret), sub_copy);
+            // same operation as in div_rem, not panicking when division by zero
+            #[inline]
+            fn div_rem_checked(self, other: Self) -> Option<(Self, Self)> {
+                match other {
+                    Self::ZERO => None,
+                    _ => Some(self.div_rem(other)),
                 }
-
-                // Bitwise long division
-                let mut shift = my_bits - your_bits;
-                shift_copy = shift_copy << shift;
-                loop {
-                    if sub_copy >= shift_copy {
-                        ret[shift / 64] |= 1 << (shift % 64);
-                        sub_copy = sub_copy - shift_copy;
-                    }
-                    shift_copy = shift_copy >> 1;
-                    if shift == 0 {
-                        break;
-                    }
-                    shift -= 1;
-                }
-
-                ($name(ret), sub_copy)
-            }*/
+            }
         }
 
         impl_op!($ty, $inner, Add, add, AddAssign, add_assign, +);

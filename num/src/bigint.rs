@@ -247,6 +247,14 @@ macro_rules! construct_bigint {
 
                 ($name(ret), sub_copy)
             }
+            // same operation as in div_rem, not panicking when division by zero
+            #[inline]
+            fn div_rem_checked(self, other: Self) -> Option<(Self, Self)> {
+                match other {
+                    Self::ZERO => None,
+                    _ => Some(self.div_rem(other)),
+                }
+            }
         }
 
         impl From<u8> for $name {
