@@ -16,6 +16,7 @@
 // If not, see <https://opensource.org/licenses/MIT>.
 
 use crate::error::ParseLengthError;
+use crate::divrem::DivRem;
 
 macro_rules! construct_bigint {
     ($name:ident, $n_words:expr) => {
@@ -207,6 +208,10 @@ macro_rules! construct_bigint {
                 res
             }
 
+            
+        }
+
+        impl DivRem for $name {
             // divmod like operation, returns (quotient, remainder)
             #[inline]
             fn div_rem(self, other: Self) -> (Self, Self) {
@@ -241,6 +246,15 @@ macro_rules! construct_bigint {
                 }
 
                 ($name(ret), sub_copy)
+            }
+            // same operation as in div_rem, not panicking when
+            #[inline]
+            fn div_rem_checked(self, other: Self) -> Option<(Self, Self)> {
+                //quotient and remainder will always be smaller than self so they're going to be in bounds
+                match other {
+                    Self::ZERO => None,
+                    _ => Some(self.div_rem(other)),
+                }
             }
         }
 

@@ -21,6 +21,8 @@ use core::convert::TryFrom;
 
 use crate::error::OverflowError;
 
+use crate::divrem::DivRem;
+
 macro_rules! construct_smallint {
     ($ty:ident, $inner:ident, $as:ident, $bits:literal, $max:expr, $doc:meta) => {
         #[$doc]
@@ -100,6 +102,25 @@ macro_rules! construct_smallint {
         impl ::core::fmt::Display for $ty {
             fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
                 self.0.fmt(f)
+            }
+        }
+
+        impl DivRem for $ty {
+            // divmod like operation, returns (quotient, remainder)
+            #[inline]
+            fn div_rem(self, other: Self) -> (Self, Self) {
+                //quotient and remainder will always be smaller than self so they're going to be in bounds
+                assert!(other != Self(0));
+                let quotient = self / other;
+                (quotient, self - (quotient*other))
+            }
+            // same operation as in div_rem, not panicking when division by zero
+            #[inline]
+            fn div_rem_checked(self, other: Self) -> Option<(Self, Self)> {
+                match other {
+                    Self::ZERO => None,
+                    _ => Some(self.div_rem(other)),
+                }
             }
         }
 
