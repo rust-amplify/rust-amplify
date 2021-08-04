@@ -16,7 +16,7 @@
 // If not, see <https://opensource.org/licenses/MIT>.
 
 use crate::error::ParseLengthError;
-use std::convert::TryInto;
+use core::convert::TryInto;
 
 macro_rules! construct_bigint {
     ($name:ident, $n_words:expr) => {
@@ -832,6 +832,7 @@ macro_rules! construct_bigint {
         }
 
         impl ::core::str::FromStr for $name {
+            type Err = ::core::num::ParseIntError;
             #[inline]
             fn from_str(s: &str) -> Result<Self, Self::Err> {
                 let splitted = s.split("0x");
