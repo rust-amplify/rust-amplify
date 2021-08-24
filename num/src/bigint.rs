@@ -836,9 +836,10 @@ macro_rules! construct_bigint {
             #[inline]
             fn from_str(s: &str) -> Result<Self, Self::Err> {
                 let splitted = s.split("0x");
-                let inner_big_int: Vec<u64> = splitted.map(|x| format!("0x{}", x)).
-                                                        map(|x| x.parse::<u64>().unwrap()).
-                                                        collect();
+                let inner_big_int: Vec<u64> = splitted
+                    .map(|x| format!("0x{}", x))
+                    .map(|x| x.parse::<u64>().unwrap())
+                    .collect();
                 let inner_big_int_array = inner_big_int.try_into().unwrap();
                 Ok(Self(inner_big_int_array))
             }
