@@ -13,9 +13,12 @@
 // along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
-use core::fmt::{self, Debug, Formatter, LowerHex, UpperHex};
+#[cfg(feature = "std")]
+use core::fmt::{self, Display, Debug, Formatter, LowerHex, UpperHex};
+#[cfg(feature = "std")]
 use core::str::FromStr;
 
+#[cfg(feature = "std")]
 use crate::hex::{Error, FromHex, ToHex};
 use crate::Wrapper;
 
@@ -29,8 +32,7 @@ use crate::Wrapper;
     derive(Serialize, Deserialize),
     serde(crate = "serde_crate")
 )]
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Display, Default, From)]
-#[display(LowerHex)]
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 pub struct Slice32(
     #[cfg_attr(
         feature = "serde",
@@ -71,6 +73,20 @@ impl Slice32 {
     }
 }
 
+impl From<&[u8; 32]> for Slice32 {
+    #[inline]
+    fn from(inner: &[u8; 32]) -> Self {
+        Self(*inner)
+    }
+}
+
+impl From<[u8; 32]> for Slice32 {
+    #[inline]
+    fn from(inner: [u8; 32]) -> Self {
+        Self(inner)
+    }
+}
+
 impl Wrapper for Slice32 {
     type Inner = [u8; 32];
 
@@ -95,12 +111,22 @@ impl Wrapper for Slice32 {
     }
 }
 
+#[cfg(feature = "std")]
+impl Display for Slice32 {
+    #[inline]
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        LowerHex::fmt(self, f)
+    }
+}
+
+#[cfg(feature = "std")]
 impl Debug for Slice32 {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         write!(f, "Slice32({})", self.to_hex())
     }
 }
 
+#[cfg(feature = "std")]
 impl FromStr for Slice32 {
     type Err = Error;
 
@@ -109,6 +135,7 @@ impl FromStr for Slice32 {
     }
 }
 
+#[cfg(feature = "std")]
 impl FromHex for Slice32 {
     fn from_byte_iter<I>(iter: I) -> Result<Self, Error>
     where
@@ -124,6 +151,7 @@ impl FromHex for Slice32 {
     }
 }
 
+#[cfg(feature = "std")]
 impl LowerHex for Slice32 {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         if f.alternate() {
@@ -139,6 +167,7 @@ impl LowerHex for Slice32 {
     }
 }
 
+#[cfg(feature = "std")]
 impl UpperHex for Slice32 {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         if f.alternate() {
