@@ -141,7 +141,7 @@ impl AsAny for i128 {
     }
 }
 
-impl AsAny for String {
+impl AsAny for alloc::string::String {
     #[inline]
     fn as_any(&self) -> &dyn Any {
         self as &dyn Any

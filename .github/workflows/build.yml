@@ -15,7 +15,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        feature: [ serde, std, parse_arg, stringly_conversions, rand, c_raw, proc_attr ]
+        feature: [ serde, std, alloc, parse_arg, stringly_conversions, rand, c_raw, proc_attr, hex ]
     steps:
       - uses: actions/checkout@v2
       - name: Install rust stable

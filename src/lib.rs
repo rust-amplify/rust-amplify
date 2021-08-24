@@ -30,6 +30,9 @@
     missing_docs,
     warnings
 )]
+#![cfg_attr(not(feature = "std"), no_std)]
+extern crate alloc;
+extern crate core;
 
 #[cfg(feature = "derive")]
 #[macro_use]
@@ -42,7 +45,7 @@ pub use amplify_derive::{Wrapper, Display, AsAny, From, Getters, Error};
 extern crate serde_crate as serde;
 
 pub extern crate amplify_num as num;
-#[cfg(feature = "std")]
+#[cfg(any(test, feature = "hex"))]
 pub use num::hex;
 #[cfg(feature = "stringly_conversions")]
 pub extern crate stringly_conversions;
