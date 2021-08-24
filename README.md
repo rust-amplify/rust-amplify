@@ -14,9 +14,15 @@ Amplifying Rust language capabilities: multiple generic trait implementations,
 type wrappers, derive macros. Tiny library with zero non-optional dependencies.
 Able to work as `no_std`.
 
-Minimum supported rust compiler version (MSRV): 1.36.0 (if 
-`stringly_conversions` feature is not used) and 1.41.1 (for 
-`stringly_conversions` and `serde_str_helpers` sub-crates).
+Minimum supported rust compiler version (MSRV): 1.36.0 
+(if `stringly_conversions` feature is not used) and 1.41.1 
+(for `stringly_conversions` and `serde_str_helpers` sub-crates).
+
+NB: use of 1.36.0 also requires pinning `serde_yaml` version to `0.8.17`.
+This can be done with a command
+```shell
+cargo update -p serde_yaml --precise "0.8.17"
+```
 
 ## Main features
 
@@ -159,4 +165,3 @@ As a reminder, minimum supported rust compiler version (MSRV) is 1.36.0, so it
 can be build with either nightly, dev, stable or 1.36+ version of the rust 
 compiler. Use `rustup` for getting the proper version, or add `+toolchain`
 parameter to both `cargo build` and `cargo test` commands.
-

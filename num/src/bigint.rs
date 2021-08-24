@@ -232,13 +232,13 @@ macro_rules! construct_bigint {
 
                 // Bitwise long division
                 let mut shift = my_bits - your_bits;
-                shift_copy = shift_copy << shift;
+                shift_copy <<= shift;
                 loop {
                     if sub_copy >= shift_copy {
                         ret[shift / 64] |= 1 << (shift % 64);
-                        sub_copy = sub_copy - shift_copy;
+                        sub_copy -= shift_copy;
                     }
-                    shift_copy = shift_copy >> 1;
+                    shift_copy >>= 1;
                     if shift == 0 {
                         break;
                     }
