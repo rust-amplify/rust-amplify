@@ -17,6 +17,7 @@
 use core::fmt::{self, Display, Debug, Formatter, LowerHex, UpperHex};
 #[cfg(all(feature = "hex", any(feature = "std", feature = "alloc")))]
 use core::str::FromStr;
+use core::ops::{Index, IndexMut, RangeFull};
 
 #[cfg(all(feature = "hex", any(feature = "std", feature = "alloc")))]
 use crate::hex::{Error, FromHex, ToHex};
@@ -70,6 +71,42 @@ impl Slice32 {
     #[allow(clippy::wrong_self_convention)]
     pub fn to_vec(&self) -> alloc::vec::Vec<u8> {
         self.0.to_vec()
+    }
+}
+
+impl Index<usize> for Slice32 {
+    type Output = u8;
+    #[inline]
+    fn index(&self, index: usize) -> &Self::Output {
+        &self.0[index]
+    }
+}
+
+impl Index<u8> for Slice32 {
+    type Output = u8;
+    #[inline]
+    fn index(&self, index: u8) -> &Self::Output {
+        &self.0[index as usize]
+    }
+}
+
+impl Index<RangeFull> for Slice32 {
+    type Output = [u8];
+    #[inline]
+    fn index(&self, index: RangeFull) -> &Self::Output {
+        &self.0[index]
+    }
+}
+
+impl IndexMut<usize> for Slice32 {
+    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+        &mut self.0[index]
+    }
+}
+
+impl IndexMut<u8> for Slice32 {
+    fn index_mut(&mut self, index: u8) -> &mut Self::Output {
+        &mut self.0[index as usize]
     }
 }
 
