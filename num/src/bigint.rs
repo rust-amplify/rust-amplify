@@ -207,8 +207,6 @@ macro_rules! construct_bigint {
                 }
                 res
             }
-
-            
         }
 
         impl DivRem for $name {
