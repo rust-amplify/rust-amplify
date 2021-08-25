@@ -15,7 +15,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        feature: [ serde, std, parse_arg, stringly_conversions ]
+        feature: [ serde, std, alloc, parse_arg, stringly_conversions, rand, c_raw, proc_attr, hex ]
     steps:
       - uses: actions/checkout@v2
       - name: Install rust stable
@@ -61,6 +61,16 @@ jobs:
           override: true
       - name: Clean Cargo.lock
         run: rm -f Cargo.lock
+      - name: Fix Cargo.lock
+        uses: actions-rs/cargo@v1
+        with:
+          command: generate-lockfile
+          args: --verbose
+      - name: Pin serde_yaml
+        uses: actions-rs/cargo@v1
+        with:
+          command: update
+          args: -p serde_yaml --precise "0.8.17" --verbose
       - name: Main repo
         uses: actions-rs/cargo@v1
         with:

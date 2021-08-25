@@ -32,6 +32,9 @@
 #[macro_use]
 extern crate serde_crate as serde;
 
+extern crate alloc;
+extern crate core;
+
 mod bigint;
 pub mod error;
 #[cfg(feature = "hex")]

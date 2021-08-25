@@ -1,6 +1,14 @@
 Change Log
 ==========
 
+3.8.0
+-----
+- Better no_std support: `std` and `alloc` features for the main crate and
+  `amplify_num`
+- `amplify_num::he`x now works in no_std mode
+- New Slice32 type
+- Fixed MSRV broken by serdr_yaml dependency
+
 3.7.0
 -----
 - Numerics moved into dedicated `amplify_num` crate
