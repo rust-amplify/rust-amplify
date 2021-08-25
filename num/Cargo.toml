@@ -1,6 +1,6 @@
 [package]
 name = "amplify_num"
-version = "0.2.0"
+version = "0.2.1"
 description = "Amplifying numeric types: big-sized and bit-sized integers"
 authors = ["Dr. Maxim Orlovsky <orlovsky@pandoracore.com>"]
 keywords = ["generics", "num", "wrap", "patterns"]
@@ -26,5 +26,5 @@ default = ["hex"]
 all = ["std", "hex", "serde"]
 std = []
 serde = ["std", "serde_crate", "hex"]
-hex = ["std"]
+hex = []
 alloc = []

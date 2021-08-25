@@ -4,7 +4,7 @@ version = 3
 
 [[package]]
 name = "amplify"
-version = "3.8.1"
+version = "3.8.2"
 dependencies = [
  "amplify_derive",
  "amplify_num",
@@ -32,7 +32,7 @@ dependencies = [
 
 [[package]]
 name = "amplify_num"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "bincode",
  "serde",

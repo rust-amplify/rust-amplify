@@ -17,6 +17,9 @@
 //! # Hex encoding and decoding
 
 use core::{fmt, str};
+use alloc::string::String;
+use alloc::vec::Vec;
+use alloc::format;
 
 /// Hex decoding error
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
