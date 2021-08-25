@@ -1136,11 +1136,11 @@ mod tests {
         let number_two = u256::from(::core::u64::MAX);
         let max = u256::MAX;
 
-        let result1 = std::panic::catch_unwind(|| u256::div_rem_checked(max, zero));
+        let result1 = std::panic::catch_unwind(|| u256::div_rem(max, zero));
         assert!(result1.is_err());
-        let result2 = std::panic::catch_unwind(|| u256::div_rem_checked(number_one, zero));
+        let result2 = std::panic::catch_unwind(|| u256::div_rem(number_one, zero));
         assert!(result2.is_err());
-        let result3 = std::panic::catch_unwind(|| u256::div_rem_checked(number_two, zero));
+        let result3 = std::panic::catch_unwind(|| u256::div_rem(number_two, zero));
         assert!(result3.is_err());
     }
 
