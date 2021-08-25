@@ -679,12 +679,13 @@ fn inner_union(input: &DeriveInput, data: &DataUnion) -> Result<TokenStream2> {
         match format {
             None => {
                 display.push(quote_spanned! { field.span() =>
-                    Self::#type_name => f.write_str(#type_str),
+                    Self::#type_name => #type_str,
                 });
             }
             Some((format_str, format_alt)) => {
                 display.push(quote_spanned! { field.span() =>
-                    Self::#type_name => f.write_str(if !f.alternate() { #format_str } else { #format_alt }),
+                    Self::#type_name if !f.alternate() => #format_str,
+                    Self::#type_name => #format_alt,
                 });
             }
         }
@@ -706,9 +707,10 @@ fn inner_union(input: &DeriveInput, data: &DataUnion) -> Result<TokenStream2> {
             }
         }
         None => quote! {
-            match self {
+            let s = match self {
                 #( #display )*
-            }
+            };
+            f.write_str(s)
         },
     };
     Ok(quote! {
