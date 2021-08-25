@@ -411,11 +411,17 @@ fn inner_struct(input: &DeriveInput, data: &DataStruct) -> Result<TokenStream2> 
                 let idents_alt = f
                     .filter(|ident| has_formatters(ident, &str_alt))
                     .collect::<Vec<_>>();
-                quote_spanned! { fields.span() =>
-                    if !f.alternate() {
+                if str_fmt != str_alt {
+                    quote_spanned! { fields.span() =>
+                        if !f.alternate() {
+                            write!(f, #tokens_fmt, #( #idents = self.#idents, )*)
+                        } else {
+                            write!(f, #tokens_alt, #( #idents_alt = self.#idents_alt, )*)
+                        }
+                    }
+                } else {
+                    quote_spanned! { fields.span() =>
                         write!(f, #tokens_fmt, #( #idents = self.#idents, )*)
-                    } else {
-                        write!(f, #tokens_alt, #( #idents_alt = self.#idents_alt, )*)
                     }
                 }
             }
@@ -442,11 +448,17 @@ fn inner_struct(input: &DeriveInput, data: &DataStruct) -> Result<TokenStream2> 
                     .map(|ident| Ident::new(&format!("_{}", ident.index), fields.span()))
                     .collect::<Vec<_>>();
                 let idents_alt = idents_alt.collect::<Vec<_>>();
-                quote_spanned! { fields.span() =>
-                    if !f.alternate() {
+                if str_fmt != str_alt {
+                    quote_spanned! { fields.span() =>
+                        if !f.alternate() {
+                            write!(f, #tokens_fmt, #( #nums = self.#idents, )*)
+                        } else {
+                            write!(f, #tokens_alt, #( #nums_alt = self.#idents_alt, )*)
+                        }
+                    }
+                } else {
+                    quote_spanned! { fields.span() =>
                         write!(f, #tokens_fmt, #( #nums = self.#idents, )*)
-                    } else {
-                        write!(f, #tokens_alt, #( #nums_alt = self.#idents_alt, )*)
                     }
                 }
             }
@@ -569,15 +581,22 @@ fn inner_enum(input: &DeriveInput, data: &DataEnum) -> Result<TokenStream2> {
                     let idents_alt = f
                         .filter(|ident| has_formatters(ident, &tokens_alt.to_string()))
                         .collect::<Vec<_>>();
-                    display.extend(quote_spanned! { v.span() =>
-                        Self::#type_name { #( #idents, )* .. } => {
-                            if !f.alternate() {
+                    if tokens_fmt.to_string() != tokens_alt.to_string() {
+                        display.extend(quote_spanned! { v.span() =>
+                            Self::#type_name { #( #idents, )* .. } if !f.alternate() => {
                                 write!(f, #tokens_fmt, #( #idents = #idents, )*)
-                            } else {
+                            },
+                            Self::#type_name { #( #idents, )* .. } => {
                                 write!(f, #tokens_alt, #( #idents_alt = #idents_alt, )*)
-                            }
-                        }
-                    });
+                            },
+                        });
+                    } else {
+                        display.extend(quote_spanned! { v.span() =>
+                            Self::#type_name { #( #idents, )* .. } => {
+                                write!(f, #tokens_fmt, #( #idents = #idents, )*)
+                            },
+                        });
+                    }
                 }
             }
             (Fields::Unnamed(fields), Some(tokens_fmt), Some(tokens_alt)) => {
@@ -599,15 +618,22 @@ fn inner_enum(input: &DeriveInput, data: &DataEnum) -> Result<TokenStream2> {
                     let idents_alt = f
                         .filter(|ident| has_formatters(ident, &tokens_alt.to_string()))
                         .collect::<Vec<_>>();
-                    display.extend(quote_spanned! { v.span() =>
-                        Self::#type_name ( #( #idents, )* .. ) => {
-                            if !f.alternate() {
+                    if tokens_fmt.to_string() != tokens_alt.to_string() {
+                        display.extend(quote_spanned! { v.span() =>
+                            Self::#type_name ( #( #idents, )* .. ) if !f.alternate() => {
                                 write!(f, #tokens_fmt, #( #idents = #idents, )*)
-                            } else {
+                            },
+                            Self::#type_name ( #( #idents, )* .. ) => {
                                 write!(f, #tokens_alt, #( #idents_alt = #idents_alt, )*)
-                            }
-                        },
-                    });
+                            },
+                        });
+                    } else {
+                        display.extend(quote_spanned! { v.span() =>
+                            Self::#type_name ( #( #idents, )* .. ) => {
+                                write!(f, #tokens_fmt, #( #idents = #idents, )*)
+                            },
+                        });
+                    }
                 }
             }
             (Fields::Unit, Some(tokens_fmt), Some(tokens_alt)) => {
@@ -637,12 +663,16 @@ fn inner_enum(input: &DeriveInput, data: &DataEnum) -> Result<TokenStream2> {
                     .clone()
                     .into_token_stream2(&Fields::Unit, input.span(), false);
             let format_alt = tenchique.into_token_stream2(&Fields::Unit, input.span(), true);
-            quote! {
-                if f.alternate() {
-                    #format_alt
-                } else {
-                    #format_str
+            if format_str.to_string() != format_alt.to_string() {
+                quote! {
+                    if f.alternate() {
+                        #format_alt
+                    } else {
+                        #format_str
+                    }
                 }
+            } else {
+                quote! { #format_str }
             }
         }
         _ => unreachable!(),
@@ -698,12 +728,16 @@ fn inner_union(input: &DeriveInput, data: &DataUnion) -> Result<TokenStream2> {
                     .clone()
                     .into_token_stream2(&Fields::Unit, input.span(), false);
             let format_alt = tenchique.into_token_stream2(&Fields::Unit, input.span(), true);
-            quote! {
-                if f.alternate() {
-                    #format_alt
-                } else {
-                    #format_str
+            if format_str.to_string() != format_alt.to_string() {
+                quote! {
+                    if f.alternate() {
+                        #format_alt
+                    } else {
+                        #format_str
+                    }
                 }
+            } else {
+                quote! { #format_str }
             }
         }
         None => quote! {
