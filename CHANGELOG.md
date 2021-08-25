@@ -1,6 +1,15 @@
 Change Log
 ==========
 
+3.8.2
+-----
+- Feature `hex` becomes default and independent from `std` in `amplify_num`
+- `DivRem` trait implemented for all small integer types
+
+3.8.1
+-----
+- `Index` and `IndexMut` traits implemented for `Slice32`
+
 3.8.0
 -----
 - Better no_std support: `std` and `alloc` features for the main crate and

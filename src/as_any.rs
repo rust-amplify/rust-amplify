@@ -14,7 +14,9 @@
 // along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
-use ::core::any::Any;
+use core::any::Any;
+#[cfg(feature = "alloc")]
+use alloc::string::String;
 
 /// Trait `AsAny` allows simple conversion of any type into a generic "thick"
 /// pointer `&dyn Any` (see [`::core::any::Any`]), that can be later converted
@@ -141,7 +143,8 @@ impl AsAny for i128 {
     }
 }
 
-impl AsAny for alloc::string::String {
+#[cfg(any(test, feature = "std", feature = "alloc"))]
+impl AsAny for String {
     #[inline]
     fn as_any(&self) -> &dyn Any {
         self as &dyn Any

@@ -17,6 +17,8 @@
 //! # Hex encoding and decoding
 
 use core::{fmt, str};
+#[cfg(feature = "alloc")]
+use alloc::{string::String, vec::Vec, format};
 
 /// Hex decoding error
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -43,6 +45,7 @@ impl fmt::Display for Error {
 }
 
 /// Trait for objects that can be serialized as hex strings
+#[cfg(any(test, feature = "std", feature = "alloc"))]
 pub trait ToHex {
     /// Hex representation of the object
     fn to_hex(&self) -> String;
@@ -61,6 +64,7 @@ pub trait FromHex: Sized {
     }
 }
 
+#[cfg(any(test, feature = "std", feature = "alloc"))]
 impl<T: fmt::LowerHex> ToHex for T {
     /// Outputs the hash in hexadecimal form
     fn to_hex(&self) -> String {
