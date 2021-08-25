@@ -36,6 +36,7 @@ extern crate alloc;
 extern crate core;
 
 mod bigint;
+mod divrem;
 pub mod error;
 #[cfg(feature = "hex")]
 pub mod hex;

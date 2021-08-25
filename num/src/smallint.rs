@@ -21,6 +21,8 @@ use core::convert::TryFrom;
 
 use crate::error::OverflowError;
 
+use crate::divrem::DivRem;
+
 macro_rules! construct_smallint {
     ($ty:ident, $inner:ident, $as:ident, $bits:literal, $max:expr, $doc:meta) => {
         #[$doc]
@@ -100,6 +102,25 @@ macro_rules! construct_smallint {
         impl ::core::fmt::Display for $ty {
             fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
                 self.0.fmt(f)
+            }
+        }
+
+        impl DivRem for $ty {
+            // divmod like operation, returns (quotient, remainder)
+            #[inline]
+            fn div_rem(self, other: Self) -> (Self, Self) {
+                //quotient and remainder will always be smaller than self so they're going to be in bounds
+                assert!(other != Self(0));
+                let quotient = self / other;
+                (quotient, self - (quotient*other))
+            }
+            // same operation as in div_rem, not panicking when division by zero
+            #[inline]
+            fn div_rem_checked(self, other: Self) -> Option<(Self, Self)> {
+                match other {
+                    Self::ZERO => None,
+                    _ => Some(self.div_rem(other)),
+                }
             }
         }
 
@@ -477,5 +498,27 @@ mod test {
         assert_eq!(v2.to_le_bytes(), le);
         assert_eq!(v2, v1);
         assert_eq!(v2.as_u32(), v1.as_u32());
+    }
+
+    #[test]
+    fn smallint_div_rem_checked() {
+        let u_2 = u2::MAX;
+        let u_2_2 = u2::try_from(2).unwrap();
+        let u_2_half = (
+            u2::try_from(u2::MAX / 2).unwrap(),
+            u2::try_from(u2::MAX % 2).unwrap(),
+        );
+        let u_2_zero = u2::ZERO;
+
+        assert_eq!(u2::div_rem_checked(u_2, u_2_2), Some(u_2_half));
+        assert_eq!(u2::div_rem_checked(u_2, u_2_zero), None);
+    }
+
+    #[test]
+    #[should_panic]
+    fn smallint_div_rem() {
+        let u_2 = u2::MAX;
+        let u_2_zero = u2::ZERO;
+        u2::div_rem(u_2, u_2_zero);
     }
 }

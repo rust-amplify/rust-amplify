@@ -16,6 +16,7 @@
 // If not, see <https://opensource.org/licenses/MIT>.
 
 use crate::error::ParseLengthError;
+use crate::divrem::DivRem;
 
 macro_rules! construct_bigint {
     ($name:ident, $n_words:expr) => {
@@ -206,7 +207,9 @@ macro_rules! construct_bigint {
                 }
                 res
             }
+        }
 
+        impl DivRem for $name {
             // divmod like operation, returns (quotient, remainder)
             #[inline]
             fn div_rem(self, other: Self) -> (Self, Self) {
@@ -241,6 +244,15 @@ macro_rules! construct_bigint {
                 }
 
                 ($name(ret), sub_copy)
+            }
+            // same operation as in div_rem, not panicking when
+            #[inline]
+            fn div_rem_checked(self, other: Self) -> Option<(Self, Self)> {
+                //quotient and remainder will always be smaller than self so they're going to be in bounds
+                match other {
+                    Self::ZERO => None,
+                    _ => Some(self.div_rem(other)),
+                }
             }
         }
 
@@ -1083,6 +1095,53 @@ mod tests {
                 0xfe, 0xca, 0xad, 0x1b,
             ]
         );
+    }
+
+    #[test]
+    fn u256_div_rem_checked() {
+        let zero = u256::ZERO;
+        let number_one = u256::from(0xDEADBEEFu64);
+        let number_two = u256::from(::core::u64::MAX);
+        let one_div_rem_two = (
+            u256::from(::core::u64::MAX / 0xDEADBEEFu64),
+            u256::from(::core::u64::MAX % 0xDEADBEEFu64),
+        );
+        let max = u256::MAX;
+
+        // Division by zero gets not panic and gets None
+        assert_eq!(u256::div_rem_checked(max, zero), None);
+        assert_eq!(u256::div_rem_checked(number_two, zero), None);
+        assert_eq!(u256::div_rem_checked(number_one, zero), None);
+
+        // Division of zero gets Zero
+        assert_eq!(u256::div_rem_checked(zero, max), Some((zero, zero)));
+        assert_eq!(u256::div_rem_checked(zero, number_two), Some((zero, zero)));
+        assert_eq!(u256::div_rem_checked(zero, number_one), Some((zero, zero)));
+
+        // Division by another than zero not gets None
+        assert_ne!(u256::div_rem_checked(max, number_one), None);
+        assert_ne!(u256::div_rem_checked(number_two, number_one), None);
+
+        // In u256 division gets the same as in u64
+        assert_eq!(
+            u256::div_rem_checked(number_two, number_one),
+            Some(one_div_rem_two)
+        );
+    }
+
+    #[test]
+    fn u256_div_rem() {
+        let zero = u256::ZERO;
+        let number_one = u256::from(0xDEADBEEFu64);
+        let number_two = u256::from(::core::u64::MAX);
+        let max = u256::MAX;
+
+        let result1 = std::panic::catch_unwind(|| u256::div_rem(max, zero));
+        assert!(result1.is_err());
+        let result2 = std::panic::catch_unwind(|| u256::div_rem(number_one, zero));
+        assert!(result2.is_err());
+        let result3 = std::panic::catch_unwind(|| u256::div_rem(number_two, zero));
+        assert!(result3.is_err());
     }
 
     #[test]
