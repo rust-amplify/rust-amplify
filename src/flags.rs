@@ -26,7 +26,7 @@ use std::str::FromStr;
 pub type FlagNo = u16;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
-/// Keeps a reference to a specific feature flag within [`Features`] vector
+/// Keeps a reference to a specific feature flag within [`FlagVec`] vector
 pub struct FlagRef<'a> {
     byte: &'a u8,
     bit: u8,

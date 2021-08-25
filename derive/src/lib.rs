@@ -371,10 +371,10 @@ pub fn derive_from(input: TokenStream) -> TokenStream {
         .into()
 }
 
-/// Trait [`amplify::AsAny`] allows simple conversion of any type into a generic
-/// "thick" pointer `&dyn Any` (see [`::core::any::Any`]), that can be later
-/// converted back to the original type with a graceful failing for all other
-/// conversions. `AsAny` derive macro allows to implement this trait for
+/// Trait `amplify::AsAny` allows simple conversion of any type into a
+/// generic "thick" pointer `&dyn Any` (see [`::core::any::Any`]), that can be
+/// later converted back to the original type with a graceful failing for all
+/// other conversions. `AsAny` derive macro allows to implement this trait for
 /// arbitrary time without much hussle:
 ///
 /// # Example
@@ -576,50 +576,45 @@ pub fn derive_getters(input: TokenStream) -> TokenStream {
 /// `Default` trait.
 ///
 /// Supports automatic implementation of the following traits:
-/// * [`amplify::Wrapper`]
+/// * `amplify::Wrapper`
 /// * [`AsRef`]
 /// * [`AsMut`]
-/// * [`Borrow`]
-/// * [`BorrowMut`]
-/// * [`Deref`]
-/// * [`DerefMut`]
+/// * [`std::borrow::Borrow`]
+/// * [`std::borrow::BorrowMut`]
+/// * [`std::ops::Deref`]
+/// * [`std::ops::DerefMut`]
 ///
 /// You can implement additonal derives, it they are implemented for the wrapped
 /// type, using `#[wrapper()]` proc macro:
-/// * [`LowerHex`]
-/// * [`UpperHex`]
-/// * [`LowerExp`]
-/// * [`UpperExp`]
-/// * [`Octal`]
-/// * [`Index`]
-/// * [`IndexMut`]
-/// * [`IndexRange`]
-/// * [`IndexFull`]
-/// * [`IndexFrom`]
-/// * [`IndexTo`]
-/// * [`IndexInclusive`]
-/// * [`Neg`]
-/// * [`Not`]
-/// * [`Add`]
-/// * [`AddAssign`]
-/// * [`Sub`]
-/// * [`SubAssign`]
-/// * [`Mul`]
-/// * [`MulAssign`]
-/// * [`Div`]
-/// * [`DivAssign`]
-/// * [`Rem`]
-/// * [`RemAssign`]
-/// * [`Shl`]
-/// * [`ShlAssign`]
-/// * [`Shr`]
-/// * [`ShrAssign`]
-/// * [`BitAnd`]
-/// * [`BitAndAssign`]
-/// * [`BitOr`]
-/// * [`BitOrAssign`]
-/// * [`BitXor`]
-/// * [`BitXorAssign`]
+/// * [`std::fmt::LowerHex`]
+/// * [`std::fmt::UpperHex`]
+/// * [`std::fmt::LowerExp`]
+/// * [`std::fmt::UpperExp`]
+/// * [`std::fmt::Octal`]
+/// * [`std::ops::Index`]
+/// * [`std::ops::IndexMut`]
+/// * [`std::ops::Neg`]
+/// * [`std::ops::Not`]
+/// * [`std::ops::Add`]
+/// * [`std::ops::AddAssign`]
+/// * [`std::ops::Sub`]
+/// * [`std::ops::SubAssign`]
+/// * [`std::ops::Mul`]
+/// * [`std::ops::MulAssign`]
+/// * [`std::ops::Div`]
+/// * [`std::ops::DivAssign`]
+/// * [`std::ops::Rem`]
+/// * [`std::ops::RemAssign`]
+/// * [`std::ops::Shl`]
+/// * [`std::ops::ShlAssign`]
+/// * [`std::ops::Shr`]
+/// * [`std::ops::ShrAssign`]
+/// * [`std::ops::BitAnd`]
+/// * [`std::ops::BitAndAssign`]
+/// * [`std::ops::BitOr`]
+/// * [`std::ops::BitOrAssign`]
+/// * [`std::ops::BitXor`]
+/// * [`std::ops::BitXorAssign`]
 ///
 /// Other traits, such as [`PartialEq`], [`Eq`], [`PartialOrd`], [`Ord`],
 /// [`Hash`] can be implemented using standard `#[derive]` attribute in the
