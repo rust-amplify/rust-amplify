@@ -499,4 +499,26 @@ mod test {
         assert_eq!(v2, v1);
         assert_eq!(v2.as_u32(), v1.as_u32());
     }
+
+    #[test]
+    fn smallint_div_rem_checked() {
+        let u_2 = u2::MAX;
+        let u_2_2 = u2::try_from(2).unwrap();
+        let u_2_half = (
+            u2::try_from(u2::MAX / 2).unwrap(),
+            u2::try_from(u2::MAX % 2).unwrap(),
+        );
+        let u_2_zero = u2::ZERO;
+
+        assert_eq!(u2::div_rem_checked(u_2, u_2_2), Some(u_2_half));
+        assert_eq!(u2::div_rem_checked(u_2, u_2_zero), None);
+    }
+
+    #[test]
+    #[should_panic]
+    fn smallint_div_rem() {
+        let u_2 = u2::MAX;
+        let u_2_zero = u2::ZERO;
+        u2::div_rem(u_2, u_2_zero);
+    }
 }
