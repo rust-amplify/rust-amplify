@@ -21,11 +21,11 @@ use crate::{Error, ArgValue};
 #[derive(Clone, Copy, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
 pub enum ValueClass {
     /// The value must be a literal matching given literal constraints (see
-    /// [`ConstrainedLit`])
+    /// [`LiteralClass`])
     Literal(LiteralClass),
 
     /// The value must be of a native rust type matching given type constraints
-    /// (see [`ConstrainedType`])
+    /// (see [`TypeClass`])
     Type(TypeClass),
 }
 

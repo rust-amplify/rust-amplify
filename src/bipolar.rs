@@ -14,7 +14,8 @@
 // If not, see <https://opensource.org/licenses/MIT>.
 
 /// Trait for splittable streams and other types, which can be separated into
-/// some two types ([`Left`], [`Right`]), like a reader and writer streams.
+/// some two types ([`Bipolar::Left`], [`Bipolar::Right`]), like a reader and
+/// writer streams.
 pub trait Bipolar {
     /// First separable type (like reader)
     type Left;

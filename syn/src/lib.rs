@@ -54,7 +54,7 @@ pub use req::{ValueReq, ListReq, AttrReq, ArgValueReq};
 pub use val::ArgValue;
 pub use parsers::{MetaArgList, MetaArg, MetaArgNameValue};
 
-/// Convenience macro for constructing [`syn::Ident`] from literals
+/// Convenience macro for constructing [`struct@syn::Ident`] from literals
 #[macro_export]
 macro_rules! ident {
     ($ident:ident) => {

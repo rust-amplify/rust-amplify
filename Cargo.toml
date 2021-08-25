@@ -49,4 +49,4 @@ serde = ["serde_crate", "std",
 
 [workspace]
 members = [".", "num", "derive", "syn", "serde_str_helpers", "stringly_conversions"]
-default-members = [".", "num"]
+default-members = ["."]

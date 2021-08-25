@@ -269,7 +269,7 @@ impl ValueReq {
 }
 
 /// Requirements for list elements. For instance, used in [`AttrReq`] for
-/// providing [`ParametrizedAttr`] fields requirements.
+/// providing [`crate::ParametrizedAttr`] fields requirements.
 #[derive(Clone)]
 pub enum ListReq<T>
 where

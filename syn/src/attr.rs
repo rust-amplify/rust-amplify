@@ -50,11 +50,11 @@ pub enum Attr {
 /// enum.
 ///
 /// Internally the structure is composed of the `name` and `value` fields,
-/// where name is always a [`Ident`] (corresponding `name1`, `name2`, `name3`
-/// from the sample above) and `value` is an optional literal [`Lit`], with
-/// corresponding cases of `None`,
-/// `Some(`[`AttrArgValue::Lit`]`(`[`Lit::Str`]`(`[`LitStr`]`)))`, and
-/// `Some(`[`AttrArgValue::Type`]`(`[`Type::Path`]`(`[`Path`]`)))`.
+/// where name is always a [`struct@syn::Ident`] (corresponding `name1`,
+/// `name2`, `name3` from the sample above) and `value` is an optional literal
+/// [`enum@Lit`], with corresponding cases of `None`,
+/// `Some(`[`ArgValue::Literal`]`(`[`Lit::Str`]`(`[`struct@LitStr`]`)))`, and
+/// `Some(`[`ArgValue::Type`]`(`[`Type::Path`]`(`[`Path`]`)))`.
 #[derive(Clone, Debug)]
 pub struct SingularAttr {
     /// Optional attribute argument path part; for instance in
@@ -90,8 +90,9 @@ pub struct ParametrizedAttr {
     /// field by default, even if they do not represent any known rust path or
     /// type name, like `#[attr(some_id, other)]`. However, with
     /// [`ParametrizedAttr::check`] and [`ParametrizedAttr::checked`] those
-    /// values matching ones specified in [`AttrReq::args`] with values set to
-    /// [`ValueOccurrences::Default`] are moved into [`ParametrizedAttr::args`].
+    /// values matching ones specified in [`AttrReq::arg_req`] with values set
+    /// to [`crate::ListReq::Predefined::default`] are moved into
+    /// [`ParametrizedAttr::args`].
     pub paths: Vec<Path>,
 
     /// Unnamed string literal found within attribute arguments.
@@ -139,7 +140,7 @@ impl Attr {
     /// If the attribute does not match either of forms, a [`Error`] is
     /// returned. Currently, only single type of error may occur in practice:
     /// - [`Error::ArgNameMustBeIdent`], which happens if the attribute name is
-    ///   not an [`Ident`] but is a complex path value
+    ///   not an [`struct@syn::Ident`] but is a complex path value
     pub fn from_attribute(attr: &Attribute) -> Result<Self, Error> {
         SingularAttr::from_attribute(attr)
             .map(Attr::Singular)
@@ -342,7 +343,7 @@ impl SingularAttr {
     }
 
     /// Checks that the structure meets provided value requirements (see
-    /// [`ValueReq`]), generating [`Error`] if the requirements are not met.
+    /// [`ArgValueReq`]), generating [`Error`] if the requirements are not met.
     pub fn check(&mut self, req: ArgValueReq) -> Result<(), Error> {
         req.check(&mut self.value, &self.name, &self.name)?;
         Ok(())
@@ -598,12 +599,16 @@ impl ParametrizedAttr {
     /// The procedure modifies the [`ParametrizedAttr`] data in the following
     /// ways:
     /// 1. First, it fills in [`ParametrizedAttr::paths`],
-    ///    [`ParametrizedAttr::integers`] and [`ParametrizedAttr::literal`] with
-    ///    default values    from [`AttrReq::paths`], [`AttrReq::integers`] and
-    ///    [`AttrReq::literal`] (correspondingly).
-    /// 2. [`ParametrizedAttr::paths`] values matching ones specified in
-    ///    [`AttrReq::args`] with values set to [`ValueOccurrences::Default`]
-    ///    are moved into [`ParametrizedAttr::args`] field.
+    ///    [`ParametrizedAttr::integers`], [`ParametrizedAttr::floats`],
+    ///    [`ParametrizedAttr::chars`], [`ParametrizedAttr::bytes`],
+    ///    [`ParametrizedAttr::string`] with default values from
+    ///    [`AttrReq::path_req`], [`AttrReq::integer_req`],
+    ///    [`AttrReq::float_req`], [`AttrReq::char_req`],
+    ///    [`AttrReq::bytes_req`], [`AttrReq::string_req`] correspondingly.
+    /// 2. [`ParametrizedAttr::paths`] values
+    ///    matching ones specified in [`AttrReq::arg_req`] with values set to
+    ///    [`crate::ListReq::Predefined::default`] are moved into
+    ///    [`ParametrizedAttr::args`] field.
     pub fn check(&mut self, req: AttrReq) -> Result<(), Error> {
         for (name, req) in &req.arg_req {
             if let Some(pos) = self.paths.iter().position(|path| path.is_ident(name)) {

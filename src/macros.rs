@@ -85,8 +85,8 @@ macro_rules! dumb {
     };
 }
 
-/// Macro for creating [`HashMap`] in the same manner as `vec!` is used for
-/// [`Vec`]:
+/// Macro for creating [`std::collections::HashMap`] in the same manner as
+/// `vec!` is used for [`Vec`]:
 /// ```
 /// #[macro_use]
 /// extern crate amplify;
@@ -117,8 +117,8 @@ macro_rules! map {
     }
 }
 
-/// Macro for creating [`HashSet`] in the same manner as `vec!` is used for
-/// [`Vec`]:
+/// Macro for creating [`std::collections::HashSet`] in the same manner as
+/// `vec!` is used for [`Vec`]:
 /// ```
 /// #[macro_use]
 /// extern crate amplify;
@@ -128,7 +128,8 @@ macro_rules! map {
 /// # }
 /// ```
 ///
-/// NB: you can't use repeated values with [`HashSet`], unlike to [`Vec`]'s:
+/// NB: you can't use repeated values with [`std::collections::HashSet`], unlike
+/// to [`Vec`]'s:
 /// ```
 /// #[macro_use]
 /// extern crate amplify;
@@ -156,8 +157,8 @@ macro_rules! set {
     }
 }
 
-/// Macro for creating [`BTreeMap`] in the same manner as `vec!` is used for
-/// [`Vec`]:
+/// Macro for creating [`std::collections::BTreeMap`] in the same manner as
+/// `vec!` is used for [`Vec`]:
 /// ```
 /// #[macro_use]
 /// extern crate amplify;
@@ -188,8 +189,8 @@ macro_rules! bmap {
     }
 }
 
-/// Macro for creating [`BTreeSet`] in the same manner as `vec!` is used for
-/// [`Vec`]:
+/// Macro for creating [`std::collections::BTreeSet`] in the same manner as
+/// `vec!` is used for [`Vec`]:
 /// ```
 /// #[macro_use]
 /// extern crate amplify;
@@ -199,7 +200,8 @@ macro_rules! bmap {
 /// # }
 /// ```
 ///
-/// NB: you can't use repeated values with [`HashSet`], unlike to [`Vec`]'s:
+/// NB: you can't use repeated values with [`std::collections::HashSet`], unlike
+/// to [`Vec`]'s:
 /// ```
 /// #[macro_use]
 /// extern crate amplify;
@@ -227,8 +229,8 @@ macro_rules! bset {
     }
 }
 
-/// Macro for creating [`LinkedList`] in the same manner as `vec!` is used for
-/// [`Vec`]:
+/// Macro for creating [`std::collections::LinkedList`] in the same manner as
+/// `vec!` is used for [`Vec`]:
 /// ```
 /// #[macro_use]
 /// extern crate amplify;
