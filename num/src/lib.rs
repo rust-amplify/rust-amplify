@@ -27,13 +27,13 @@
 //! The functions here are designed to be fast.
 
 #![cfg_attr(not(feature = "std"), no_std)]
+#[cfg(feature = "alloc")]
+extern crate alloc;
+extern crate core;
 
 #[cfg(feature = "serde")]
 #[macro_use]
 extern crate serde_crate as serde;
-
-extern crate alloc;
-extern crate core;
 
 mod bigint;
 mod divrem;

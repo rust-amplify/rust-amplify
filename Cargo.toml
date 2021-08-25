@@ -20,7 +20,7 @@ path = "src/lib.rs"
 libc = { version = "0.2", optional = true }
 amplify_derive = { version = "2.7", path = "./derive", optional = true }
 amplify_syn = { version = "1.1", path = "./syn", optional = true }
-amplify_num = { version = "0.2", path = "./num" }
+amplify_num = { version = "0.2.1", path = "./num" }
 parse_arg = { version = "0.1.4", optional = true }
 rand = { version = "0.8.4", optional = true }
 # This strange naming is a workaround for not being able to define required features for a dependency

@@ -18,6 +18,8 @@ use core::fmt::{self, Display, Debug, Formatter, LowerHex, UpperHex};
 #[cfg(all(feature = "hex", any(feature = "std", feature = "alloc")))]
 use core::str::FromStr;
 use core::ops::{Index, IndexMut, RangeFull};
+#[cfg(feature = "alloc")]
+use alloc::vec::Vec;
 
 #[cfg(all(feature = "hex", any(feature = "std", feature = "alloc")))]
 use crate::hex::{Error, FromHex, ToHex};
@@ -69,7 +71,8 @@ impl Slice32 {
 
     /// Returns vector representing internal slice data
     #[allow(clippy::wrong_self_convention)]
-    pub fn to_vec(&self) -> alloc::vec::Vec<u8> {
+    #[cfg(any(test, feature = "std", feature = "alloc"))]
+    pub fn to_vec(&self) -> Vec<u8> {
         self.0.to_vec()
     }
 }
