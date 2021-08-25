@@ -201,9 +201,20 @@ impl Octal for FlagVec {
 
 /// Error parsing feature vector string representation: only `1`, `0`, `+`, `-`,
 /// `*`, `!`, `#`, `_` and whitespace characters are allowed
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Display, Error)]
-#[display(doc_comments)]
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 pub struct ParseError;
+
+impl Display for ParseError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        f.write_str(
+            "Error parsing feature vector string representation: only `1`, `0`, `+`, `-`, `*`, \
+            `!`, `#`, `_` and whitespace characters are allowed",
+        )
+    }
+}
+
+#[cfg(feature = "std")]
+impl std::error::Error for ParseError {}
 
 impl FromStr for FlagVec {
     type Err = ParseError;

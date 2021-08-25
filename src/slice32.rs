@@ -13,12 +13,13 @@
 // along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
-#[cfg(feature = "std")]
+#[cfg(all(feature = "hex", any(feature = "std", feature = "alloc")))]
 use core::fmt::{self, Display, Debug, Formatter, LowerHex, UpperHex};
-#[cfg(feature = "std")]
+#[cfg(all(feature = "hex", any(feature = "std", feature = "alloc")))]
 use core::str::FromStr;
+use core::ops::{Index, IndexMut, RangeFull};
 
-#[cfg(feature = "std")]
+#[cfg(all(feature = "hex", any(feature = "std", feature = "alloc")))]
 use crate::hex::{Error, FromHex, ToHex};
 use crate::Wrapper;
 
@@ -35,7 +36,7 @@ use crate::Wrapper;
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 pub struct Slice32(
     #[cfg_attr(
-        feature = "serde",
+        all(feature = "serde", feature = "hex"),
         serde(
             serialize_with = "serde_helpers::to_hex",
             deserialize_with = "serde_helpers::from_hex"
@@ -68,8 +69,44 @@ impl Slice32 {
 
     /// Returns vector representing internal slice data
     #[allow(clippy::wrong_self_convention)]
-    pub fn to_vec(&self) -> Vec<u8> {
+    pub fn to_vec(&self) -> alloc::vec::Vec<u8> {
         self.0.to_vec()
+    }
+}
+
+impl Index<usize> for Slice32 {
+    type Output = u8;
+    #[inline]
+    fn index(&self, index: usize) -> &Self::Output {
+        &self.0[index]
+    }
+}
+
+impl Index<u8> for Slice32 {
+    type Output = u8;
+    #[inline]
+    fn index(&self, index: u8) -> &Self::Output {
+        &self.0[index as usize]
+    }
+}
+
+impl Index<RangeFull> for Slice32 {
+    type Output = [u8];
+    #[inline]
+    fn index(&self, index: RangeFull) -> &Self::Output {
+        &self.0[index]
+    }
+}
+
+impl IndexMut<usize> for Slice32 {
+    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+        &mut self.0[index]
+    }
+}
+
+impl IndexMut<u8> for Slice32 {
+    fn index_mut(&mut self, index: u8) -> &mut Self::Output {
+        &mut self.0[index as usize]
     }
 }
 
@@ -111,7 +148,7 @@ impl Wrapper for Slice32 {
     }
 }
 
-#[cfg(feature = "std")]
+#[cfg(all(feature = "hex", any(feature = "std", feature = "alloc")))]
 impl Display for Slice32 {
     #[inline]
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
@@ -119,14 +156,14 @@ impl Display for Slice32 {
     }
 }
 
-#[cfg(feature = "std")]
+#[cfg(all(feature = "hex", any(feature = "std", feature = "alloc")))]
 impl Debug for Slice32 {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         write!(f, "Slice32({})", self.to_hex())
     }
 }
 
-#[cfg(feature = "std")]
+#[cfg(all(feature = "hex", any(feature = "std", feature = "alloc")))]
 impl FromStr for Slice32 {
     type Err = Error;
 
@@ -135,7 +172,7 @@ impl FromStr for Slice32 {
     }
 }
 
-#[cfg(feature = "std")]
+#[cfg(all(feature = "hex", any(feature = "std", feature = "alloc")))]
 impl FromHex for Slice32 {
     fn from_byte_iter<I>(iter: I) -> Result<Self, Error>
     where
@@ -151,7 +188,7 @@ impl FromHex for Slice32 {
     }
 }
 
-#[cfg(feature = "std")]
+#[cfg(all(feature = "hex", any(feature = "std", feature = "alloc")))]
 impl LowerHex for Slice32 {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         if f.alternate() {
@@ -167,7 +204,7 @@ impl LowerHex for Slice32 {
     }
 }
 
-#[cfg(feature = "std")]
+#[cfg(all(feature = "hex", any(feature = "std", feature = "alloc")))]
 impl UpperHex for Slice32 {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         if f.alternate() {
@@ -183,7 +220,7 @@ impl UpperHex for Slice32 {
     }
 }
 
-#[cfg(feature = "serde")]
+#[cfg(all(feature = "serde", feature = "hex"))]
 pub(crate) mod serde_helpers {
     //! Serde serialization helpers
 

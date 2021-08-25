@@ -1,6 +1,6 @@
 [package]
 name = "amplify"
-version = "3.7.1"
+version = "3.8.1"
 description = "Amplifying Rust language capabilities: multiple generic trait implementations, type wrappers, derive macros"
 authors = ["Dr. Maxim Orlovsky <orlovsky@pandoracore.com>", "Martin Habovstiak <martin.habovstiak@gmail.com>"]
 keywords = ["generics", "core", "no_std", "wrap", "patterns"]
@@ -10,7 +10,7 @@ homepage = "https://github.com/LNP-BP"
 license = "MIT"
 readme = "README.md"
 edition = "2018"
-exclude = [".github", "derive", "syn", "serde_str_helpers", "stringly_conversions"]
+exclude = [".github", "derive", "syn", "num", "serde_str_helpers", "stringly_conversions"]
 
 [lib]
 name = "amplify"
@@ -20,7 +20,7 @@ path = "src/lib.rs"
 libc = { version = "0.2", optional = true }
 amplify_derive = { version = "2.7", path = "./derive", optional = true }
 amplify_syn = { version = "1.1", path = "./syn", optional = true }
-amplify_num = { version = "0.1", path = "./num" }
+amplify_num = { version = "0.2", path = "./num" }
 parse_arg = { version = "0.1.4", optional = true }
 rand = { version = "0.8.4", optional = true }
 # This strange naming is a workaround for not being able to define required features for a dependency
@@ -32,12 +32,14 @@ toml = { version = "0.5", optional = true }
 stringly_conversions = { version = "0.1.1", optional = true, features = ["alloc"] }
 
 [features]
-all = ["serde", "std", "parse_arg", "stringly_conversions", "c_raw", "proc_attr", "derive", "rand"]
+all = ["serde", "std", "parse_arg", "stringly_conversions", "c_raw", "proc_attr", "derive", "rand", "alloc"]
 default = ["std", "derive"]
-std = ["derive", "amplify_num/hex"]
-c_raw = ["libc"]
+std = ["amplify_num/std"]
+alloc = ["amplify_num/alloc"]
+c_raw = ["libc", "std"]
+hex = ["amplify_num/hex"]
 proc_attr = ["amplify_syn"]
-derive = ["amplify_derive", "std"]
+derive = ["amplify_derive"]
 serde = ["serde_crate", "std",
          "serde_yaml", "serde_json", "toml",
          "amplify_num/serde",
