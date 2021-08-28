@@ -495,6 +495,8 @@ pub fn derive_as_any(input: TokenStream) -> TokenStream {
 ///     #[getter(all, base_name = "bytes")]
 ///     vec: Vec<u8>,
 ///
+///     defaults: String,
+///
 ///     #[getter(as_copy)]
 ///     pub flag: bool,
 ///
@@ -505,6 +507,8 @@ pub fn derive_as_any(input: TokenStream) -> TokenStream {
 /// let mut one = One::default();
 /// assert_eq!(one.get_bytes_ref(), &Vec::<u8>::default());
 /// *one.get_bytes_mut() = vec![0, 1, 2];
+/// assert_eq!(one.get_defaults(), "");
+/// assert_eq!(one.get_defaults_mut(), "");
 /// assert_eq!(one.get_bytes(), vec![0, 1, 2]);
 /// assert_eq!(one.get_flag(), bool::default());
 /// assert_eq!(one.get_flag_mut(), &mut bool::default());

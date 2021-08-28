@@ -113,8 +113,7 @@ impl GetterDerive {
             || attr.args.contains_key("as_ref")
             || attr.args.contains_key("as_mut"))
         {
-            attr.args
-                .insert("as_ref".to_owned(), ArgValue::from("_ref"));
+            attr.args.insert("as_ref".to_owned(), ArgValue::from(""));
         }
 
         Ok(GetterDerive {
