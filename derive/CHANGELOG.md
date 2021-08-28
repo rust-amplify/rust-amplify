@@ -1,6 +1,13 @@
 Change Log
 ==========
 
+2.9.0
+-----
+- Fixing `Getters` behavior to match documentation: if none of getter options
+  are provided a function with the same name as a field is generated returning
+  reference to the field (previously due to a bug this function had `_ref` 
+  suffix)
+
 2.7.2
 -----
 - Using `core` instead of `std` in order to support no_std environment

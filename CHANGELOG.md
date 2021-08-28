@@ -1,6 +1,10 @@
 Change Log
 ==========
 
+3.9.0
+-----
+- Bumped `derive` dependency version
+
 3.8.2
 -----
 - Feature `hex` becomes default and independent from `std` in `amplify_num`
