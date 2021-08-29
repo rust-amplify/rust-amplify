@@ -19,7 +19,7 @@ use syn::{DeriveInput, Lit, Result, Meta, Ident, Attribute, NestedMeta, Path, Me
 use syn::punctuated::IntoIter;
 use syn::spanned::Spanned;
 
-/// Macro producing [`Result::Err`] with [`syn::Error`] containing span
+/// Macro producing `Result::Err` with [`syn::Error`] containing span
 /// information from `$attr` (first) argument and formatted string describing
 /// concrete error (description is taken from `$msg` second macro argument) and
 /// providing an example `$example` (third macro argument) of how the macro

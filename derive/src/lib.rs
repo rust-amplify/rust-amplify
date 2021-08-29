@@ -484,7 +484,28 @@ pub fn derive_as_any(input: TokenStream) -> TokenStream {
 /// Additionally to these two cases, macro errors on argument inconsistencies,
 /// as described in the argument-specifc sections.
 ///
-/// # Example
+/// # Examples
+///
+/// Basic use:
+///
+/// ```
+/// # #[macro_use] extern crate amplify_derive;
+/// #[derive(Getters, Default)]
+/// struct One {
+///     vec: Vec<u8>,
+///     defaults: String,
+///     pub flag: bool,
+///     pub(self) field: u8,
+/// }
+///
+/// let mut one = One::default();
+/// assert_eq!(one.vec(), &Vec::<u8>::default());
+/// assert_eq!(one.defaults(), "");
+/// assert_eq!(one.flag(), &false);
+/// assert_eq!(one.field(), &0);
+/// ```
+///
+/// Advanced use:
 ///
 /// ```
 /// # #[macro_use] extern crate amplify_derive;
