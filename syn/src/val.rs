@@ -101,6 +101,12 @@ impl From<f64> for ArgValue {
     }
 }
 
+impl From<bool> for ArgValue {
+    fn from(val: bool) -> Self {
+        ArgValue::Literal(Lit::Bool(LitBool::new(val, Span::call_site())))
+    }
+}
+
 impl From<Option<LitStr>> for ArgValue {
     fn from(val: Option<LitStr>) -> Self {
         match val {
