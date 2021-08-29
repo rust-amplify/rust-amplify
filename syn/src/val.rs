@@ -14,7 +14,7 @@
 // If not, see <https://opensource.org/licenses/MIT>.
 
 use std::fmt::{Debug, Formatter, self};
-use std::convert::TryInto;
+use std::convert::TryFrom;
 use syn::{
     Type, Ident, Path, Lit, LitStr, LitByteStr, LitBool, LitChar, LitInt, LitFloat, TypePath,
     PathSegment,
@@ -173,121 +173,121 @@ impl From<Option<LitFloat>> for ArgValue {
     }
 }
 
-impl TryInto<String> for ArgValue {
+impl TryFrom<ArgValue> for String {
     type Error = Error;
 
-    fn try_into(self) -> Result<String, Self::Error> {
-        match self {
+    fn try_from(value: ArgValue) -> Result<Self, Self::Error> {
+        match value {
             ArgValue::Literal(Lit::Str(s)) => Ok(s.value()),
             _ => Err(Error::ArgValueMustBeLiteral),
         }
     }
 }
 
-impl TryInto<Vec<u8>> for ArgValue {
+impl TryFrom<ArgValue> for Vec<u8> {
     type Error = Error;
 
-    fn try_into(self) -> Result<Vec<u8>, Self::Error> {
-        match self {
+    fn try_from(value: ArgValue) -> Result<Self, Self::Error> {
+        match value {
             ArgValue::Literal(Lit::ByteStr(s)) => Ok(s.value()),
             _ => Err(Error::ArgValueMustBeLiteral),
         }
     }
 }
 
-impl TryInto<bool> for ArgValue {
+impl TryFrom<ArgValue> for bool {
     type Error = Error;
 
-    fn try_into(self) -> Result<bool, Self::Error> {
-        match self {
+    fn try_from(value: ArgValue) -> Result<Self, Self::Error> {
+        match value {
             ArgValue::Literal(Lit::Bool(b)) => Ok(b.value),
             _ => Err(Error::ArgValueMustBeLiteral),
         }
     }
 }
 
-impl TryInto<char> for ArgValue {
+impl TryFrom<ArgValue> for char {
     type Error = Error;
 
-    fn try_into(self) -> Result<char, Self::Error> {
-        match self {
+    fn try_from(value: ArgValue) -> Result<Self, Self::Error> {
+        match value {
             ArgValue::Literal(Lit::Char(c)) => Ok(c.value()),
             _ => Err(Error::ArgValueMustBeLiteral),
         }
     }
 }
 
-impl TryInto<LitStr> for ArgValue {
+impl TryFrom<ArgValue> for LitStr {
     type Error = Error;
 
-    fn try_into(self) -> Result<LitStr, Self::Error> {
-        match self {
+    fn try_from(value: ArgValue) -> Result<Self, Self::Error> {
+        match value {
             ArgValue::Literal(Lit::Str(s)) => Ok(s),
             _ => Err(Error::ArgValueMustBeLiteral),
         }
     }
 }
 
-impl TryInto<LitByteStr> for ArgValue {
+impl TryFrom<ArgValue> for LitByteStr {
     type Error = Error;
 
-    fn try_into(self) -> Result<LitByteStr, Self::Error> {
-        match self {
+    fn try_from(value: ArgValue) -> Result<Self, Self::Error> {
+        match value {
             ArgValue::Literal(Lit::ByteStr(s)) => Ok(s),
             _ => Err(Error::ArgValueMustBeLiteral),
         }
     }
 }
 
-impl TryInto<LitBool> for ArgValue {
+impl TryFrom<ArgValue> for LitBool {
     type Error = Error;
 
-    fn try_into(self) -> Result<LitBool, Self::Error> {
-        match self {
+    fn try_from(value: ArgValue) -> Result<Self, Self::Error> {
+        match value {
             ArgValue::Literal(Lit::Bool(s)) => Ok(s),
             _ => Err(Error::ArgValueMustBeLiteral),
         }
     }
 }
 
-impl TryInto<LitChar> for ArgValue {
+impl TryFrom<ArgValue> for LitChar {
     type Error = Error;
 
-    fn try_into(self) -> Result<LitChar, Self::Error> {
-        match self {
+    fn try_from(value: ArgValue) -> Result<Self, Self::Error> {
+        match value {
             ArgValue::Literal(Lit::Char(c)) => Ok(c),
             _ => Err(Error::ArgValueMustBeLiteral),
         }
     }
 }
 
-impl TryInto<LitInt> for ArgValue {
+impl TryFrom<ArgValue> for LitInt {
     type Error = Error;
 
-    fn try_into(self) -> Result<LitInt, Self::Error> {
-        match self {
+    fn try_from(value: ArgValue) -> Result<Self, Self::Error> {
+        match value {
             ArgValue::Literal(Lit::Int(i)) => Ok(i),
             _ => Err(Error::ArgValueMustBeLiteral),
         }
     }
 }
 
-impl TryInto<LitFloat> for ArgValue {
+impl TryFrom<ArgValue> for LitFloat {
     type Error = Error;
 
-    fn try_into(self) -> Result<LitFloat, Self::Error> {
-        match self {
+    fn try_from(value: ArgValue) -> Result<Self, Self::Error> {
+        match value {
             ArgValue::Literal(Lit::Float(f)) => Ok(f),
             _ => Err(Error::ArgValueMustBeLiteral),
         }
     }
 }
 
-impl TryInto<Ident> for ArgValue {
+impl TryFrom<ArgValue> for Ident {
     type Error = Error;
 
-    fn try_into(self) -> Result<Ident, Self::Error> {
-        match self {
+    fn try_from(value: ArgValue) -> Result<Self, Self::Error> {
+        match value {
             ArgValue::Type(Type::Path(ty)) => {
                 if let Some(ident) = ty.path.get_ident() {
                     Ok(ident.clone())
@@ -300,22 +300,22 @@ impl TryInto<Ident> for ArgValue {
     }
 }
 
-impl TryInto<Path> for ArgValue {
+impl TryFrom<ArgValue> for Path {
     type Error = Error;
 
-    fn try_into(self) -> Result<Path, Self::Error> {
-        match self {
+    fn try_from(value: ArgValue) -> Result<Self, Self::Error> {
+        match value {
             ArgValue::Type(Type::Path(ty)) => Ok(ty.path),
             _ => Err(Error::ArgValueMustBeType),
         }
     }
 }
 
-impl TryInto<Option<LitStr>> for ArgValue {
+impl TryFrom<ArgValue> for Option<LitStr> {
     type Error = Error;
 
-    fn try_into(self) -> Result<Option<LitStr>, Self::Error> {
-        match self {
+    fn try_from(value: ArgValue) -> Result<Self, Self::Error> {
+        match value {
             ArgValue::Literal(Lit::Str(s)) => Ok(Some(s)),
             ArgValue::None => Ok(None),
             _ => Err(Error::ArgValueMustBeLiteral),
@@ -323,11 +323,11 @@ impl TryInto<Option<LitStr>> for ArgValue {
     }
 }
 
-impl TryInto<Option<LitByteStr>> for ArgValue {
+impl TryFrom<ArgValue> for Option<LitByteStr> {
     type Error = Error;
 
-    fn try_into(self) -> Result<Option<LitByteStr>, Self::Error> {
-        match self {
+    fn try_from(value: ArgValue) -> Result<Self, Self::Error> {
+        match value {
             ArgValue::Literal(Lit::ByteStr(s)) => Ok(Some(s)),
             ArgValue::None => Ok(None),
             _ => Err(Error::ArgValueMustBeLiteral),
@@ -335,11 +335,11 @@ impl TryInto<Option<LitByteStr>> for ArgValue {
     }
 }
 
-impl TryInto<Option<LitBool>> for ArgValue {
+impl TryFrom<ArgValue> for Option<LitBool> {
     type Error = Error;
 
-    fn try_into(self) -> Result<Option<LitBool>, Self::Error> {
-        match self {
+    fn try_from(value: ArgValue) -> Result<Self, Self::Error> {
+        match value {
             ArgValue::Literal(Lit::Bool(b)) => Ok(Some(b)),
             ArgValue::None => Ok(None),
             _ => Err(Error::ArgValueMustBeLiteral),
@@ -347,11 +347,11 @@ impl TryInto<Option<LitBool>> for ArgValue {
     }
 }
 
-impl TryInto<Option<LitChar>> for ArgValue {
+impl TryFrom<ArgValue> for Option<LitChar> {
     type Error = Error;
 
-    fn try_into(self) -> Result<Option<LitChar>, Self::Error> {
-        match self {
+    fn try_from(value: ArgValue) -> Result<Self, Self::Error> {
+        match value {
             ArgValue::Literal(Lit::Char(c)) => Ok(Some(c)),
             ArgValue::None => Ok(None),
             _ => Err(Error::ArgValueMustBeLiteral),
@@ -359,11 +359,11 @@ impl TryInto<Option<LitChar>> for ArgValue {
     }
 }
 
-impl TryInto<Option<LitInt>> for ArgValue {
+impl TryFrom<ArgValue> for Option<LitInt> {
     type Error = Error;
 
-    fn try_into(self) -> Result<Option<LitInt>, Self::Error> {
-        match self {
+    fn try_from(value: ArgValue) -> Result<Self, Self::Error> {
+        match value {
             ArgValue::Literal(Lit::Int(i)) => Ok(Some(i)),
             ArgValue::None => Ok(None),
             _ => Err(Error::ArgValueMustBeLiteral),
@@ -371,11 +371,11 @@ impl TryInto<Option<LitInt>> for ArgValue {
     }
 }
 
-impl TryInto<Option<LitFloat>> for ArgValue {
+impl TryFrom<ArgValue> for Option<LitFloat> {
     type Error = Error;
 
-    fn try_into(self) -> Result<Option<LitFloat>, Self::Error> {
-        match self {
+    fn try_from(value: ArgValue) -> Result<Self, Self::Error> {
+        match value {
             ArgValue::Literal(Lit::Float(f)) => Ok(Some(f)),
             ArgValue::None => Ok(None),
             _ => Err(Error::ArgValueMustBeLiteral),
@@ -383,11 +383,11 @@ impl TryInto<Option<LitFloat>> for ArgValue {
     }
 }
 
-impl TryInto<Option<Ident>> for ArgValue {
+impl TryFrom<ArgValue> for Option<Ident> {
     type Error = Error;
 
-    fn try_into(self) -> Result<Option<Ident>, Self::Error> {
-        match self {
+    fn try_from(value: ArgValue) -> Result<Self, Self::Error> {
+        match value {
             ArgValue::Type(Type::Path(ty)) => {
                 if let Some(ident) = ty.path.get_ident() {
                     Ok(Some(ident.clone()))
@@ -401,11 +401,11 @@ impl TryInto<Option<Ident>> for ArgValue {
     }
 }
 
-impl TryInto<Option<Path>> for ArgValue {
+impl TryFrom<ArgValue> for Option<Path> {
     type Error = Error;
 
-    fn try_into(self) -> Result<Option<Path>, Self::Error> {
-        match self {
+    fn try_from(value: ArgValue) -> Result<Self, Self::Error> {
+        match value {
             ArgValue::Type(Type::Path(ty)) => Ok(Some(ty.path)),
             ArgValue::None => Ok(None),
             _ => Err(Error::ArgValueMustBeType),
