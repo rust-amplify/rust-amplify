@@ -44,6 +44,9 @@ impl fmt::Display for Error {
     }
 }
 
+#[cfg(feature = "std")]
+impl std::error::Error for Error {}
+
 /// Trait for objects that can be serialized as hex strings
 #[cfg(any(test, feature = "std", feature = "alloc"))]
 pub trait ToHex {
