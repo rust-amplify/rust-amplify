@@ -356,165 +356,165 @@ impl u24 {
 }
 
 impl core::fmt::UpperHex for u1 {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
         core::fmt::UpperHex::fmt(&self.as_u8(), f)
     }
 }
 impl core::fmt::UpperHex for u2 {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
         core::fmt::UpperHex::fmt(&self.as_u8(), f)
     }
 }
 impl core::fmt::UpperHex for u3 {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
         core::fmt::UpperHex::fmt(&self.as_u8(), f)
     }
 }
 impl core::fmt::UpperHex for u4 {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
         core::fmt::UpperHex::fmt(&self.as_u8(), f)
     }
 }
 impl core::fmt::UpperHex for u5 {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
         core::fmt::UpperHex::fmt(&self.as_u8(), f)
     }
 }
 impl core::fmt::UpperHex for u6 {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
         core::fmt::UpperHex::fmt(&self.as_u8(), f)
     }
 }
 impl core::fmt::UpperHex for u7 {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
         core::fmt::UpperHex::fmt(&self.as_u8(), f)
     }
 }
 impl core::fmt::UpperHex for u24 {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
         core::fmt::UpperHex::fmt(&self.as_u32(), f)
     }
 }
 
 impl core::fmt::LowerHex for u1 {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
         core::fmt::LowerHex::fmt(&self.as_u8(), f)
     }
 }
 impl core::fmt::LowerHex for u2 {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
         core::fmt::LowerHex::fmt(&self.as_u8(), f)
     }
 }
 impl core::fmt::LowerHex for u3 {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
         core::fmt::LowerHex::fmt(&self.as_u8(), f)
     }
 }
 impl core::fmt::LowerHex for u4 {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
         core::fmt::LowerHex::fmt(&self.as_u8(), f)
     }
 }
 impl core::fmt::LowerHex for u5 {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
         core::fmt::LowerHex::fmt(&self.as_u8(), f)
     }
 }
 impl core::fmt::LowerHex for u6 {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
         core::fmt::LowerHex::fmt(&self.as_u8(), f)
     }
 }
 impl core::fmt::LowerHex for u7 {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
         core::fmt::LowerHex::fmt(&self.as_u8(), f)
     }
 }
 impl core::fmt::LowerHex for u24 {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
         core::fmt::LowerHex::fmt(&self.as_u32(), f)
     }
 }
 
 impl core::fmt::Octal for u1 {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
         core::fmt::Octal::fmt(&self.as_u8(), f)
     }
 }
 impl core::fmt::Octal for u2 {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
         core::fmt::Octal::fmt(&self.as_u8(), f)
     }
 }
 impl core::fmt::Octal for u3 {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
         core::fmt::Octal::fmt(&self.as_u8(), f)
     }
 }
 impl core::fmt::Octal for u4 {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
         core::fmt::Octal::fmt(&self.as_u8(), f)
     }
 }
 impl core::fmt::Octal for u5 {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
         core::fmt::Octal::fmt(&self.as_u8(), f)
     }
 }
 impl core::fmt::Octal for u6 {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
         core::fmt::Octal::fmt(&self.as_u8(), f)
     }
 }
 impl core::fmt::Octal for u7 {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
         core::fmt::Octal::fmt(&self.as_u8(), f)
     }
 }
 impl core::fmt::Octal for u24 {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
         core::fmt::Octal::fmt(&self.as_u32(), f)
     }
 }
 
 impl core::fmt::Binary for u1 {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
         core::fmt::Binary::fmt(&self.as_u8(), f)
     }
 }
 impl core::fmt::Binary for u2 {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
         core::fmt::Binary::fmt(&self.as_u8(), f)
     }
 }
 impl core::fmt::Binary for u3 {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
         core::fmt::Binary::fmt(&self.as_u8(), f)
     }
 }
 impl core::fmt::Binary for u4 {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
         core::fmt::Binary::fmt(&self.as_u8(), f)
     }
 }
 impl core::fmt::Binary for u5 {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
         core::fmt::Binary::fmt(&self.as_u8(), f)
     }
 }
 impl core::fmt::Binary for u6 {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
         core::fmt::Binary::fmt(&self.as_u8(), f)
     }
 }
 impl core::fmt::Binary for u7 {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
         core::fmt::Binary::fmt(&self.as_u8(), f)
     }
 }
 impl core::fmt::Binary for u24 {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
         core::fmt::Binary::fmt(&self.as_u32(), f)
     }
 }
@@ -688,13 +688,13 @@ mod test {
 
     #[test]
     fn fmt_test() {
-        let u_2 = u2::try_from(u2::MAX.as_u8()).unwrap();
-        let u_3 = u3::try_from(u3::MAX.as_u8()).unwrap();
-        let u_4 = u4::try_from(u4::MAX.as_u8()).unwrap();
-        let u_5 = u5::try_from(u5::MAX.as_u8()).unwrap();
-        let u_6 = u6::try_from(u6::MAX.as_u8()).unwrap();
-        let u_7 = u7::try_from(u7::MAX.as_u8()).unwrap();
-        let u_24 = u24::try_from(u24::MAX.as_u32()).unwrap();
+        let u_2 = u2::MAX;
+        let u_3 = u3::MAX;
+        let u_4 = u4::MAX;
+        let u_5 = u5::MAX;
+        let u_6 = u6::MAX;
+        let u_7 = u7::MAX;
+        let u_24 = u24::MAX;
 
         // UpperHex
         assert_eq!(format!("{:X}", u_2), "3");
