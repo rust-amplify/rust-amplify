@@ -355,6 +355,170 @@ impl u24 {
     }
 }
 
+impl core::fmt::UpperHex for u1 {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        core::fmt::UpperHex::fmt(&self.as_u8(), f)
+    }
+}
+impl core::fmt::UpperHex for u2 {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        core::fmt::UpperHex::fmt(&self.as_u8(), f)
+    }
+}
+impl core::fmt::UpperHex for u3 {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        core::fmt::UpperHex::fmt(&self.as_u8(), f)
+    }
+}
+impl core::fmt::UpperHex for u4 {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        core::fmt::UpperHex::fmt(&self.as_u8(), f)
+    }
+}
+impl core::fmt::UpperHex for u5 {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        core::fmt::UpperHex::fmt(&self.as_u8(), f)
+    }
+}
+impl core::fmt::UpperHex for u6 {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        core::fmt::UpperHex::fmt(&self.as_u8(), f)
+    }
+}
+impl core::fmt::UpperHex for u7 {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        core::fmt::UpperHex::fmt(&self.as_u8(), f)
+    }
+}
+impl core::fmt::UpperHex for u24 {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        core::fmt::UpperHex::fmt(&self.as_u32(), f)
+    }
+}
+
+impl core::fmt::LowerHex for u1 {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        core::fmt::LowerHex::fmt(&self.as_u8(), f)
+    }
+}
+impl core::fmt::LowerHex for u2 {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        core::fmt::LowerHex::fmt(&self.as_u8(), f)
+    }
+}
+impl core::fmt::LowerHex for u3 {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        core::fmt::LowerHex::fmt(&self.as_u8(), f)
+    }
+}
+impl core::fmt::LowerHex for u4 {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        core::fmt::LowerHex::fmt(&self.as_u8(), f)
+    }
+}
+impl core::fmt::LowerHex for u5 {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        core::fmt::LowerHex::fmt(&self.as_u8(), f)
+    }
+}
+impl core::fmt::LowerHex for u6 {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        core::fmt::LowerHex::fmt(&self.as_u8(), f)
+    }
+}
+impl core::fmt::LowerHex for u7 {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        core::fmt::LowerHex::fmt(&self.as_u8(), f)
+    }
+}
+impl core::fmt::LowerHex for u24 {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        core::fmt::LowerHex::fmt(&self.as_u32(), f)
+    }
+}
+
+impl core::fmt::Octal for u1 {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        core::fmt::Octal::fmt(&self.as_u8(), f)
+    }
+}
+impl core::fmt::Octal for u2 {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        core::fmt::Octal::fmt(&self.as_u8(), f)
+    }
+}
+impl core::fmt::Octal for u3 {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        core::fmt::Octal::fmt(&self.as_u8(), f)
+    }
+}
+impl core::fmt::Octal for u4 {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        core::fmt::Octal::fmt(&self.as_u8(), f)
+    }
+}
+impl core::fmt::Octal for u5 {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        core::fmt::Octal::fmt(&self.as_u8(), f)
+    }
+}
+impl core::fmt::Octal for u6 {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        core::fmt::Octal::fmt(&self.as_u8(), f)
+    }
+}
+impl core::fmt::Octal for u7 {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        core::fmt::Octal::fmt(&self.as_u8(), f)
+    }
+}
+impl core::fmt::Octal for u24 {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        core::fmt::Octal::fmt(&self.as_u32(), f)
+    }
+}
+
+impl core::fmt::Binary for u1 {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        core::fmt::Binary::fmt(&self.as_u8(), f)
+    }
+}
+impl core::fmt::Binary for u2 {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        core::fmt::Binary::fmt(&self.as_u8(), f)
+    }
+}
+impl core::fmt::Binary for u3 {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        core::fmt::Binary::fmt(&self.as_u8(), f)
+    }
+}
+impl core::fmt::Binary for u4 {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        core::fmt::Binary::fmt(&self.as_u8(), f)
+    }
+}
+impl core::fmt::Binary for u5 {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        core::fmt::Binary::fmt(&self.as_u8(), f)
+    }
+}
+impl core::fmt::Binary for u6 {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        core::fmt::Binary::fmt(&self.as_u8(), f)
+    }
+}
+impl core::fmt::Binary for u7 {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        core::fmt::Binary::fmt(&self.as_u8(), f)
+    }
+}
+impl core::fmt::Binary for u24 {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        core::fmt::Binary::fmt(&self.as_u32(), f)
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
@@ -520,5 +684,80 @@ mod test {
         let u_2 = u2::MAX;
         let u_2_zero = u2::ZERO;
         u2::div_rem(u_2, u_2_zero);
+    }
+
+    #[test]
+    fn fmt_test() {
+        let u_2 = u2::try_from(u2::MAX.as_u8()).unwrap();
+        let u_3 = u3::try_from(u3::MAX.as_u8()).unwrap();
+        let u_4 = u4::try_from(u4::MAX.as_u8()).unwrap();
+        let u_5 = u5::try_from(u5::MAX.as_u8()).unwrap();
+        let u_6 = u6::try_from(u6::MAX.as_u8()).unwrap();
+        let u_7 = u7::try_from(u7::MAX.as_u8()).unwrap();
+        let u_24 = u24::try_from(u24::MAX.as_u32()).unwrap();
+
+        // UpperHex
+        assert_eq!(format!("{:X}", u_2), "3");
+        assert_eq!(format!("{:X}", u_3), "7");
+        assert_eq!(format!("{:X}", u_4), "F");
+        assert_eq!(format!("{:X}", u_5), "1F");
+        assert_eq!(format!("{:X}", u_6), "3F");
+        assert_eq!(format!("{:X}", u_7), "7F");
+        assert_eq!(format!("{:X}", u_24), "FFFFFF");
+        assert_eq!(format!("{:#X}", u_2), "0x3");
+        assert_eq!(format!("{:#X}", u_3), "0x7");
+        assert_eq!(format!("{:#X}", u_4), "0xF");
+        assert_eq!(format!("{:#X}", u_5), "0x1F");
+        assert_eq!(format!("{:#X}", u_6), "0x3F");
+        assert_eq!(format!("{:#X}", u_7), "0x7F");
+        assert_eq!(format!("{:#X}", u_24), "0xFFFFFF");
+
+        // LowerHex
+        assert_eq!(format!("{:x}", u_2), "3");
+        assert_eq!(format!("{:x}", u_3), "7");
+        assert_eq!(format!("{:x}", u_4), "f");
+        assert_eq!(format!("{:x}", u_5), "1f");
+        assert_eq!(format!("{:x}", u_6), "3f");
+        assert_eq!(format!("{:x}", u_7), "7f");
+        assert_eq!(format!("{:x}", u_24), "ffffff");
+        assert_eq!(format!("{:#x}", u_2), "0x3");
+        assert_eq!(format!("{:#x}", u_3), "0x7");
+        assert_eq!(format!("{:#x}", u_4), "0xf");
+        assert_eq!(format!("{:#x}", u_5), "0x1f");
+        assert_eq!(format!("{:#x}", u_6), "0x3f");
+        assert_eq!(format!("{:#x}", u_7), "0x7f");
+        assert_eq!(format!("{:#x}", u_24), "0xffffff");
+
+        // Octal
+        assert_eq!(format!("{:o}", u_2), "3");
+        assert_eq!(format!("{:o}", u_3), "7");
+        assert_eq!(format!("{:o}", u_4), "17");
+        assert_eq!(format!("{:o}", u_5), "37");
+        assert_eq!(format!("{:o}", u_6), "77");
+        assert_eq!(format!("{:o}", u_7), "177");
+        assert_eq!(format!("{:o}", u_24), "77777777");
+        assert_eq!(format!("{:#o}", u_2), "0o3");
+        assert_eq!(format!("{:#o}", u_3), "0o7");
+        assert_eq!(format!("{:#o}", u_4), "0o17");
+        assert_eq!(format!("{:#o}", u_5), "0o37");
+        assert_eq!(format!("{:#o}", u_6), "0o77");
+        assert_eq!(format!("{:#o}", u_7), "0o177");
+        assert_eq!(format!("{:#o}", u_24), "0o77777777");
+
+        // Binary
+        assert_eq!(format!("{:b}", u_2), format!("{:b}", 3));
+        assert_eq!(format!("{:b}", u_3), format!("{:b}", 7));
+        assert_eq!(format!("{:b}", u_4), format!("{:b}", 15));
+        assert_eq!(format!("{:b}", u_5), format!("{:b}", 31));
+        assert_eq!(format!("{:b}", u_6), format!("{:b}", 63));
+        assert_eq!(format!("{:b}", u_7), format!("{:b}", 127));
+        assert_eq!(format!("{:b}", u_24), format!("{:b}", 16_777_215));
+        assert_eq!(format!("{:#b}", u_2), format!("{:#b}", 3));
+        assert_eq!(format!("{:#b}", u_3), format!("{:#b}", 7));
+        assert_eq!(format!("{:#b}", u_4), format!("{:#b}", 15));
+        assert_eq!(format!("{:#b}", u_5), format!("{:#b}", 31));
+        assert_eq!(format!("{:#b}", u_6), format!("{:#b}", 63));
+        assert_eq!(format!("{:#b}", u_7), format!("{:#b}", 127));
+        assert_eq!(format!("{:#b}", u_24), format!("{:#b}", 16_777_215));
     }
 }
