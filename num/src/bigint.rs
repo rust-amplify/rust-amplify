@@ -848,6 +848,54 @@ macro_rules! construct_bigint {
             }
         }
 
+        impl core::fmt::UpperHex for $name {
+            fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
+                if f.alternate() {
+                    write!(f, "0x")?;
+                }
+                for chunk in self.0.iter().rev() {
+                    write!(f, "{:0>16X}", chunk)?;
+                }
+                Ok(())
+            }
+        }
+
+        impl core::fmt::LowerHex for $name {
+            fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
+                if f.alternate() {
+                    write!(f, "0x")?;
+                }
+                for chunk in self.0.iter().rev() {
+                    write!(f, "{:0>16x}", chunk)?;
+                }
+                Ok(())
+            }
+        }
+
+        impl core::fmt::Octal for $name {
+            fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
+                if f.alternate() {
+                    write!(f, "0o")?;
+                }
+                for chunk in self.0.iter().rev() {
+                    write!(f, "{:0>22o}", chunk)?;
+                }
+                Ok(())
+            }
+        }
+
+        impl core::fmt::Binary for $name {
+            fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
+                if f.alternate() {
+                    write!(f, "0b")?;
+                }
+                for chunk in self.0.iter().rev() {
+                    write!(f, "{:0>64b}", chunk)?;
+                }
+                Ok(())
+            }
+        }
+
         #[cfg(feature = "serde")]
         impl $crate::serde::Serialize for $name {
             fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
@@ -917,143 +965,6 @@ macro_rules! construct_bigint {
 construct_bigint!(u256, 4);
 construct_bigint!(u512, 8);
 construct_bigint!(u1024, 16);
-
-impl core::fmt::UpperHex for u256 {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
-        if f.alternate() {
-            write!(f, "0x")?;
-        }
-        for chunk in self.0.iter().rev() {
-            write!(f, "{:0>16X}", chunk)?;
-        }
-        Ok(())
-    }
-}
-impl core::fmt::UpperHex for u512 {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
-        if f.alternate() {
-            write!(f, "0x")?;
-        }
-        for chunk in self.0.iter().rev() {
-            write!(f, "{:0>16X}", chunk)?;
-        }
-        Ok(())
-    }
-}
-impl core::fmt::UpperHex for u1024 {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
-        if f.alternate() {
-            write!(f, "0x")?;
-        }
-        for chunk in self.0.iter().rev() {
-            write!(f, "{:0>16X}", chunk)?;
-        }
-        Ok(())
-    }
-}
-
-impl core::fmt::LowerHex for u256 {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
-        if f.alternate() {
-            write!(f, "0x")?;
-        }
-        for chunk in self.0.iter().rev() {
-            write!(f, "{:0>16x}", chunk)?;
-        }
-        Ok(())
-    }
-}
-impl core::fmt::LowerHex for u512 {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
-        if f.alternate() {
-            write!(f, "0x")?;
-        }
-        for chunk in self.0.iter().rev() {
-            write!(f, "{:0>16x}", chunk)?;
-        }
-        Ok(())
-    }
-}
-impl core::fmt::LowerHex for u1024 {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
-        if f.alternate() {
-            write!(f, "0x")?;
-        }
-        for chunk in self.0.iter().rev() {
-            write!(f, "{:0>16x}", chunk)?;
-        }
-        Ok(())
-    }
-}
-
-impl core::fmt::Octal for u256 {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
-        if f.alternate() {
-            write!(f, "0o")?;
-        }
-        for chunk in self.0.iter().rev() {
-            write!(f, "{:0>22o}", chunk)?;
-        }
-        Ok(())
-    }
-}
-impl core::fmt::Octal for u512 {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
-        if f.alternate() {
-            write!(f, "0o")?;
-        }
-        for chunk in self.0.iter().rev() {
-            write!(f, "{:0>22o}", chunk)?;
-        }
-        Ok(())
-    }
-}
-impl core::fmt::Octal for u1024 {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
-        if f.alternate() {
-            write!(f, "0o")?;
-        }
-        for chunk in self.0.iter().rev() {
-            write!(f, "{:0>22o}", chunk)?;
-        }
-        Ok(())
-    }
-}
-
-impl core::fmt::Binary for u256 {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
-        if f.alternate() {
-            write!(f, "0b")?;
-        }
-        for chunk in self.0.iter().rev() {
-            write!(f, "{:0>64b}", chunk)?;
-        }
-        Ok(())
-    }
-}
-impl core::fmt::Binary for u512 {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
-        if f.alternate() {
-            write!(f, "0b")?;
-        }
-        for chunk in self.0.iter().rev() {
-            write!(f, "{:0>64b}", chunk)?;
-        }
-        Ok(())
-    }
-}
-impl core::fmt::Binary for u1024 {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
-        if f.alternate() {
-            write!(f, "0b")?;
-        }
-        for chunk in self.0.iter().rev() {
-            write!(f, "{:0>64b}", chunk)?;
-        }
-        Ok(())
-    }
-}
-
 #[cfg(test)]
 mod tests {
     #![allow(unused)]
