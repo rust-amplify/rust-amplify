@@ -848,6 +848,7 @@ macro_rules! construct_bigint {
             }
         }
 
+        #[cfg(feature = "alloc")]
         impl ::core::fmt::UpperHex for $name {
             fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> Result<(), ::core::fmt::Error> {
                 let mut hex = String::new();
@@ -880,6 +881,7 @@ macro_rules! construct_bigint {
             }
         }
 
+        #[cfg(feature = "alloc")]
         impl ::core::fmt::LowerHex for $name {
             fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> Result<(), ::core::fmt::Error> {
                 let mut hex = String::new();
@@ -912,6 +914,7 @@ macro_rules! construct_bigint {
             }
         }
 
+        #[cfg(feature = "alloc")]
         impl ::core::fmt::Octal for $name {
             fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> Result<(), ::core::fmt::Error> {
                 let mut octal = String::new();
@@ -945,6 +948,7 @@ macro_rules! construct_bigint {
             }
         }
 
+        #[cfg(feature = "alloc")]
         impl ::core::fmt::Binary for $name {
             fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> Result<(), ::core::fmt::Error> {
                 let mut binary = String::new();
@@ -1103,17 +1107,16 @@ mod tests {
         );
     }
 
+    #[cfg(feature = "alloc")]
     #[test]
     fn fmt_hex() {
+        let one = u256::ONE;
         let mut u_256 = u256([
             0x0000000000000000,
             0xAAAAAAAABBBBBBBB,
             0x0000000111122222,
             0x0000000000000000,
         ]);
-        let one = u256::ONE;
-
-        assert_eq!(format!("{:x}", u256::ZERO), "0");
 
         // UpperHex
         assert_eq!(
@@ -1124,6 +1127,7 @@ mod tests {
             format!("{:#X}", u_256),
             "0x111122222AAAAAAAABBBBBBBB0000000000000000"
         );
+        assert_eq!(format!("{:X}", u256::ZERO), "0");
         assert_eq!(format!("{:05X}", one), "00001");
         assert_eq!(format!("{:#05X}", one), "0x001");
         assert_eq!(format!("{:5X}", one), "1    ");
@@ -1139,6 +1143,7 @@ mod tests {
             format!("{:#x}", u_256),
             "0x111122222aaaaaaaabbbbbbbb0000000000000000"
         );
+        assert_eq!(format!("{:x}", u256::ZERO), "0");
         assert_eq!(format!("{:05x}", one), "00001");
         assert_eq!(format!("{:#05x}", one), "0x001");
         assert_eq!(format!("{:5x}", one), "1    ");
@@ -1146,15 +1151,16 @@ mod tests {
         assert_eq!(format!("{:w^#7x}", one), "ww0x1ww");
     }
 
+    #[cfg(feature = "alloc")]
     #[test]
     fn fmt_octal() {
+        let one = u256::ONE;
         let mut u_256 = u256([
             0o0000000000000000000000,
             0o0011222222222222222222,
             0o0000000001111111111111,
             0o0000000000000000000000,
         ]);
-        let one = u256::ONE;
 
         assert_eq!(
             format!("{:o}", u_256),
@@ -1172,15 +1178,16 @@ mod tests {
         assert_eq!(format!("{:w^#7o}", one), "ww0o1ww");
     }
 
+    #[cfg(feature = "alloc")]
     #[test]
     fn fmt_binary() {
+        let one = u256::ONE;
         let mut u_256 = u256([
             0b0000000000000000000000000000000000000000000000000000000000000000,
             0b0001111000011110001111000011110001111000011110001111000011110000,
             0b0000000000000000000000000000001111111111111111111111111111111111,
             0b0000000000000000000000000000000000000000000000000000000000000000,
         ]);
-        let one = u256::ONE;
 
         assert_eq!(
             format!("{:b}", u_256),
