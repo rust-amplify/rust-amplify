@@ -851,6 +851,9 @@ macro_rules! construct_bigint {
         #[cfg(feature = "alloc")]
         impl ::core::fmt::UpperHex for $name {
             fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> Result<(), ::core::fmt::Error> {
+                use alloc::string::String;
+                use alloc::format;
+
                 let mut hex = String::new();
                 for chunk in self.0.iter().rev().skip_while(|x| **x == 0) {
                     if hex.is_empty() {
@@ -884,6 +887,9 @@ macro_rules! construct_bigint {
         #[cfg(feature = "alloc")]
         impl ::core::fmt::LowerHex for $name {
             fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> Result<(), ::core::fmt::Error> {
+                use alloc::string::String;
+                use alloc::format;
+
                 let mut hex = String::new();
                 for chunk in self.0.iter().rev().skip_while(|x| **x == 0) {
                     if hex.is_empty() {
@@ -917,6 +923,9 @@ macro_rules! construct_bigint {
         #[cfg(feature = "alloc")]
         impl ::core::fmt::Octal for $name {
             fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> Result<(), ::core::fmt::Error> {
+                use alloc::string::String;
+                use alloc::format;
+
                 let mut octal = String::new();
                 for chunk in self.0.iter().rev().skip_while(|x| **x == 0) {
                     if octal.is_empty() {
@@ -951,6 +960,9 @@ macro_rules! construct_bigint {
         #[cfg(feature = "alloc")]
         impl ::core::fmt::Binary for $name {
             fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> Result<(), ::core::fmt::Error> {
+                use alloc::string::String;
+                use alloc::format;
+
                 let mut binary = String::new();
                 for chunk in self.0.iter().rev().skip_while(|x| **x == 0) {
                     if binary.is_empty() {
