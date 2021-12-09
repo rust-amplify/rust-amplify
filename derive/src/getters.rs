@@ -66,6 +66,7 @@ struct GetterDerive {
 }
 
 impl GetterDerive {
+    #[allow(clippy::blocks_in_if_conditions)]
     fn try_from(attr: &mut ParametrizedAttr, global: bool) -> Result<GetterDerive> {
         let mut map = HashMap::from_iter(vec![
             ("prefix", ArgValueReq::with_default("")),

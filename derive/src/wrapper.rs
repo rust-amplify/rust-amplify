@@ -125,7 +125,7 @@ impl WrapperDerives {
         let impl_generics_params = input.generics.params.clone();
         let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
         let ident_name = &input.ident;
-        let amplify_crate = get_amplify_crate(&input);
+        let amplify_crate = get_amplify_crate(input);
 
         match self {
             WrapperDerives::FromStr => quote! {

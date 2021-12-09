@@ -224,6 +224,7 @@ impl Technique {
         }
     }
 
+    #[allow(clippy::unnecessary_unwrap)]
     pub fn into_token_stream2(self, fields: &Fields, span: Span, alt: bool) -> TokenStream2 {
         match self {
             Technique::FromTrait(fmt) => fmt.into_token_stream2(span),
