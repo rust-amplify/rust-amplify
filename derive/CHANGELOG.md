@@ -1,6 +1,12 @@
 Change Log
 ==========
 
+2.10.0
+------
+- Improving `Getters`: replacing struct-level arguments in a smart way with
+  field-level arguments
+- `num::Error` implements `std::Error`
+
 2.9.0
 -----
 - Fixing `Getters` behavior to match documentation: if none of getter options
