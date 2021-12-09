@@ -17,6 +17,7 @@ use std::collections::HashMap;
 use std::iter::FromIterator;
 use std::convert::TryInto;
 use proc_macro2::{TokenStream as TokenStream2, Span, Ident};
+use quote::ToTokens;
 use syn::spanned::Spanned;
 use syn::{
     Data, DeriveInput, Error, Fields, Result, LitStr, Attribute, DataStruct, ImplGenerics,
@@ -71,7 +72,7 @@ impl GetterDerive {
             ("all", ArgValueReq::Prohibited),
             ("as_copy", ArgValueReq::with_default("")),
             ("as_clone", ArgValueReq::with_default("")),
-            ("as_ref", ArgValueReq::with_default("_ref")),
+            ("as_ref", ArgValueReq::with_default("")),
             ("as_mut", ArgValueReq::with_default("_mut")),
         ]);
 
@@ -105,6 +106,25 @@ impl GetterDerive {
                 Span::call_site(),
                 "`as_clone` and `as_copy` attributes can't be present together",
             ));
+        }
+
+        // If we have to return copy or a clone of value and did not explicitly
+        // specified different prefix for borrowing accessor, we need not to derive it
+        // since we will have a naming conflict
+        if (attr.args.contains_key("as_clone") || attr.args.contains_key("as_copy"))
+            && attr
+                .args
+                .get("as_ref")
+                .map(|a| {
+                    if let ArgValue::Literal(lit) = a {
+                        lit.to_token_stream().to_string() == "\"\""
+                    } else {
+                        false
+                    }
+                })
+                .unwrap_or_default()
+        {
+            attr.args.remove("as_ref");
         }
 
         // If we are not provided with any options, default to deriving borrows

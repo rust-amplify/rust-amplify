@@ -482,7 +482,7 @@ pub fn derive_as_any(input: TokenStream) -> TokenStream {
 /// structs) is not supported (since it's meaningless), and results in a error.
 ///
 /// Additionally to these two cases, macro errors on argument inconsistencies,
-/// as described in the argument-specifc sections.
+/// as described in the argument-specific sections.
 ///
 /// # Examples
 ///
@@ -494,15 +494,17 @@ pub fn derive_as_any(input: TokenStream) -> TokenStream {
 /// struct One {
 ///     vec: Vec<u8>,
 ///     defaults: String,
+///     #[getter(as_copy)]
 ///     pub flag: bool,
+///     #[getter(as_copy)]
 ///     pub(self) field: u8,
 /// }
 ///
 /// let mut one = One::default();
 /// assert_eq!(one.vec(), &Vec::<u8>::default());
 /// assert_eq!(one.defaults(), "");
-/// assert_eq!(one.flag(), &false);
-/// assert_eq!(one.field(), &0);
+/// assert_eq!(one.flag(), false);
+/// assert_eq!(one.field(), 0);
 /// ```
 ///
 /// Advanced use:
