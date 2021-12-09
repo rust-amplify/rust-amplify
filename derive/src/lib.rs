@@ -507,7 +507,27 @@ pub fn derive_as_any(input: TokenStream) -> TokenStream {
 /// assert_eq!(one.field(), 0);
 /// ```
 ///
-/// Advanced use:
+/// Important, that field-level arguments to override struct-level arguments:
+/// ```
+/// # #[macro_use] extern crate amplify_derive;
+/// #[derive(Getters, Default)]
+/// #[getter(as_copy)]
+/// struct Other {
+///     #[getter(as_ref)]
+///     vec: Vec<u8>,
+///     #[getter(as_clone)]
+///     defaults: String,
+///     pub flag: bool,
+///     pub(self) field: u8,
+/// }
+///
+/// let mut other = Other::default();
+/// assert_eq!(other.vec(), &Vec::<u8>::default());
+/// assert_eq!(other.defaults(), String::from(""));
+/// ```
+///
+/// Advanced use: please pay attention that `as_mut` on a struct level is not
+/// removed by the use of `as_copy` at field level.
 ///
 /// ```
 /// # #[macro_use] extern crate amplify_derive;

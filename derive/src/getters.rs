@@ -343,7 +343,27 @@ fn derive_field_methods(
     // First, test individual attribute
     let _ = GetterDerive::try_from(&mut local_param, false)?;
     // Second, combine global and local together
-    let getter = GetterDerive::try_from(&mut global_param.clone().merged(local_param)?, false)?;
+    let mut local_args = local_param.args.clone();
+    let mut params = global_param.clone().merged(local_param)?;
+    if local_args
+        .keys()
+        .any(|k| k == "as_copy" || k == "as_clone" || k == "as_ref")
+    {
+        // we have to use local arguments since they do override globals
+        params.args.remove("as_copy");
+        params.args.remove("as_clone");
+        params.args.remove("as_ref");
+        local_args
+            .remove("as_copy")
+            .map(|a| params.args.insert("as_copy".to_owned(), a));
+        local_args
+            .remove("as_clone")
+            .map(|a| params.args.insert("as_clone".to_owned(), a));
+        local_args
+            .remove("as_ref")
+            .map(|a| params.args.insert("as_ref".to_owned(), a));
+    }
+    let getter = GetterDerive::try_from(&mut params, false)?;
 
     if getter.skip {
         return Ok(Vec::new());
