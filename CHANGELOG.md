@@ -1,6 +1,11 @@
 Change Log
 ==========
 
+3.10.0
+------
+- `FlagVec::is_empty` and `count_flags` methods
+- Use of v2.10 derivation crate
+
 3.9.0
 -----
 - Bumped `derive` dependency version
