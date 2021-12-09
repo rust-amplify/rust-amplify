@@ -280,6 +280,18 @@ impl FlagVec {
         }
     }
 
+    /// Detects whether structure contains any flags set
+    #[inline]
+    pub fn is_empty(&self) -> bool {
+        self.shrunk().0 == &[] as &[u8]
+    }
+
+    /// Counts number of flags set
+    #[inline]
+    pub fn count_flags(&self) -> u16 {
+        self.iter().count() as u16
+    }
+
     /// Returns byte slice representation of the inner data (slice of bytes,
     /// with 8 bit flags per each byte)
     pub fn as_inner(&self) -> &[u8] {
@@ -302,14 +314,14 @@ impl FlagVec {
     /// Creates an iterator for the current feature flags which have "set" state
     #[inline]
     pub fn iter(&self) -> AllSet {
-        AllSet::new(&self)
+        AllSet::new(self)
     }
 
     /// Creates iterator over known set of the features
     #[inline]
     pub fn known_iter(&self, mut known: FlagVec) -> FilteredIter {
         known.enlarge(self.capacity());
-        FilteredIter::new(&self, known)
+        FilteredIter::new(self, known)
     }
 
     /// Creates iterator over unknown set of the features, i.e. features that
@@ -320,7 +332,7 @@ impl FlagVec {
         for byte in 0..self.0.len() {
             known.0[byte as usize] = !known.0[byte as usize];
         }
-        FilteredIter::new(&self, known)
+        FilteredIter::new(self, known)
     }
 
     /// Returns how many features current structure can hold without

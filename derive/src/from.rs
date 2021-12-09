@@ -228,7 +228,7 @@ impl InstructionTable {
         variant: Option<Ident>,
     ) -> Result<&Self> {
         let entity = InstructionEntity::with_fields(fields, variant.clone())?;
-        self.extend(InstructionEntry::parse(&fields, &attrs, entity.clone())?)?;
+        self.extend(InstructionEntry::parse(fields, attrs, entity.clone())?)?;
         for (index, field) in fields.iter().enumerate() {
             let mut punctuated = Punctuated::new();
             punctuated.push_value(field.clone());
@@ -246,7 +246,7 @@ impl InstructionTable {
                     },
                 ),
                 &field.attrs,
-                InstructionEntity::with_field(index, fields.len(), field, &fields, variant.clone()),
+                InstructionEntity::with_field(index, fields.len(), field, fields, variant.clone()),
             )?)?;
         }
         if variant.is_none() && fields.len() == 1 && self.0.is_empty() {

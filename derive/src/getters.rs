@@ -17,6 +17,7 @@ use std::collections::HashMap;
 use std::iter::FromIterator;
 use std::convert::TryInto;
 use proc_macro2::{TokenStream as TokenStream2, Span, Ident};
+use quote::ToTokens;
 use syn::spanned::Spanned;
 use syn::{
     Data, DeriveInput, Error, Fields, Result, LitStr, Attribute, DataStruct, ImplGenerics,
@@ -65,13 +66,14 @@ struct GetterDerive {
 }
 
 impl GetterDerive {
+    #[allow(clippy::blocks_in_if_conditions)]
     fn try_from(attr: &mut ParametrizedAttr, global: bool) -> Result<GetterDerive> {
         let mut map = HashMap::from_iter(vec![
             ("prefix", ArgValueReq::with_default("")),
             ("all", ArgValueReq::Prohibited),
             ("as_copy", ArgValueReq::with_default("")),
             ("as_clone", ArgValueReq::with_default("")),
-            ("as_ref", ArgValueReq::with_default("_ref")),
+            ("as_ref", ArgValueReq::with_default("")),
             ("as_mut", ArgValueReq::with_default("_mut")),
         ]);
 
@@ -105,6 +107,25 @@ impl GetterDerive {
                 Span::call_site(),
                 "`as_clone` and `as_copy` attributes can't be present together",
             ));
+        }
+
+        // If we have to return copy or a clone of value and did not explicitly
+        // specified different prefix for borrowing accessor, we need not to derive it
+        // since we will have a naming conflict
+        if (attr.args.contains_key("as_clone") || attr.args.contains_key("as_copy"))
+            && attr
+                .args
+                .get("as_ref")
+                .map(|a| {
+                    if let ArgValue::Literal(lit) = a {
+                        lit.to_token_stream().to_string() == "\"\""
+                    } else {
+                        false
+                    }
+                })
+                .unwrap_or_default()
+        {
+            attr.args.remove("as_ref");
         }
 
         // If we are not provided with any options, default to deriving borrows
@@ -323,7 +344,27 @@ fn derive_field_methods(
     // First, test individual attribute
     let _ = GetterDerive::try_from(&mut local_param, false)?;
     // Second, combine global and local together
-    let getter = GetterDerive::try_from(&mut global_param.clone().merged(local_param)?, false)?;
+    let mut local_args = local_param.args.clone();
+    let mut params = global_param.clone().merged(local_param)?;
+    if local_args
+        .keys()
+        .any(|k| k == "as_copy" || k == "as_clone" || k == "as_ref")
+    {
+        // we have to use local arguments since they do override globals
+        params.args.remove("as_copy");
+        params.args.remove("as_clone");
+        params.args.remove("as_ref");
+        local_args
+            .remove("as_copy")
+            .map(|a| params.args.insert("as_copy".to_owned(), a));
+        local_args
+            .remove("as_clone")
+            .map(|a| params.args.insert("as_clone".to_owned(), a));
+        local_args
+            .remove("as_ref")
+            .map(|a| params.args.insert("as_ref".to_owned(), a));
+    }
+    let getter = GetterDerive::try_from(&mut params, false)?;
 
     if getter.skip {
         return Ok(Vec::new());
