@@ -116,6 +116,8 @@ enum Technique {
     WithFormat(LitStr, Option<LitStr>),
     DocComments(String),
     Inner,
+    Lowercase(String),
+    Uppercase(String),
 }
 
 impl Technique {
@@ -146,6 +148,12 @@ impl Technique {
                     }
                     Some(NestedMeta::Meta(Meta::Path(path))) if path.is_ident("inner") => {
                         Some(Technique::Inner)
+                    }
+                    Some(NestedMeta::Meta(Meta::Path(path))) if path.is_ident("lowercase") => {
+                        Some(Technique::Lowercase(String::new()))
+                    }
+                    Some(NestedMeta::Meta(Meta::Path(path))) if path.is_ident("uppercase") => {
+                        Some(Technique::Uppercase(String::new()))
                     }
                     Some(NestedMeta::Meta(Meta::Path(path))) => Some(
                         FormattingTrait::from_path(path, list.span())?
@@ -221,6 +229,8 @@ impl Technique {
                     quote! { "{_0}" }
                 }
             }
+            Technique::Lowercase(fields_fmt) => quote! { #fields_fmt },
+            Technique::Uppercase(fields_fmt) => quote! { #fields_fmt },
         }
     }
 
@@ -250,6 +260,14 @@ impl Technique {
                 } else {
                     quote_spanned! { span => "{_0}" }
                 };
+                Self::impl_format(fields, &format, span)
+            }
+            Technique::Lowercase(fields_fmt) => {
+                let format = quote_spanned! { span => #fields_fmt };
+                Self::impl_format(fields, &format, span)
+            }
+            Technique::Uppercase(fields_fmt) => {
+                let format = quote_spanned! { span => #fields_fmt };
                 Self::impl_format(fields, &format, span)
             }
         }
@@ -308,6 +326,37 @@ impl Technique {
             }
             *doc = doc.trim().replace(" \n", "\n");
         }
+    }
+
+    fn apply_case(&mut self, type_str: &str, fields: &Fields) {
+        let (type_str_cased, fields_fmt) = match self {
+            Technique::Lowercase(ref mut f) => (type_str.to_lowercase(), f),
+            Technique::Uppercase(ref mut f) => (type_str.to_uppercase(), f),
+            _ => unreachable!(),
+        };
+        *fields_fmt = match fields {
+            Fields::Named(f) => {
+                let idents = f
+                    .named
+                    .iter()
+                    .map(|f| f.ident.as_ref().unwrap())
+                    .collect::<Vec<_>>();
+                let inner = idents
+                    .iter()
+                    .map(|ident| format!("{}: {{{0}}}", ident.to_string()))
+                    .collect::<Vec<_>>()
+                    .join(", ");
+                format!("{} {{{{ {} }}}}", type_str_cased, inner)
+            }
+            Fields::Unnamed(f) => {
+                let inner = (0..f.unnamed.len())
+                    .map(|i| format!("{{_{}}}", i.to_string()))
+                    .collect::<Vec<_>>()
+                    .join(", ");
+                format!("{}({})", type_str_cased, inner)
+            }
+            Fields::Unit => type_str_cased,
+        };
     }
 
     fn fix_fmt(&mut self) {
@@ -495,7 +544,9 @@ fn inner_enum(input: &DeriveInput, data: &DataEnum) -> Result<TokenStream2> {
     // Ancient rust versions do not known about `matches!` macro
     #[allow(clippy::match_like_matches_macro)]
     let mut use_global = match global {
-        Some(Technique::Inner) => false,
+        Some(Technique::Inner) | Some(Technique::Lowercase(_)) | Some(Technique::Uppercase(_)) => {
+            false
+        }
         _ => true,
     };
 
@@ -517,12 +568,30 @@ fn inner_enum(input: &DeriveInput, data: &DataEnum) -> Result<TokenStream2> {
             use_global = false;
         }
 
-        if let Some(Technique::DocComments(_)) = current {
+        if let Some(Technique::DocComments(_))
+        | Some(Technique::Lowercase(_))
+        | Some(Technique::Uppercase(_)) = current
+        {
             use_global = false;
             if let Some(t) = current.as_mut() {
-                *t = Technique::DocComments(String::new());
-                t.apply_docs(&v.attrs);
-                t.fix_fmt();
+                match t {
+                    Technique::DocComments(_) => {
+                        *t = Technique::DocComments(String::new());
+                        t.apply_docs(&v.attrs);
+                        t.fix_fmt();
+                    }
+                    Technique::Lowercase(_) => {
+                        *t = Technique::Lowercase(String::new());
+                        t.apply_case(&type_str, &v.fields);
+                        t.fix_fmt();
+                    }
+                    Technique::Uppercase(_) => {
+                        *t = Technique::Uppercase(String::new());
+                        t.apply_case(&type_str, &v.fields);
+                        t.fix_fmt();
+                    }
+                    _ => unreachable!(),
+                }
             }
         }
 
