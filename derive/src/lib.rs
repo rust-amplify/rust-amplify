@@ -166,6 +166,33 @@ use syn::DeriveInput;
 ///     #[display(doc_comments)]
 ///     pub struct UnitStruct;
 ///    ```
+/// 7. Print the name of enum variant in lowercase/uppercase:
+///    ```
+///     # #[macro_use] extern crate amplify_derive;
+///     #[derive(Display)]
+///     #[display(lowercase)]
+///     enum Message {
+///         Quit,
+///         Move { x: i32, y: i32 },
+///         Write(String),
+///         ChangeColor(i32, i32, i32),
+///     }
+///
+///     #[derive(Display)]
+///     #[display(uppercase)]
+///     enum Event {
+///         Init,
+///         Load(Message),
+///     }
+///
+///
+///     assert_eq!(format!("{}", Message::Quit), "quit");
+///     assert_eq!(format!("{}", Message::Move{ x: 1, y: 2 }), "move { x: 1, y: 2 }");
+///     assert_eq!(format!("{}", Message::Write(String::from("msg"))), "write(msg)");
+///     assert_eq!(format!("{}", Message::ChangeColor(255, 0, 0)), "changecolor(255, 0, 0)");
+///     assert_eq!(format!("{}", Event::Init), "INIT");
+///     assert_eq!(format!("{}", Event::Load(Message::ChangeColor(0, 255, 0))), "LOAD(changecolor(0, 255, 0))");
+///    ```
 /// # Example
 ///
 /// Advanced use with enums:
@@ -482,7 +509,7 @@ pub fn derive_as_any(input: TokenStream) -> TokenStream {
 /// structs) is not supported (since it's meaningless), and results in a error.
 ///
 /// Additionally to these two cases, macro errors on argument inconsistencies,
-/// as described in the argument-specifc sections.
+/// as described in the argument-specific sections.
 ///
 /// # Examples
 ///
@@ -494,18 +521,40 @@ pub fn derive_as_any(input: TokenStream) -> TokenStream {
 /// struct One {
 ///     vec: Vec<u8>,
 ///     defaults: String,
+///     #[getter(as_copy)]
 ///     pub flag: bool,
+///     #[getter(as_copy)]
 ///     pub(self) field: u8,
 /// }
 ///
 /// let mut one = One::default();
 /// assert_eq!(one.vec(), &Vec::<u8>::default());
 /// assert_eq!(one.defaults(), "");
-/// assert_eq!(one.flag(), &false);
-/// assert_eq!(one.field(), &0);
+/// assert_eq!(one.flag(), false);
+/// assert_eq!(one.field(), 0);
 /// ```
 ///
-/// Advanced use:
+/// Important, that field-level arguments to override struct-level arguments:
+/// ```
+/// # #[macro_use] extern crate amplify_derive;
+/// #[derive(Getters, Default)]
+/// #[getter(as_copy)]
+/// struct Other {
+///     #[getter(as_ref)]
+///     vec: Vec<u8>,
+///     #[getter(as_clone)]
+///     defaults: String,
+///     pub flag: bool,
+///     pub(self) field: u8,
+/// }
+///
+/// let mut other = Other::default();
+/// assert_eq!(other.vec(), &Vec::<u8>::default());
+/// assert_eq!(other.defaults(), String::from(""));
+/// ```
+///
+/// Advanced use: please pay attention that `as_mut` on a struct level is not
+/// removed by the use of `as_copy` at field level.
 ///
 /// ```
 /// # #[macro_use] extern crate amplify_derive;
