@@ -363,7 +363,7 @@ construct_smallint!(
 
 impl u24 {
     /// Create a native endian integer value from its representation as a byte
-    /// array in big endian.
+    /// array in little endian.
     pub fn from_le_bytes(bytes: [u8; 3]) -> u24 {
         let mut inner = [0u8; 4];
         inner[..3].copy_from_slice(&bytes);
@@ -375,6 +375,22 @@ impl u24 {
     pub fn to_le_bytes(self) -> [u8; 3] {
         let mut inner = [0u8; 3];
         inner.copy_from_slice(&self.0.to_le_bytes()[..3]);
+        inner
+    }
+
+    /// Create a native endian integer value from its representation as a byte
+    /// array in big endian.
+    pub fn from_be_bytes(bytes: [u8; 3]) -> u24 {
+        let mut inner = [0u8; 4];
+        inner[1..].copy_from_slice(&bytes);
+        Self(u32::from_be_bytes(inner))
+    }
+
+    /// Return the memory representation of this integer as a byte array in
+    /// big-endian byte order.
+    pub fn to_be_bytes(self) -> [u8; 3] {
+        let mut inner = [0u8; 3];
+        inner.copy_from_slice(&self.0.to_be_bytes()[1..]);
         inner
     }
 }
