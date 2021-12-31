@@ -105,6 +105,30 @@ macro_rules! construct_smallint {
             }
         }
 
+        impl core::fmt::UpperHex for $ty {
+            fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
+                core::fmt::UpperHex::fmt(&self.as_ref(), f)
+            }
+        }
+
+        impl core::fmt::LowerHex for $ty {
+            fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
+                core::fmt::LowerHex::fmt(&self.as_ref(), f)
+            }
+        }
+
+        impl core::fmt::Octal for $ty {
+            fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
+                core::fmt::Octal::fmt(&self.as_ref(), f)
+            }
+        }
+
+        impl core::fmt::Binary for $ty {
+            fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
+                core::fmt::Binary::fmt(&self.as_ref(), f)
+            }
+        }
+
         impl DivRem for $ty {
             // divmod like operation, returns (quotient, remainder)
             #[inline]
@@ -520,5 +544,80 @@ mod test {
         let u_2 = u2::MAX;
         let u_2_zero = u2::ZERO;
         u2::div_rem(u_2, u_2_zero);
+    }
+
+    #[test]
+    fn fmt_test() {
+        let u_2 = u2::MAX;
+        let u_3 = u3::MAX;
+        let u_4 = u4::MAX;
+        let u_5 = u5::MAX;
+        let u_6 = u6::MAX;
+        let u_7 = u7::MAX;
+        let u_24 = u24::MAX;
+
+        // UpperHex
+        assert_eq!(format!("{:X}", u_2), "3");
+        assert_eq!(format!("{:X}", u_3), "7");
+        assert_eq!(format!("{:X}", u_4), "F");
+        assert_eq!(format!("{:X}", u_5), "1F");
+        assert_eq!(format!("{:X}", u_6), "3F");
+        assert_eq!(format!("{:X}", u_7), "7F");
+        assert_eq!(format!("{:X}", u_24), "FFFFFF");
+        assert_eq!(format!("{:#X}", u_2), "0x3");
+        assert_eq!(format!("{:#X}", u_3), "0x7");
+        assert_eq!(format!("{:#X}", u_4), "0xF");
+        assert_eq!(format!("{:#X}", u_5), "0x1F");
+        assert_eq!(format!("{:#X}", u_6), "0x3F");
+        assert_eq!(format!("{:#X}", u_7), "0x7F");
+        assert_eq!(format!("{:#X}", u_24), "0xFFFFFF");
+
+        // LowerHex
+        assert_eq!(format!("{:x}", u_2), "3");
+        assert_eq!(format!("{:x}", u_3), "7");
+        assert_eq!(format!("{:x}", u_4), "f");
+        assert_eq!(format!("{:x}", u_5), "1f");
+        assert_eq!(format!("{:x}", u_6), "3f");
+        assert_eq!(format!("{:x}", u_7), "7f");
+        assert_eq!(format!("{:x}", u_24), "ffffff");
+        assert_eq!(format!("{:#x}", u_2), "0x3");
+        assert_eq!(format!("{:#x}", u_3), "0x7");
+        assert_eq!(format!("{:#x}", u_4), "0xf");
+        assert_eq!(format!("{:#x}", u_5), "0x1f");
+        assert_eq!(format!("{:#x}", u_6), "0x3f");
+        assert_eq!(format!("{:#x}", u_7), "0x7f");
+        assert_eq!(format!("{:#x}", u_24), "0xffffff");
+
+        // Octal
+        assert_eq!(format!("{:o}", u_2), "3");
+        assert_eq!(format!("{:o}", u_3), "7");
+        assert_eq!(format!("{:o}", u_4), "17");
+        assert_eq!(format!("{:o}", u_5), "37");
+        assert_eq!(format!("{:o}", u_6), "77");
+        assert_eq!(format!("{:o}", u_7), "177");
+        assert_eq!(format!("{:o}", u_24), "77777777");
+        assert_eq!(format!("{:#o}", u_2), "0o3");
+        assert_eq!(format!("{:#o}", u_3), "0o7");
+        assert_eq!(format!("{:#o}", u_4), "0o17");
+        assert_eq!(format!("{:#o}", u_5), "0o37");
+        assert_eq!(format!("{:#o}", u_6), "0o77");
+        assert_eq!(format!("{:#o}", u_7), "0o177");
+        assert_eq!(format!("{:#o}", u_24), "0o77777777");
+
+        // Binary
+        assert_eq!(format!("{:b}", u_2), "11");
+        assert_eq!(format!("{:b}", u_3), "111");
+        assert_eq!(format!("{:b}", u_4), "1111");
+        assert_eq!(format!("{:b}", u_5), "11111");
+        assert_eq!(format!("{:b}", u_6), "111111");
+        assert_eq!(format!("{:b}", u_7), "1111111");
+        assert_eq!(format!("{:b}", u_24), "111111111111111111111111");
+        assert_eq!(format!("{:#b}", u_2), "0b11");
+        assert_eq!(format!("{:#b}", u_3), "0b111");
+        assert_eq!(format!("{:#b}", u_4), "0b1111");
+        assert_eq!(format!("{:#b}", u_5), "0b11111");
+        assert_eq!(format!("{:#b}", u_6), "0b111111");
+        assert_eq!(format!("{:#b}", u_7), "0b1111111");
+        assert_eq!(format!("{:#b}", u_24), "0b111111111111111111111111");
     }
 }

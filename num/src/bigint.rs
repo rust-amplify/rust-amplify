@@ -848,6 +848,152 @@ macro_rules! construct_bigint {
             }
         }
 
+        #[cfg(feature = "alloc")]
+        impl ::core::fmt::UpperHex for $name {
+            fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> Result<(), ::core::fmt::Error> {
+                use alloc::string::String;
+                use alloc::format;
+
+                let mut hex = String::new();
+                for chunk in self.0.iter().rev().skip_while(|x| **x == 0) {
+                    if hex.is_empty() {
+                        hex.push_str(&format!("{:X}", chunk));
+                    } else {
+                        hex.push_str(&format!("{:0>16X}", chunk));
+                    }
+                }
+                if hex.is_empty() {
+                    hex.push_str("0");
+                }
+
+                let mut prefix = if f.alternate() {
+                    String::from("0x")
+                } else {
+                    String::new()
+                };
+                if let Some(width) = f.width() {
+                    if f.sign_aware_zero_pad() {
+                        let missing_width =
+                            width.saturating_sub(prefix.len()).saturating_sub(hex.len());
+                        prefix.push_str(&"0".repeat(missing_width));
+                    }
+                }
+
+                prefix.push_str(&hex);
+                f.pad(&prefix)
+            }
+        }
+
+        #[cfg(feature = "alloc")]
+        impl ::core::fmt::LowerHex for $name {
+            fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> Result<(), ::core::fmt::Error> {
+                use alloc::string::String;
+                use alloc::format;
+
+                let mut hex = String::new();
+                for chunk in self.0.iter().rev().skip_while(|x| **x == 0) {
+                    if hex.is_empty() {
+                        hex.push_str(&format!("{:x}", chunk));
+                    } else {
+                        hex.push_str(&format!("{:0>16x}", chunk));
+                    }
+                }
+                if hex.is_empty() {
+                    hex.push_str("0");
+                }
+
+                let mut prefix = if f.alternate() {
+                    String::from("0x")
+                } else {
+                    String::new()
+                };
+                if let Some(width) = f.width() {
+                    if f.sign_aware_zero_pad() {
+                        let missing_width =
+                            width.saturating_sub(prefix.len()).saturating_sub(hex.len());
+                        prefix.push_str(&"0".repeat(missing_width));
+                    }
+                }
+
+                prefix.push_str(&hex);
+                f.pad(&prefix)
+            }
+        }
+
+        #[cfg(feature = "alloc")]
+        impl ::core::fmt::Octal for $name {
+            fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> Result<(), ::core::fmt::Error> {
+                use alloc::string::String;
+                use alloc::format;
+
+                let mut octal = String::new();
+                for chunk in self.0.iter().rev().skip_while(|x| **x == 0) {
+                    if octal.is_empty() {
+                        octal.push_str(&format!("{:o}", chunk));
+                    } else {
+                        octal.push_str(&format!("{:0>22o}", chunk));
+                    }
+                }
+                if octal.is_empty() {
+                    octal.push_str("0");
+                }
+
+                let mut prefix = if f.alternate() {
+                    String::from("0o")
+                } else {
+                    String::new()
+                };
+                if let Some(width) = f.width() {
+                    if f.sign_aware_zero_pad() {
+                        let missing_width = width
+                            .saturating_sub(prefix.len())
+                            .saturating_sub(octal.len());
+                        prefix.push_str(&"0".repeat(missing_width));
+                    }
+                }
+
+                prefix.push_str(&octal);
+                f.pad(&prefix)
+            }
+        }
+
+        #[cfg(feature = "alloc")]
+        impl ::core::fmt::Binary for $name {
+            fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> Result<(), ::core::fmt::Error> {
+                use alloc::string::String;
+                use alloc::format;
+
+                let mut binary = String::new();
+                for chunk in self.0.iter().rev().skip_while(|x| **x == 0) {
+                    if binary.is_empty() {
+                        binary.push_str(&format!("{:b}", chunk));
+                    } else {
+                        binary.push_str(&format!("{:0>64b}", chunk));
+                    }
+                }
+                if binary.is_empty() {
+                    binary.push_str("0");
+                }
+
+                let mut prefix = if f.alternate() {
+                    String::from("0b")
+                } else {
+                    String::new()
+                };
+                if let Some(width) = f.width() {
+                    if f.sign_aware_zero_pad() {
+                        let missing_width = width
+                            .saturating_sub(prefix.len())
+                            .saturating_sub(binary.len());
+                        prefix.push_str(&"0".repeat(missing_width));
+                    }
+                }
+
+                prefix.push_str(&binary);
+                f.pad(&prefix)
+            }
+        }
+
         #[cfg(feature = "serde")]
         impl $crate::serde::Serialize for $name {
             fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
@@ -917,7 +1063,6 @@ macro_rules! construct_bigint {
 construct_bigint!(u256, 4);
 construct_bigint!(u512, 8);
 construct_bigint!(u1024, 16);
-
 #[cfg(test)]
 mod tests {
     #![allow(unused)]
@@ -972,6 +1117,104 @@ mod tests {
             format!("{}", max_val),
             "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
         );
+    }
+
+    #[cfg(feature = "alloc")]
+    #[test]
+    fn fmt_hex() {
+        let one = u256::ONE;
+        let mut u_256 = u256([
+            0x0000000000000000,
+            0xAAAAAAAABBBBBBBB,
+            0x0000000111122222,
+            0x0000000000000000,
+        ]);
+
+        // UpperHex
+        assert_eq!(
+            format!("{:X}", u_256),
+            "111122222AAAAAAAABBBBBBBB0000000000000000"
+        );
+        assert_eq!(
+            format!("{:#X}", u_256),
+            "0x111122222AAAAAAAABBBBBBBB0000000000000000"
+        );
+        assert_eq!(format!("{:X}", u256::ZERO), "0");
+        assert_eq!(format!("{:05X}", one), "00001");
+        assert_eq!(format!("{:#05X}", one), "0x001");
+        assert_eq!(format!("{:5X}", one), "1    ");
+        assert_eq!(format!("{:#5X}", one), "0x1  ");
+        assert_eq!(format!("{:w^#7X}", one), "ww0x1ww");
+
+        // LowerHex
+        assert_eq!(
+            format!("{:x}", u_256),
+            "111122222aaaaaaaabbbbbbbb0000000000000000"
+        );
+        assert_eq!(
+            format!("{:#x}", u_256),
+            "0x111122222aaaaaaaabbbbbbbb0000000000000000"
+        );
+        assert_eq!(format!("{:x}", u256::ZERO), "0");
+        assert_eq!(format!("{:05x}", one), "00001");
+        assert_eq!(format!("{:#05x}", one), "0x001");
+        assert_eq!(format!("{:5x}", one), "1    ");
+        assert_eq!(format!("{:#5x}", one), "0x1  ");
+        assert_eq!(format!("{:w^#7x}", one), "ww0x1ww");
+    }
+
+    #[cfg(feature = "alloc")]
+    #[test]
+    fn fmt_octal() {
+        let one = u256::ONE;
+        let mut u_256 = u256([
+            0o0000000000000000000000,
+            0o0011222222222222222222,
+            0o0000000001111111111111,
+            0o0000000000000000000000,
+        ]);
+
+        assert_eq!(
+            format!("{:o}", u_256),
+            "111111111111100112222222222222222220000000000000000000000"
+        );
+        assert_eq!(
+            format!("{:#o}", u_256),
+            "0o111111111111100112222222222222222220000000000000000000000"
+        );
+        assert_eq!(format!("{:o}", u256::ZERO), "0");
+        assert_eq!(format!("{:05o}", one), "00001");
+        assert_eq!(format!("{:#05o}", one), "0o001");
+        assert_eq!(format!("{:5o}", one), "1    ");
+        assert_eq!(format!("{:#5o}", one), "0o1  ");
+        assert_eq!(format!("{:w^#7o}", one), "ww0o1ww");
+    }
+
+    #[cfg(feature = "alloc")]
+    #[test]
+    fn fmt_binary() {
+        let one = u256::ONE;
+        let mut u_256 = u256([
+            0b0000000000000000000000000000000000000000000000000000000000000000,
+            0b0001111000011110001111000011110001111000011110001111000011110000,
+            0b0000000000000000000000000000001111111111111111111111111111111111,
+            0b0000000000000000000000000000000000000000000000000000000000000000,
+        ]);
+
+        assert_eq!(
+            format!("{:b}", u_256),
+            "111111111111111111111111111111111100011110000111100011110000111100011110000111100011110000111100000000000000000000000000000000000000000000000000000000000000000000"
+        );
+        assert_eq!(
+            format!("{:#b}", u_256),
+            "0b111111111111111111111111111111111100011110000111100011110000111100011110000111100011110000111100000000000000000000000000000000000000000000000000000000000000000000"
+        );
+        assert_eq!(format!("{:b}", u256::ZERO), "0");
+        assert_eq!(format!("{:05b}", one), "00001");
+        assert_eq!(format!("{:#05b}", one), "0b001");
+        assert_eq!(format!("{:5b}", one), "1    ");
+        assert_eq!(format!("{:#5b}", one), "0b1  ");
+        assert_eq!(format!("{:w^#7b}", one), "ww0b1ww");
     }
 
     #[test]
