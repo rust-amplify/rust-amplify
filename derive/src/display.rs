@@ -82,28 +82,28 @@ impl FormattingTrait {
     pub fn into_token_stream2(self, span: Span) -> TokenStream2 {
         match self {
             FormattingTrait::Debug => quote_spanned! { span =>
-                ::core::fmt::Debug::fmt(self, &mut f)
+                ::core::fmt::Debug::fmt(&self, f)
             },
             FormattingTrait::Octal => quote_spanned! { span =>
-                ::core::fmt::Octal::fmt(self, &mut f)
+                ::core::fmt::Octal::fmt(&self, f)
             },
             FormattingTrait::Binary => quote_spanned! { span =>
-                ::core::fmt::Binary::fmt(self, &mut f)
+                ::core::fmt::Binary::fmt(&self, f)
             },
             FormattingTrait::Pointer => quote_spanned! { span =>
-                ::core::fmt::Pointer::fmt(self, &mut f)
+                ::core::fmt::Pointer::fmt(&self, f)
             },
             FormattingTrait::LowerHex => quote_spanned! { span =>
-                ::core::fmt::LowerHex::fmt(self, &mut f)
+                ::core::fmt::LowerHex::fmt(&self, f)
             },
             FormattingTrait::UpperHex => quote_spanned! { span =>
-                ::core::fmt::UpperHex::fmt(self, &mut f)
+                ::core::fmt::UpperHex::fmt(&self, f)
             },
             FormattingTrait::LowerExp => quote_spanned! { span =>
-                ::core::fmt::LowerExp::fmt(self, &mut f)
+                ::core::fmt::LowerExp::fmt(&self, f)
             },
             FormattingTrait::UpperExp => quote_spanned! { span =>
-                ::core::fmt::UpperExp::fmt(self, &mut f)
+                ::core::fmt::UpperExp::fmt(&self, f)
             },
         }
     }
