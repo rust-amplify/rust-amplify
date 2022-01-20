@@ -1334,6 +1334,7 @@ mod tests {
     use super::*;
 
     construct_bigint!(Uint128, 2);
+    construct_unsigned_bigint_methods!(Uint128, 2);
 
     #[test]
     fn u256_bits_test() {
@@ -1860,5 +1861,164 @@ mod tests {
             "\"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff\""
         )
         .is_err()); // invalid length
+    }
+
+    #[test]
+    fn i256_test() {
+        let x = i256::from(1);
+        let y = i256::from(1);
+        assert_eq!(x.checked_add(y), Some(i256::from(2)));
+    }
+
+    #[test]
+    fn i256_is_positive_test() {
+        assert_eq!(true, i256::from(1).is_positive());
+        assert_eq!(false, i256::from(-1).is_positive());
+        assert_eq!(false, i256::from(0).is_positive());
+        assert_eq!(true, i256::MAX.is_positive());
+        assert_eq!(false, i256::MIN.is_positive());
+        assert_eq!(true, i256::MIN.is_negative());
+    }
+
+    #[test]
+    fn i256_add_test() {
+        assert_eq!(
+            (i256::from(3), false),
+            i256::from(1).overflowing_add(i256::from(2))
+        );
+        assert_eq!(
+            (i256::from(1), false),
+            i256::from(-1).overflowing_add(i256::from(2))
+        );
+        assert_eq!(
+            (i256::from(-2), false),
+            i256::from(-1).overflowing_add(i256::from(-1))
+        );
+        assert_eq!(
+            (i256::from(0), false),
+            i256::from(0).overflowing_add(i256::from(0))
+        );
+        assert_eq!((i256::MIN, true), i256::from(1).overflowing_add(i256::MAX));
+    }
+
+    #[test]
+    fn i256_sub_test() {
+        assert_eq!(
+            (i256::from(-1), false),
+            i256::from(1).overflowing_sub(i256::from(2))
+        );
+        assert_eq!(
+            (i256::from(1), false),
+            i256::from(3).overflowing_sub(i256::from(2))
+        );
+        assert_eq!(
+            (i256::from(-3), false),
+            i256::from(-4).overflowing_sub(i256::from(-1))
+        );
+        assert_eq!(
+            (i256::from(0), false),
+            i256::from(0).overflowing_add(i256::from(0))
+        );
+        assert_eq!((i256::MIN, false), i256::from(0).overflowing_sub(i256::MIN));
+        assert_eq!((-i256::ONE, false), i256::MAX.overflowing_sub(i256::MIN));
+        assert_eq!(
+            (i256::MAX, true),
+            (-i256::from(2)).overflowing_sub(i256::MAX)
+        );
+    }
+
+    #[test]
+    fn i256_neg_test() {
+        assert_eq!(i256::from(1), -i256::from(-1));
+        assert_eq!(i256::from(-1), -i256::from(1));
+        assert_eq!(i256::from(0), -i256::from(0));
+        assert_eq!(i256::MIN + 1, -i256::MAX);
+    }
+
+    #[test]
+    #[should_panic]
+    fn i256_neg_min_test() {
+        assert_eq!(-i256::MIN, -i256::MIN);
+    }
+
+    #[test]
+    fn i256_mul_test() {
+        assert_eq!(
+            (i256::from(-12), false),
+            i256::from(3).overflowing_mul(i256::from(-4))
+        );
+        assert_eq!(
+            (i256::from(6), false),
+            i256::from(2).overflowing_mul(i256::from(3))
+        );
+        assert_eq!(
+            (i256::from(30), false),
+            i256::from(-6).overflowing_mul(i256::from(-5))
+        );
+        assert_eq!(
+            (i256::from(-2), true),
+            i256::MAX.overflowing_mul(i256::from(2))
+        );
+        assert_eq!((i256::ZERO, true), i256::MIN.overflowing_mul(i256::from(2)));
+        assert_eq!((i256::ONE, true), i256::MAX.overflowing_mul(i256::MAX));
+    }
+
+    #[test]
+    fn i256_arithmetic_shr_test() {
+        assert_eq!(i256::from(-1), i256::from(-1) >> 1);
+        assert_eq!(i256::from(-1), i256::from(-2) >> 1);
+        assert_eq!(i256::from(1), i256::from(2) >> 1);
+        assert_eq!(i256::from(1), i256::from(2) >> 1);
+        assert_eq!(i256::from(0), i256::from(1) >> 1);
+    }
+
+    #[test]
+    fn i256_bits_required_test() {
+        assert_eq!(i256::from(255u64).bits_required(), 8);
+        assert_eq!(i256::from(256u64).bits_required(), 9);
+        assert_eq!(i256::from(300u64).bits_required(), 9);
+        assert_eq!(i256::from(60000u64).bits_required(), 16);
+        assert_eq!(i256::from(70000u64).bits_required(), 17);
+        assert_eq!(i256::from(-128i64).bits_required(), 8);
+        assert_eq!(i256::from(-129i128).bits_required(), 9);
+        assert_eq!(i256::from(0i32).bits_required(), 0);
+        assert_eq!(i256::from(-1i16).bits_required(), 1);
+        assert_eq!(i256::from(-2i64).bits_required(), 2);
+        assert_eq!(i256::MIN.bits_required(), 256);
+        assert_eq!(i256::MAX.bits_required(), 255);
+    }
+
+    #[test]
+    fn i256_div_test() {
+        assert_eq!(
+            (i256::from(3), i256::from(1)),
+            i256::from(7).div_rem_checked(i256::from(2i32)).unwrap()
+        );
+        assert_eq!(
+            (i256::from(-3), i256::from(1)),
+            i256::from(7).div_rem_checked(i256::from(-2i128)).unwrap()
+        );
+        assert_eq!(
+            (i256::from(-3), i256::from(-1)),
+            i256::from(-7).div_rem_checked(i256::from(2)).unwrap()
+        );
+        assert_eq!(
+            (i256::from(3), i256::from(-1)),
+            i256::from(-7).div_rem_checked(i256::from(-2)).unwrap()
+        );
+        let res = std::panic::catch_unwind(|| i256::div_rem(i256::MAX, i256::ZERO));
+        assert!(res.is_err());
+        let res = std::panic::catch_unwind(|| i256::div_rem(i256::MIN, i256::from(-1)));
+        assert!(res.is_err());
+    }
+
+    #[test]
+    fn i256_cmp_test() {
+        assert!(i256::ZERO < i256::ONE);
+        assert!(-i256::ONE < i256::ZERO);
+        assert!(i256::MIN < i256::MAX);
+        assert!(i256::MIN < i256::ZERO);
+        assert!(i256::from(200) < i256::from(10000000));
+        assert!(i256::from(-3) < i256::from(87));
     }
 }
