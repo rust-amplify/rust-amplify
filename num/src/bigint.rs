@@ -73,12 +73,6 @@ macro_rules! construct_bigint {
                 one
             });
 
-            /// Minimum value
-            pub const MIN: $name = $name([0u64; $n_words]);
-
-            /// Maximum value
-            pub const MAX: $name = $name([::core::u64::MAX; $n_words]);
-
             /// Bit dimension
             pub const BITS: u32 = $n_words * 64;
 
@@ -113,13 +107,36 @@ macro_rules! construct_bigint {
             #[inline]
             pub fn bits_required(&self) -> usize {
                 let &$name(ref arr) = self;
-                for i in 1..$n_words {
-                    if arr[$n_words - i] > 0 {
-                        return (0x40 * ($n_words - i + 1))
-                            - arr[$n_words - i].leading_zeros() as usize;
+                if self.is_negative() {
+                    for i in 1..$n_words {
+                        if arr[$n_words - i] != ::core::u64::MAX {
+                            return (0x40 * ($n_words - i + 1)) + 1
+                                - (!arr[$n_words - i]).leading_zeros() as usize;
+                        }
                     }
+                    0x40 + 1 - (!arr[0]).leading_zeros() as usize
+                } else {
+                    for i in 1..$n_words {
+                        if arr[$n_words - i] > 0 {
+                            return (0x40 * ($n_words - i + 1))
+                                - arr[$n_words - i].leading_zeros() as usize;
+                        }
+                    }
+                    0x40 - arr[0].leading_zeros() as usize
                 }
-                0x40 - arr[0].leading_zeros() as usize
+            }
+
+            #[inline]
+            pub fn is_zero(&self) -> bool {
+                self[..] == [0; $n_words]
+            }
+
+            #[inline]
+            pub fn abs(self) -> $name {
+                if !self.is_negative() {
+                    return self;
+                }
+                (!self).wrapping_add($name::ONE)
             }
 
             /// Creates the integer value from a byte array using big-endian
@@ -228,6 +245,15 @@ macro_rules! construct_bigint {
                     return ($name(ret), sub_copy);
                 }
 
+                if sub_copy.is_negative() || shift_copy.is_negative() {
+                    assert!(
+                        sub_copy != $name::MIN || my_bits != $name::BITS as usize,
+                        "attempt to divide with overflow"
+                    );
+                }
+                sub_copy = sub_copy.abs();
+                shift_copy = shift_copy.abs();
+
                 // Bitwise long division
                 let mut shift = my_bits - your_bits;
                 shift_copy <<= shift;
@@ -243,7 +269,15 @@ macro_rules! construct_bigint {
                     shift -= 1;
                 }
 
-                ($name(ret), sub_copy)
+                let ret = match self.is_negative() == other.is_negative() {
+                    true => $name(ret),
+                    false => -$name(ret),
+                };
+                sub_copy = match self.is_negative() {
+                    true => -sub_copy,
+                    false => sub_copy,
+                };
+                (ret, sub_copy)
             }
             // same operation as in div_rem, not panicking when
             #[inline]
@@ -368,18 +402,39 @@ macro_rules! construct_bigint {
         impl Ord for $name {
             #[inline]
             fn cmp(&self, other: &$name) -> ::core::cmp::Ordering {
-                // We need to manually implement ordering because we use little-endian
-                // and the auto derive is a lexicographic ordering(i.e. memcmp)
-                // which with numbers is equivilant to big-endian
-                for i in 0..$n_words {
-                    if self[$n_words - 1 - i] < other[$n_words - 1 - i] {
-                        return ::core::cmp::Ordering::Less;
-                    }
-                    if self[$n_words - 1 - i] > other[$n_words - 1 - i] {
-                        return ::core::cmp::Ordering::Greater;
+                match (self.is_negative(), other.is_negative()) {
+                    (false, true) => ::core::cmp::Ordering::Greater,
+                    (true, false) => ::core::cmp::Ordering::Less,
+                    _ => {
+                        // We need to manually implement ordering because we use little-endian
+                        // and the auto derive is a lexicographic ordering(i.e. memcmp)
+                        // which with numbers is equivilant to big-endian
+                        for i in 0..$n_words {
+                            if self[$n_words - 1 - i] < other[$n_words - 1 - i] {
+                                return ::core::cmp::Ordering::Less;
+                            }
+                            if self[$n_words - 1 - i] > other[$n_words - 1 - i] {
+                                return ::core::cmp::Ordering::Greater;
+                            }
+                        }
+                        ::core::cmp::Ordering::Equal
                     }
                 }
-                ::core::cmp::Ordering::Equal
+            }
+        }
+
+        impl ::core::ops::Neg for $name {
+            type Output = Self;
+            fn neg(self) -> Self::Output {
+                assert!(
+                    $name::MIN != $name([::core::u64::MAX; $n_words]),
+                    "attempt to negate unsigned number"
+                );
+                assert!(
+                    self != $name::MIN,
+                    "attempt to negate the minimum value, which would overflow"
+                );
+                (!self).wrapping_add($name::ONE)
             }
         }
 
@@ -422,7 +477,8 @@ macro_rules! construct_bigint {
                 T: Into<$name>,
             {
                 let $name(ref me) = self;
-                let $name(ref you) = other.into();
+                let other = other.into();
+                let $name(ref you) = other;
                 let mut ret = [0u64; $n_words];
                 let mut carry = 0u64;
                 for i in 0..$n_words {
@@ -432,7 +488,12 @@ macro_rules! construct_bigint {
                     carry += flag as u64;
                     ret[i] = res;
                 }
-                (Self(ret), carry > 0)
+                let ret = Self(ret);
+                (
+                    ret,
+                    (self.is_negative() == other.is_negative())
+                        && (self.is_negative() != ret.is_negative()),
+                )
             }
 
             /// Wrapping (modular) addition. Computes `self + rhs`, wrapping around at
@@ -481,11 +542,7 @@ macro_rules! construct_bigint {
             where
                 T: Into<$name>,
             {
-                let other = other.into();
-                (
-                    self.wrapping_add(!other).wrapping_add($name::ONE),
-                    self < other,
-                )
+                self.overflowing_add((!other.into()).wrapping_add($name::ONE))
             }
 
             /// Wrapping (modular) subtraction. Computes `self - rhs`, wrapping around
@@ -523,46 +580,6 @@ macro_rules! construct_bigint {
                 } else {
                     res
                 }
-            }
-
-            /// Calculates `self * rhs`
-            ///
-            /// Returns a tuple of the multiplication along with a boolean indicating
-            /// whether an arithmetic overflow would occur. If an overflow would
-            /// have occurred then the wrapped value is returned.
-            pub fn overflowing_mul<T>(self, other: T) -> ($name, bool)
-            where
-                T: Into<$name>,
-            {
-                let $name(ref me) = self;
-                let $name(ref you) = other.into();
-                let mut ret = [0u64; $n_words];
-                let mut overflow = false;
-                for i in 0..$n_words {
-                    let mut carry = 0u64;
-                    for j in 0..$n_words {
-                        if i + j >= $n_words {
-                            if me[i] > 0 && you[j] > 0 {
-                                overflow = true
-                            }
-                            continue;
-                        }
-                        let prev_carry = carry;
-                        let res = me[i] as u128 * you[j] as u128;
-                        carry = (res >> 64) as u64;
-                        let mul = (res & ::core::u64::MAX as u128) as u64;
-                        let (res, flag) = ret[i + j].overflowing_add(mul);
-                        carry += flag as u64;
-                        ret[i + j] = res;
-                        let (res, flag) = ret[i + j].overflowing_add(prev_carry);
-                        carry += flag as u64;
-                        ret[i + j] = res;
-                    }
-                    if carry > 0 {
-                        overflow = true
-                    }
-                }
-                (Self(ret), overflow)
             }
 
             /// Wrapping (modular) multiplication. Computes `self * rhs`, wrapping
@@ -837,9 +854,13 @@ macro_rules! construct_bigint {
                         ret[i - word_shift] += original[i + 1] << (64 - bit_shift);
                     }
                 }
+                if self.is_negative() {
+                    ret[$n_words - 1] |= 0x8000_0000_0000_0000
+                }
                 $name(ret)
             }
         }
+
         impl ::core::ops::ShrAssign<usize> for $name {
             #[inline]
             fn shr_assign(&mut self, rhs: usize) {
@@ -1090,9 +1111,222 @@ macro_rules! construct_bigint {
     };
 }
 
+macro_rules! construct_signed_bigint_methods {
+    ( $ name: ident, $ n_words: expr ) => {
+        impl From<i8> for $name {
+            fn from(init: i8) -> $name {
+                let bytes = init.to_le_bytes();
+                let mut ret = [if init.is_negative() {
+                    ::core::u8::MAX
+                } else {
+                    0
+                }; $n_words * 8];
+                for i in 0..bytes.len() {
+                    ret[i] = bytes[i]
+                }
+                $name::from_le_bytes(ret)
+            }
+        }
+
+        impl From<i16> for $name {
+            fn from(init: i16) -> $name {
+                let bytes = init.to_le_bytes();
+                let mut ret = [if init.is_negative() {
+                    ::core::u8::MAX
+                } else {
+                    0
+                }; $n_words * 8];
+                for i in 0..bytes.len() {
+                    ret[i] = bytes[i]
+                }
+                $name::from_le_bytes(ret)
+            }
+        }
+
+        impl From<i32> for $name {
+            fn from(init: i32) -> $name {
+                let bytes = init.to_le_bytes();
+                let mut ret = [if init.is_negative() {
+                    ::core::u8::MAX
+                } else {
+                    0
+                }; $n_words * 8];
+                for i in 0..bytes.len() {
+                    ret[i] = bytes[i]
+                }
+                $name::from_le_bytes(ret)
+            }
+        }
+
+        impl From<i64> for $name {
+            fn from(init: i64) -> $name {
+                let bytes = init.to_le_bytes();
+                let mut ret = [if init.is_negative() {
+                    ::core::u8::MAX
+                } else {
+                    0
+                }; $n_words * 8];
+                for i in 0..bytes.len() {
+                    ret[i] = bytes[i]
+                }
+                $name::from_le_bytes(ret)
+            }
+        }
+
+        impl From<i128> for $name {
+            fn from(init: i128) -> $name {
+                let bytes = init.to_le_bytes();
+                let mut ret = [if init.is_negative() {
+                    ::core::u8::MAX
+                } else {
+                    0
+                }; $n_words * 8];
+                for i in 0..bytes.len() {
+                    ret[i] = bytes[i]
+                }
+                $name::from_le_bytes(ret)
+            }
+        }
+
+        impl $name {
+            /// Minimum value
+            pub const MIN: $name = {
+                let mut min = [0u64; $n_words];
+                min[$n_words - 1] = 0x8000_0000_0000_0000;
+                $name(min)
+            };
+
+            /// Maximum value
+            pub const MAX: $name = {
+                let mut max = [::core::u64::MAX; $n_words];
+                max[$n_words - 1] = ::core::u64::MAX >> 1;
+                $name(max)
+            };
+
+            #[inline]
+            pub fn is_positive(&self) -> bool {
+                !self.is_zero()
+                    && self[($name::INNER_LEN - 1) as usize] & 0x8000_0000_0000_0000 == 0
+            }
+
+            #[inline]
+            pub fn is_negative(&self) -> bool {
+                !self.is_zero() && !self.is_positive()
+            }
+
+            /// Calculates `self * rhs`
+            ///
+            /// Returns a tuple of the multiplication along with a boolean indicating
+            /// whether an arithmetic overflow would occur. If an overflow would
+            /// have occurred then the wrapped value is returned.
+            pub fn overflowing_mul<T>(self, other: T) -> ($name, bool)
+            where
+                T: Into<$name>,
+            {
+                let sub = if self != $name::MIN { -self } else { self };
+                let mut p_high = $name::ZERO;
+                let mut p_low = other.into();
+                let mut prev = false;
+                for _i in 0..$name::BITS {
+                    let p_low_trailing_bit = (p_low[0] & 1) != 0;
+                    p_high = match (p_low_trailing_bit, prev) {
+                        (false, true) => p_high.wrapping_add(self),
+                        (true, false) => p_high.wrapping_add(sub),
+                        _ => p_high,
+                    };
+                    prev = p_low_trailing_bit;
+                    p_low >>= 1;
+                    p_low = match p_high[0] & 1 {
+                        0 => p_low & $name::MAX,
+                        _ => p_low | $name::MIN,
+                    };
+                    p_high >>= 1;
+                }
+                let negative_overflow =
+                    p_low.is_negative() && p_high != $name([::core::u64::MAX; $n_words]);
+                let positive_overflow = !p_low.is_negative() && p_high != $name::ZERO;
+                (p_low, negative_overflow || positive_overflow)
+            }
+        }
+    };
+}
+
+macro_rules! construct_unsigned_bigint_methods {
+    ( $ name: ident, $ n_words: expr ) => {
+        impl $name {
+            /// Minimum value
+            pub const MIN: $name = $name([0u64; $n_words]);
+
+            /// Maximum value
+            pub const MAX: $name = $name([::core::u64::MAX; $n_words]);
+
+            #[inline]
+            pub fn is_positive(&self) -> bool {
+                !self.is_zero()
+            }
+
+            #[inline]
+            pub fn is_negative(&self) -> bool {
+                false
+            }
+
+            /// Calculates `self * rhs`
+            ///
+            /// Returns a tuple of the multiplication along with a boolean indicating
+            /// whether an arithmetic overflow would occur. If an overflow would
+            /// have occurred then the wrapped value is returned.
+            pub fn overflowing_mul<T>(self, other: T) -> ($name, bool)
+            where
+                T: Into<$name>,
+            {
+                let $name(ref me) = self;
+                let $name(ref you) = other.into();
+                let mut ret = [0u64; $n_words];
+                let mut overflow = false;
+                for i in 0..$n_words {
+                    let mut carry = 0u64;
+                    for j in 0..$n_words {
+                        if i + j >= $n_words {
+                            if me[i] > 0 && you[j] > 0 {
+                                overflow = true
+                            }
+                            continue;
+                        }
+                        let prev_carry = carry;
+                        let res = me[i] as u128 * you[j] as u128;
+                        carry = (res >> 64) as u64;
+                        let mul = (res & ::core::u64::MAX as u128) as u64;
+                        let (res, flag) = ret[i + j].overflowing_add(mul);
+                        carry += flag as u64;
+                        ret[i + j] = res;
+                        let (res, flag) = ret[i + j].overflowing_add(prev_carry);
+                        carry += flag as u64;
+                        ret[i + j] = res;
+                    }
+                    if carry > 0 {
+                        overflow = true
+                    }
+                }
+                (Self(ret), overflow)
+            }
+        }
+    };
+}
+
+construct_bigint!(i256, 4);
+construct_bigint!(i512, 8);
+construct_bigint!(i1024, 16);
 construct_bigint!(u256, 4);
 construct_bigint!(u512, 8);
 construct_bigint!(u1024, 16);
+
+construct_unsigned_bigint_methods!(u256, 4);
+construct_unsigned_bigint_methods!(u512, 8);
+construct_unsigned_bigint_methods!(u1024, 16);
+construct_signed_bigint_methods!(i256, 4);
+construct_signed_bigint_methods!(i512, 8);
+construct_signed_bigint_methods!(i1024, 16);
+
 #[cfg(test)]
 mod tests {
     #![allow(unused)]
