@@ -573,6 +573,36 @@ macro_rules! construct_bigint {
             {
                 self.overflowing_mul(other).0
             }
+
+            /// Checked shift left. Computes self << rhs,
+            /// returning None if rhs is larger than or equal to the number of bits in self.
+            pub fn checked_shl(self, rhs: u32) -> Option<$name> {
+                match rhs < Self::BITS {
+                    true => Some(self << (rhs as usize)),
+                    false => None,
+                }
+            }
+
+            /// Checked shift right. Computes self >> rhs,
+            /// returning None if rhs is larger than or equal to the number of bits in self.
+            pub fn checked_shr(self, rhs: u32) -> Option<$name> {
+                match rhs < Self::BITS {
+                    true => Some(self >> (rhs as usize)),
+                    false => None,
+                }
+            }
+
+            /// Wrapping (modular) negation. Computes -self,
+            /// wrapping around at the boundary of the type.
+            /// Since unsigned types do not have negative equivalents
+            /// all applications of this function will wrap (except for -0).
+            /// For values smaller than the corresponding signed type's maximum
+            /// the result is the same as casting the corresponding signed value.
+            /// Any larger values are equivalent to MAX + 1 - (val - MAX - 1)
+            /// where MAX is the corresponding signed type's maximum.
+            pub fn wrapping_neg(self) -> $name {
+                !self + Self::ONE
+            }
         }
 
         impl<T> ::core::ops::Add<T> for $name
