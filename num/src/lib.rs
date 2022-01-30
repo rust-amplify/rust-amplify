@@ -40,6 +40,7 @@ mod divrem;
 pub mod error;
 #[cfg(feature = "hex")]
 pub mod hex;
+mod posit;
 mod smallint;
 
 pub use bigint::{u256, u512, u1024};
