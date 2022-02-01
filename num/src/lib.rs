@@ -43,7 +43,7 @@ pub mod hex;
 mod posit;
 mod smallint;
 
-pub use bigint::{u256, u512, u1024};
+pub use bigint::{u256, u512, u1024, i256, i512, i1024};
 pub use smallint::{u1, u2, u3, u4, u5, u6, u7, u24};
 
 // TODO: Create arbitrary precision types
