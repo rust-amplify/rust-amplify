@@ -2140,4 +2140,37 @@ mod tests {
         assert_eq!(i256::from(-2).trailing_zeros(), 1);
         assert_eq!(i256::from(-2).trailing_ones(), 0);
     }
+
+    #[test]
+    fn checked_shl_test() {
+        assert_eq!(i256::from(4).checked_shl(0), Some(i256::from(4)));
+        assert_eq!(i256::from(4).checked_shl(1), Some(i256::from(8)));
+        assert_eq!(i256::from(1).checked_shl(255), Some(i256::MIN));
+        assert_eq!(i256::from(4).checked_shl(255), Some(i256::from(0)));
+        assert_eq!(i256::from(4).checked_shl(256), None);
+        assert_eq!(u256::from(4u8).checked_shl(0), Some(u256::from(4u8)));
+        assert_eq!(u256::from(4u8).checked_shl(1), Some(u256::from(8u8)));
+        assert_eq!(u256::from(4u8).checked_shl(255), Some(u256::from(0u8)));
+        assert_eq!(u256::from(4u8).checked_shl(256), None);
+    }
+
+    #[test]
+    fn checked_shr_test() {
+        assert_eq!(i256::from(4).checked_shr(0), Some(i256::from(4)));
+        assert_eq!(i256::from(4).checked_shr(1), Some(i256::from(2)));
+        assert_eq!(i256::from(4).checked_shr(255), Some(i256::from(0)));
+        assert_eq!(i256::from(4).checked_shr(256), None);
+        assert_eq!(u256::from(4u8).checked_shr(0), Some(u256::from(4u8)));
+        assert_eq!(u256::from(4u8).checked_shr(1), Some(u256::from(2u8)));
+        assert_eq!(u256::from(4u8).checked_shr(255), Some(u256::from(0u8)));
+        assert_eq!(u256::from(4u8).checked_shr(256), None);
+    }
+
+    #[test]
+    fn wrapping_neg_test() {
+        assert_eq!(i256::from(2).wrapping_neg(), i256::from(-2));
+        assert_eq!(i256::MIN.wrapping_neg(), i256::MIN);
+        assert_eq!(i256::from(0).wrapping_neg(), i256::from(0));
+        assert_eq!(u256::from(1u8).wrapping_neg(), u256::MAX);
+    }
 }
