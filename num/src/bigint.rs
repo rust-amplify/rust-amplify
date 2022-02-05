@@ -103,29 +103,6 @@ macro_rules! construct_bigint {
                 arr[0] as u64
             }
 
-            /// Return the least number of bits needed to represent the number
-            #[inline]
-            pub fn bits_required(&self) -> usize {
-                let &$name(ref arr) = self;
-                if self.is_negative() {
-                    for i in 1..$n_words {
-                        if arr[$n_words - i] != ::core::u64::MAX {
-                            return (0x40 * ($n_words - i + 1)) + 1
-                                - (!arr[$n_words - i]).leading_zeros() as usize;
-                        }
-                    }
-                    0x40 + 1 - (!arr[0]).leading_zeros() as usize
-                } else {
-                    for i in 1..$n_words {
-                        if arr[$n_words - i] > 0 {
-                            return (0x40 * ($n_words - i + 1))
-                                - arr[$n_words - i].leading_zeros() as usize;
-                        }
-                    }
-                    0x40 - arr[0].leading_zeros() as usize
-                }
-            }
-
             /// Returns the number of leading ones in the binary representation of `self`.
             #[inline]
             pub fn leading_ones(&self) -> u32 {
@@ -286,19 +263,13 @@ macro_rules! construct_bigint {
                 let your_bits = other.bits_required();
 
                 // Check for division by 0
-                assert!(your_bits != 0);
+                assert!(!shift_copy.is_zero());
 
                 // Early return in case we are dividing by a larger number than us
                 if my_bits < your_bits {
                     return ($name(ret), sub_copy);
                 }
 
-                if sub_copy.is_negative() || shift_copy.is_negative() {
-                    assert!(
-                        sub_copy != $name::MIN || my_bits != $name::BITS as usize,
-                        "attempt to divide with overflow"
-                    );
-                }
                 sub_copy = sub_copy.abs();
                 shift_copy = shift_copy.abs();
 
@@ -327,10 +298,15 @@ macro_rules! construct_bigint {
                 };
                 (ret, sub_copy)
             }
-            // same operation as in div_rem, not panicking when
+            // same operation as in div_rem, not panicking when overflows
             #[inline]
             fn div_rem_checked(self, other: Self) -> Option<(Self, Self)> {
-                //quotient and remainder will always be smaller than self so they're going to be in bounds
+                // Self::MIN / -1 in signed
+                if self.is_negative() && other.is_negative() {
+                    if self == $name::MIN && other == -Self::ONE {
+                        return None
+                    }
+                }
                 match other {
                     Self::ZERO => None,
                     _ => Some(self.div_rem(other)),
@@ -1284,6 +1260,20 @@ macro_rules! construct_signed_bigint_methods {
                 !self.is_zero() && !self.is_positive()
             }
 
+            /// Return the least number of bits needed to represent the number
+            #[inline]
+            pub fn bits_required(&self) -> usize {
+                let &$name(ref arr) = self;
+                let iter = arr.iter().rev().take($n_words - 1);
+                if self.is_negative() {
+                    let ctr = iter.take_while(|&&b| b == ::core::u64::MAX).count();
+                    (0x40 * ($n_words - ctr)) + 1 - (!arr[$n_words - ctr - 1]).leading_zeros() as usize
+                } else {
+                    let ctr = iter.take_while(|&&b| b == ::core::u64::MIN).count();
+                    (0x40 * ($n_words - ctr)) + 1 - arr[$n_words - ctr - 1].leading_zeros() as usize
+                }
+            }
+
             /// Calculates `self * rhs`
             ///
             /// Returns a tuple of the multiplication along with a boolean indicating
@@ -1338,6 +1328,15 @@ macro_rules! construct_unsigned_bigint_methods {
             #[inline]
             pub fn is_negative(&self) -> bool {
                 false
+            }
+
+            /// Return the least number of bits needed to represent the number
+            #[inline]
+            pub fn bits_required(&self) -> usize {
+                let &$name(ref arr) = self;
+                let iter = arr.iter().rev().take($n_words - 1);
+                let ctr = iter.take_while(|&&b| b == ::core::u64::MIN).count();
+                (0x40 * ($n_words - ctr)) - arr[$n_words - ctr - 1].leading_zeros() as usize
             }
 
             /// Calculates `self * rhs`
@@ -2071,42 +2070,56 @@ mod tests {
 
     #[test]
     fn i256_bits_required_test() {
-        assert_eq!(i256::from(255u64).bits_required(), 8);
-        assert_eq!(i256::from(256u64).bits_required(), 9);
-        assert_eq!(i256::from(300u64).bits_required(), 9);
-        assert_eq!(i256::from(60000u64).bits_required(), 16);
-        assert_eq!(i256::from(70000u64).bits_required(), 17);
-        assert_eq!(i256::from(-128i64).bits_required(), 8);
-        assert_eq!(i256::from(-129i128).bits_required(), 9);
-        assert_eq!(i256::from(0i32).bits_required(), 0);
-        assert_eq!(i256::from(-1i16).bits_required(), 1);
-        assert_eq!(i256::from(-2i64).bits_required(), 2);
+        assert_eq!(i256::from(255).bits_required(), 9);
+        assert_eq!(i256::from(256).bits_required(), 10);
+        assert_eq!(i256::from(300).bits_required(), 10);
+        assert_eq!(i256::from(60000).bits_required(), 17);
+        assert_eq!(i256::from(70000).bits_required(), 18);
+        assert_eq!(i256::from(-128).bits_required(), 8);
+        assert_eq!(i256::from(-129).bits_required(), 9);
+        assert_eq!(i256::from(0).bits_required(), 1);
+        assert_eq!(i256::from(-1).bits_required(), 1);
+        assert_eq!(i256::from(-2).bits_required(), 2);
         assert_eq!(i256::MIN.bits_required(), 256);
-        assert_eq!(i256::MAX.bits_required(), 255);
+        assert_eq!(i256::MAX.bits_required(), 256);
     }
 
     #[test]
     fn i256_div_test() {
         assert_eq!(
             (i256::from(3), i256::from(1)),
-            i256::from(7).div_rem_checked(i256::from(2i32)).unwrap()
+            i256::from(7).div_rem(i256::from(2i32))
         );
         assert_eq!(
             (i256::from(-3), i256::from(1)),
-            i256::from(7).div_rem_checked(i256::from(-2i128)).unwrap()
+            i256::from(7).div_rem(i256::from(-2i128))
         );
         assert_eq!(
             (i256::from(-3), i256::from(-1)),
-            i256::from(-7).div_rem_checked(i256::from(2)).unwrap()
+            i256::from(-7).div_rem(i256::from(2))
         );
         assert_eq!(
             (i256::from(3), i256::from(-1)),
-            i256::from(-7).div_rem_checked(i256::from(-2)).unwrap()
+            i256::from(-7).div_rem(i256::from(-2))
         );
         let res = std::panic::catch_unwind(|| i256::div_rem(i256::MAX, i256::ZERO));
         assert!(res.is_err());
-        let res = std::panic::catch_unwind(|| i256::div_rem(i256::MIN, i256::from(-1)));
-        assert!(res.is_err());
+    }
+
+    #[test]
+    fn i256_div_checked_test() {
+        assert_eq!(
+            Some((i256::from(3), i256::from(1))),
+            i256::from(7).div_rem_checked(i256::from(2i32))
+        );
+        assert_eq!(
+            None,
+            i256::from(7).div_rem_checked(i256::from(0))
+        );
+        assert_eq!(
+            None,
+            i256::MIN.div_rem_checked(i256::from(-1))
+        );
     }
 
     #[test]
