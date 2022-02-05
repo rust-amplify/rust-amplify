@@ -550,7 +550,9 @@ macro_rules! construct_bigint {
                 let overflow = if Self::MIN == Self::ZERO {
                     carry > 0
                 } else {
-                    (self.is_negative() == other.is_negative())
+                    self != Self::MIN
+                        && other != Self::MIN
+                        && (self.is_negative() == other.is_negative())
                         && (self.is_negative() != ret.is_negative())
                 };
                 (ret, overflow)
@@ -2014,6 +2016,7 @@ mod tests {
             i256::from(0).overflowing_add(i256::from(0))
         );
         assert_eq!((i256::MIN, false), i256::from(0).overflowing_sub(i256::MIN));
+        assert_eq!((i256::ZERO, false), i256::MIN.overflowing_sub(i256::MIN));
         assert_eq!((-i256::ONE, false), i256::MAX.overflowing_sub(i256::MIN));
         assert_eq!(
             (i256::MAX, true),
