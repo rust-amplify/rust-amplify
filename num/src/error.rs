@@ -37,6 +37,21 @@ impl core::fmt::Display for OverflowError {
 #[cfg(feature = "std")]
 impl std::error::Error for OverflowError {}
 
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum DivError {
+    ZeroDiv,
+    Overflow,
+}
+
+impl core::fmt::Display for DivError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match *self {
+            DivError::ZeroDiv => write!(f, "division by zero"),
+            DivError::Overflow => write!(f, "division with overflow"),
+        }
+    }
+}
+
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
 /// Invalid slice length
 pub struct ParseLengthError {
