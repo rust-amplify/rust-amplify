@@ -533,7 +533,7 @@ macro_rules! construct_bigint {
                     carry > 0
                 } else {
                     (self.is_negative() == other.is_negative())
-                    && (self.is_negative() != ret.is_negative())
+                        && (self.is_negative() != ret.is_negative())
                 };
                 (ret, overflow)
             }
