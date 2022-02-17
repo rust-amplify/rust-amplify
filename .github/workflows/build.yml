@@ -46,10 +46,17 @@ jobs:
           toolchain: ${{matrix.toolchain}}
           override: true
       - name: All features
+        if: matrix.toolchain != '1.41.1'
         uses: actions-rs/cargo@v1
         with:
           command: build
           args: --workspace --all-targets --all-features
+      - name: All features except amplify_apfloat
+        if: matrix.toolchain == '1.41.1'
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --workspace --all-targets --all-features --exclude amplify_apfloat
   ancient:
     runs-on: ubuntu-latest
     steps:
