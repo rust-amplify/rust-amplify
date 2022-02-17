@@ -48,5 +48,5 @@ serde = ["serde_crate", "std",
          "stringly_conversions/serde_str_helpers"]
 
 [workspace]
-members = [".", "num", "derive", "syn", "serde_str_helpers", "stringly_conversions"]
+members = [".", "num", "apfloat", "derive", "syn", "serde_str_helpers", "stringly_conversions"]
 default-members = ["."]

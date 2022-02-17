@@ -1,0 +1,19 @@
+[package]
+authors = ["The Rust Project Developers", "Yudai Kiyofuji <own7000hr@gmail.com>"]
+name = "amplify_apfloat"
+version = "0.1.0"
+description = "rustc_apfloat with u256 backend to utilize Octuple precision floating-point format"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/LNP-BP/rust-amplify"
+homepage = "https://github.com/LNP-BP"
+categories = ["no-std"]
+readme = "README.md"
+keywords = ["float"]
+
+[features]
+default = ["std"]
+std = []
+
+[dependencies]
+amplify_num = { version = "0.3.0", path = "../num" }
+bitflags = "1.0"
