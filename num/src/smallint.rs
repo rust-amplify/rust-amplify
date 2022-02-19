@@ -19,9 +19,7 @@ use core::ops::{
 };
 use core::convert::TryFrom;
 
-use crate::error::OverflowError;
-
-use crate::divrem::DivRem;
+use crate::error::{DivError, OverflowError};
 
 macro_rules! construct_smallint {
     ($ty:ident, $inner:ident, $as:ident, $bits:literal, $max:expr, $doc:meta) => {
@@ -126,25 +124,6 @@ macro_rules! construct_smallint {
         impl core::fmt::Binary for $ty {
             fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
                 core::fmt::Binary::fmt(&self.as_ref(), f)
-            }
-        }
-
-        impl DivRem for $ty {
-            // divmod like operation, returns (quotient, remainder)
-            #[inline]
-            fn div_rem(self, other: Self) -> (Self, Self) {
-                //quotient and remainder will always be smaller than self so they're going to be in bounds
-                assert!(other != Self(0));
-                let quotient = self / other;
-                (quotient, self - (quotient*other))
-            }
-            // same operation as in div_rem, not panicking when division by zero
-            #[inline]
-            fn div_rem_checked(self, other: Self) -> Option<(Self, Self)> {
-                match other {
-                    Self::ZERO => None,
-                    _ => Some(self.div_rem(other)),
-                }
             }
         }
 
@@ -260,6 +239,16 @@ macro_rules! construct_smallint {
             /// the boundary of the type.
             pub fn wrapping_mul<T>(self, rhs: T) -> Self where T: Into<$inner> {
                 Self(self.0.wrapping_mul(rhs.into()) % Self::MAX.0)
+            }
+
+            #[inline]
+            fn div_rem(self, other: Self) -> Result<(Self, Self), DivError> {
+                //quotient and remainder will always be smaller than self so they're going to be in bounds
+                if other == Self(0) {
+                    return Err(DivError::ZeroDiv)
+                }
+                let quotient = self / other;
+                Ok((quotient, self - (quotient * other)))
             }
         }
     };
@@ -541,7 +530,7 @@ mod test {
     }
 
     #[test]
-    fn smallint_div_rem_checked() {
+    fn smallint_div_rem_0() {
         let u_2 = u2::MAX;
         let u_2_2 = u2::try_from(2).unwrap();
         let u_2_half = (
@@ -550,16 +539,15 @@ mod test {
         );
         let u_2_zero = u2::ZERO;
 
-        assert_eq!(u2::div_rem_checked(u_2, u_2_2), Some(u_2_half));
-        assert_eq!(u2::div_rem_checked(u_2, u_2_zero), None);
+        assert_eq!(u2::div_rem(u_2, u_2_2), Ok(u_2_half));
+        assert_eq!(u2::div_rem(u_2, u_2_zero), Err(DivError::ZeroDiv));
     }
 
     #[test]
-    #[should_panic]
     fn smallint_div_rem() {
         let u_2 = u2::MAX;
         let u_2_zero = u2::ZERO;
-        u2::div_rem(u_2, u_2_zero);
+        assert_eq!(u2::div_rem(u_2, u_2_zero), Err(DivError::ZeroDiv));
     }
 
     #[test]

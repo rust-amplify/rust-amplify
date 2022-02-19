@@ -36,7 +36,6 @@ extern crate core;
 extern crate serde_crate as serde;
 
 mod bigint;
-mod divrem;
 pub mod error;
 #[cfg(feature = "hex")]
 pub mod hex;

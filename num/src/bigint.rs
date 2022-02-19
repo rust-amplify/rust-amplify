@@ -15,8 +15,7 @@
 // along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
-use crate::error::ParseLengthError;
-use crate::divrem::DivRem;
+use crate::error::{DivError, ParseLengthError};
 
 macro_rules! construct_bigint {
     ($name:ident, $n_words:expr) => {
@@ -101,29 +100,6 @@ macro_rules! construct_bigint {
             pub fn low_u64(&self) -> u64 {
                 let &$name(ref arr) = self;
                 arr[0] as u64
-            }
-
-            /// Return the least number of bits needed to represent the number
-            #[inline]
-            pub fn bits_required(&self) -> usize {
-                let &$name(ref arr) = self;
-                if self.is_negative() {
-                    for i in 1..$n_words {
-                        if arr[$n_words - i] != ::core::u64::MAX {
-                            return (0x40 * ($n_words - i + 1)) + 1
-                                - (!arr[$n_words - i]).leading_zeros() as usize;
-                        }
-                    }
-                    0x40 + 1 - (!arr[0]).leading_zeros() as usize
-                } else {
-                    for i in 1..$n_words {
-                        if arr[$n_words - i] > 0 {
-                            return (0x40 * ($n_words - i + 1))
-                                - arr[$n_words - i].leading_zeros() as usize;
-                        }
-                    }
-                    0x40 - arr[0].leading_zeros() as usize
-                }
             }
 
             /// Returns the number of leading ones in the binary representation of `self`.
@@ -272,69 +248,60 @@ macro_rules! construct_bigint {
                 }
                 res
             }
-        }
 
-        impl DivRem for $name {
             // divmod like operation, returns (quotient, remainder)
             #[inline]
-            fn div_rem(self, other: Self) -> (Self, Self) {
-                let mut sub_copy = self;
-                let mut shift_copy = other;
-                let mut ret = [0u64; $n_words];
-
-                let my_bits = self.bits_required();
-                let your_bits = other.bits_required();
-
+            fn div_rem(self, other: Self) -> Result<(Self, Self), DivError> {
                 // Check for division by 0
-                assert!(your_bits != 0);
-
-                // Early return in case we are dividing by a larger number than us
-                if my_bits < your_bits {
-                    return ($name(ret), sub_copy);
+                if other.is_zero() {
+                    return Err(DivError::ZeroDiv);
+                }
+                if other.is_negative() && self == Self::MIN && other == Self::ONE.wrapping_neg() {
+                    return Err(DivError::Overflow);
+                }
+                let mut me = self.abs();
+                let mut you = other.abs();
+                let mut ret = [0u64; $n_words];
+                if self.is_negative() == other.is_negative() && me < you {
+                    return Ok(($name(ret), self));
                 }
 
-                if sub_copy.is_negative() || shift_copy.is_negative() {
-                    assert!(
-                        sub_copy != $name::MIN || my_bits != $name::BITS as usize,
-                        "attempt to divide with overflow"
-                    );
-                }
-                sub_copy = sub_copy.abs();
-                shift_copy = shift_copy.abs();
-
-                // Bitwise long division
-                let mut shift = my_bits - your_bits;
-                shift_copy <<= shift;
-                loop {
-                    if sub_copy >= shift_copy {
-                        ret[shift / 64] |= 1 << (shift % 64);
-                        sub_copy -= shift_copy;
+                let shift = me.bits_required() - you.bits_required();
+                you <<= shift;
+                for i in (0..=shift).rev() {
+                    if me >= you {
+                        ret[i / 64] |= 1 << (i % 64);
+                        me -= you;
                     }
-                    shift_copy >>= 1;
-                    if shift == 0 {
-                        break;
-                    }
-                    shift -= 1;
+                    you >>= 1;
                 }
 
-                let ret = match self.is_negative() == other.is_negative() {
-                    true => $name(ret),
-                    false => -$name(ret),
-                };
-                sub_copy = match self.is_negative() {
-                    true => -sub_copy,
-                    false => sub_copy,
-                };
-                (ret, sub_copy)
+                Ok((
+                    if self.is_negative() == other.is_negative() {
+                        Self(ret)
+                    } else {
+                        -Self(ret)
+                    },
+                    if self.is_negative() { -me } else { me },
+                ))
             }
-            // same operation as in div_rem, not panicking when
+
             #[inline]
-            fn div_rem_checked(self, other: Self) -> Option<(Self, Self)> {
-                //quotient and remainder will always be smaller than self so they're going to be in bounds
-                match other {
-                    Self::ZERO => None,
-                    _ => Some(self.div_rem(other)),
-                }
+            fn div_rem_euclid(self, other: Self) -> Result<(Self, Self), DivError> {
+                self.div_rem(other).map(|(q, r)| {
+                    (
+                        match (r.is_negative(), other.is_positive()) {
+                            (true, true) => q.wrapping_sub(Self::ONE),
+                            (true, false) => q.wrapping_add(Self::ONE),
+                            _ => q,
+                        },
+                        match (r.is_negative(), other.is_positive()) {
+                            (true, true) => r.wrapping_add(other),
+                            (true, false) => r.wrapping_sub(other),
+                            _ => r,
+                        },
+                    )
+                })
             }
         }
 
@@ -550,7 +517,9 @@ macro_rules! construct_bigint {
                 let overflow = if Self::MIN == Self::ZERO {
                     carry > 0
                 } else {
-                    (self.is_negative() == other.is_negative())
+                    self != Self::MIN
+                        && other != Self::MIN
+                        && (self.is_negative() == other.is_negative())
                         && (self.is_negative() != ret.is_negative())
                 };
                 (ret, overflow)
@@ -659,6 +628,206 @@ macro_rules! construct_bigint {
                 self.overflowing_mul(other).0
             }
 
+            /// Calculates `self / rhs`
+            ///
+            /// Returns a tuple of the divisor along with a boolean indicating
+            /// whether an arithmetic overflow would occur. If an overflow would
+            /// have occurred then the wrapped value is returned.
+            pub fn overflowing_div<T>(self, other: T) -> ($name, bool)
+            where
+                T: Into<$name>,
+            {
+                let rhs = other.into();
+                match self.div_rem(rhs) {
+                    Err(DivError::Overflow) => (Self::MIN, true),
+                    res => (res.expect("Error occurred during bigint division").0, false),
+                }
+            }
+
+            /// Wrapping (modular) division. Calculates `self / rhs`,
+            /// wrapping around at the boundary of the type.
+            ///
+            /// The only case where such wrapping can occur is when one divides
+            /// `MIN / -1` on a signed type (where MIN is the negative minimal value for the type);
+            /// this is equivalent to -MIN, a positive value that is
+            /// too large to represent in the type.
+            /// In such a case, this function returns MIN itself.
+            pub fn wrapping_div<T>(self, other: T) -> $name
+            where
+                T: Into<$name>,
+            {
+                self.overflowing_div(other.into()).0
+            }
+
+            /// Checked integer division. Computes `self / rhs`,
+            /// returning None if `rhs == 0` or the division results in overflow.
+            pub fn checked_div<T>(self, other: T) -> Option<$name>
+            where
+                T: Into<$name>,
+            {
+                self.div_rem(other.into()).ok().map(|(q, _)| q)
+            }
+
+            /// Saturating integer division. Computes `self / rhs`,
+            /// saturating at the numeric bounds instead of overflowing.
+            pub fn saturating_div<T>(self, other: T) -> $name
+            where
+                T: Into<$name>,
+            {
+                let rhs = other.into();
+                match self.div_rem(rhs) {
+                    Err(DivError::Overflow) => Self::MAX,
+                    res => res.expect("Error occurred during bigint division").0,
+                }
+            }
+
+            /// Calculates the remainder when `self` is divided by `rhs`.
+            ///
+            /// Returns a tuple of the remainder after dividing along with a boolean
+            /// indicating whether an arithmetic overflow would occur.
+            /// If an overflow would occur then 0 is returned.
+            pub fn overflowing_rem<T>(self, other: T) -> ($name, bool)
+            where
+                T: Into<$name>,
+            {
+                let rhs = other.into();
+                match self.div_rem(rhs) {
+                    Err(DivError::Overflow) => (Self::ZERO, true),
+                    res => (res.expect("Error occurred during bigint division").1, false),
+                }
+            }
+
+            /// Wrapping (modular) remainder.
+            /// Computes self % rhs, wrapping around at the boundary of the type.
+            ///
+            /// Such wrap-around never actually occurs mathematically;
+            /// implementation artifacts make x % y invalid for MIN / -1
+            /// on a signed type (where MIN is the negative minimal value).
+            /// In such a case, this function returns 0.
+            pub fn wrapping_rem<T>(self, other: T) -> $name
+            where
+                T: Into<$name>,
+            {
+                self.overflowing_rem(other.into()).0
+            }
+
+            /// Checked integer remainder. Computes `self % rhs`,
+            /// returning None if `rhs == 0` or the division results in overflow.
+            pub fn checked_rem<T>(self, other: T) -> Option<$name>
+            where
+                T: Into<$name>,
+            {
+                self.div_rem(other.into()).ok().map(|(_, r)| r)
+            }
+
+            /// Calculates the quotient of Euclidean division of `self` by `rhs`.
+            ///
+            /// This computes the integer `q` such that `self = q * rhs + r`,
+            /// with `r = self.rem_euclid(rhs)` and `0 <= r < abs(rhs)`.
+            ///
+            /// In other words, the result is `self / rhs` rounded to the integer `q`
+            /// such that `self >= q * rhs`. If `self > 0`,
+            /// this is equal to round towards zero (the default in Rust);
+            /// if `self < 0`, this is equal to round towards +/- infinity.
+            pub fn div_euclid<T>(self, other: T) -> $name
+            where
+                T: Into<$name>,
+            {
+                self.div_rem_euclid(other.into())
+                    .expect("Error occurred during bigint division")
+                    .0
+            }
+
+            /// Calculates the quotient of Euclidean division `self.div_euclid(rhs)`.
+            ///
+            /// Returns a tuple of the divisor along with a boolean indicating
+            /// whether an arithmetic overflow would occur.
+            /// If an overflow would occur then `self` is returned.
+            pub fn overflowing_div_euclid<T>(self, other: T) -> ($name, bool)
+            where
+                T: Into<$name>,
+            {
+                match self.div_rem_euclid(other.into()) {
+                    Err(DivError::Overflow) => (Self::MIN, true),
+                    res => (res.expect("Error occurred during bigint division").0, false),
+                }
+            }
+
+            /// Wrapping Euclidean division. Computes `self.div_euclid(rhs)`,
+            /// wrapping around at the boundary of the type.
+            ///
+            /// Wrapping will only occur in `MIN / -1` on a signed type
+            /// (where MIN is the negative minimal value for the type).
+            /// This is equivalent to `-MIN`, a positive value
+            /// that is too large to represent in the type.
+            /// In this case, this method returns `MIN` itself.
+            pub fn wrapping_div_euclid<T>(self, other: T) -> $name
+            where
+                T: Into<$name>,
+            {
+                self.overflowing_div_euclid(other.into()).0
+            }
+
+            /// Checked Euclidean division. Computes `self.div_euclid(rhs)`,
+            /// returning None if `rhs == 0` or the division results in overflow.
+            pub fn checked_div_euclid<T>(self, other: T) -> Option<$name>
+            where
+                T: Into<$name>,
+            {
+                self.div_rem_euclid(other.into()).ok().map(|(q, _)| q)
+            }
+
+            /// Calculates the least nonnegative remainder of `self (mod rhs)`.
+            ///
+            /// This is done as if by the Euclidean division algorithm –
+            /// given `r = self.rem_euclid(rhs)`, `self = rhs * self.div_euclid(rhs) + r`,
+            /// and `0 <= r < abs(rhs)`.
+            pub fn rem_euclid<T>(self, other: T) -> $name
+            where
+                T: Into<$name>,
+            {
+                self.div_rem_euclid(other.into())
+                    .expect("Error occurred during bigint division")
+                    .1
+            }
+
+            /// Overflowing Euclidean remainder. Calculates `self.rem_euclid(rhs)`.
+            ///
+            /// Returns a tuple of the remainder after dividing along with a boolean indicating
+            /// whether an arithmetic overflow would occur.
+            /// If an overflow would occur then 0 is returned.
+            pub fn overflowing_rem_euclid<T>(self, other: T) -> ($name, bool)
+            where
+                T: Into<$name>,
+            {
+                match self.div_rem_euclid(other.into()) {
+                    Err(DivError::Overflow) => (Self::ZERO, true),
+                    res => (res.expect("Error occurred during bigint division").1, false),
+                }
+            }
+
+            /// Wrapping Euclidean remainder. Computes `self.rem_euclid(rhs)`,
+            /// wrapping around at the boundary of the type.
+            ///
+            /// Wrapping will only occur in `MIN % -1` on a signed type
+            /// (where `MIN` is the negative minimal value for the type).
+            /// In this case, this method returns 0.
+            pub fn wrapping_rem_euclid<T>(self, other: T) -> $name
+            where
+                T: Into<$name>,
+            {
+                self.overflowing_rem_euclid(other.into()).0
+            }
+
+            /// Checked Euclidean remainder. Computes `self.rem_euclid(rhs)`,
+            /// returning None if `rhs == 0` or the division results in overflow.
+            pub fn checked_rem_euclid<T>(self, other: T) -> Option<$name>
+            where
+                T: Into<$name>,
+            {
+                self.div_rem_euclid(other.into()).ok().map(|(_, r)| r)
+            }
+
             /// Checked shift left. Computes self << rhs,
             /// returning None if rhs is larger than or equal to the number of bits in self.
             pub fn checked_shl(self, rhs: u32) -> Option<$name> {
@@ -764,7 +933,9 @@ macro_rules! construct_bigint {
             type Output = $name;
 
             fn div(self, other: T) -> $name {
-                self.div_rem(other.into()).0
+                self.div_rem(other.into())
+                    .expect("Error occurred during bigint division")
+                    .0
             }
         }
         impl<T> ::core::ops::DivAssign<T> for $name
@@ -784,7 +955,9 @@ macro_rules! construct_bigint {
             type Output = $name;
 
             fn rem(self, other: T) -> $name {
-                self.div_rem(other.into()).1
+                self.div_rem(other.into())
+                    .expect("Error occurred during bigint division")
+                    .1
             }
         }
         impl<T> ::core::ops::RemAssign<T> for $name
@@ -1282,6 +1455,21 @@ macro_rules! construct_signed_bigint_methods {
                 !self.is_zero() && !self.is_positive()
             }
 
+            /// Return the least number of bits needed to represent the number
+            #[inline]
+            pub fn bits_required(&self) -> usize {
+                let &$name(ref arr) = self;
+                let iter = arr.iter().rev().take($n_words - 1);
+                if self.is_negative() {
+                    let ctr = iter.take_while(|&&b| b == ::core::u64::MAX).count();
+                    (0x40 * ($n_words - ctr)) + 1
+                        - (!arr[$n_words - ctr - 1]).leading_zeros() as usize
+                } else {
+                    let ctr = iter.take_while(|&&b| b == ::core::u64::MIN).count();
+                    (0x40 * ($n_words - ctr)) + 1 - arr[$n_words - ctr - 1].leading_zeros() as usize
+                }
+            }
+
             /// Calculates `self * rhs`
             ///
             /// Returns a tuple of the multiplication along with a boolean indicating
@@ -1336,6 +1524,15 @@ macro_rules! construct_unsigned_bigint_methods {
             #[inline]
             pub fn is_negative(&self) -> bool {
                 false
+            }
+
+            /// Return the least number of bits needed to represent the number
+            #[inline]
+            pub fn bits_required(&self) -> usize {
+                let &$name(ref arr) = self;
+                let iter = arr.iter().rev().take($n_words - 1);
+                let ctr = iter.take_while(|&&b| b == ::core::u64::MIN).count();
+                (0x40 * ($n_words - ctr)) - arr[$n_words - ctr - 1].leading_zeros() as usize
             }
 
             /// Calculates `self * rhs`
@@ -1692,7 +1889,7 @@ mod tests {
     }
 
     #[test]
-    fn u256_div_rem_checked() {
+    fn u256_div_rem_0() {
         let zero = u256::ZERO;
         let number_one = u256::from(0xDEADBEEFu64);
         let number_two = u256::from(::core::u64::MAX);
@@ -1703,39 +1900,38 @@ mod tests {
         let max = u256::MAX;
 
         // Division by zero gets not panic and gets None
-        assert_eq!(u256::div_rem_checked(max, zero), None);
-        assert_eq!(u256::div_rem_checked(number_two, zero), None);
-        assert_eq!(u256::div_rem_checked(number_one, zero), None);
+        assert_eq!(u256::div_rem(max, zero), Err(DivError::ZeroDiv));
+        assert_eq!(u256::div_rem(number_two, zero), Err(DivError::ZeroDiv));
+        assert_eq!(u256::div_rem(number_one, zero), Err(DivError::ZeroDiv));
 
         // Division of zero gets Zero
-        assert_eq!(u256::div_rem_checked(zero, max), Some((zero, zero)));
-        assert_eq!(u256::div_rem_checked(zero, number_two), Some((zero, zero)));
-        assert_eq!(u256::div_rem_checked(zero, number_one), Some((zero, zero)));
+        assert_eq!(u256::div_rem(zero, max), Ok((zero, zero)));
+        assert_eq!(u256::div_rem(zero, number_two), Ok((zero, zero)));
+        assert_eq!(u256::div_rem(zero, number_one), Ok((zero, zero)));
 
         // Division by another than zero not gets None
-        assert_ne!(u256::div_rem_checked(max, number_one), None);
-        assert_ne!(u256::div_rem_checked(number_two, number_one), None);
+        assert!(u256::div_rem(max, number_one).is_ok());
+        assert!(u256::div_rem(number_two, number_one).is_ok());
 
         // In u256 division gets the same as in u64
-        assert_eq!(
-            u256::div_rem_checked(number_two, number_one),
-            Some(one_div_rem_two)
-        );
+        assert_eq!(u256::div_rem(number_two, number_one), Ok(one_div_rem_two));
     }
 
     #[test]
-    fn u256_div_rem() {
+    fn u256_div_rem_1() {
         let zero = u256::ZERO;
         let number_one = u256::from(0xDEADBEEFu64);
         let number_two = u256::from(::core::u64::MAX);
         let max = u256::MAX;
 
-        let result1 = std::panic::catch_unwind(|| u256::div_rem(max, zero));
-        assert!(result1.is_err());
-        let result2 = std::panic::catch_unwind(|| u256::div_rem(number_one, zero));
-        assert!(result2.is_err());
-        let result3 = std::panic::catch_unwind(|| u256::div_rem(number_two, zero));
-        assert!(result3.is_err());
+        assert!(u256::div_rem(max, zero).is_err());
+        assert!(u256::div_rem(number_one, zero).is_err());
+        assert!(u256::div_rem(number_two, zero).is_err());
+
+        assert_eq!(u256::MAX / u256::ONE, u256::MAX);
+        assert_eq!(u256::from(12u8) / u256::from(4u8), u256::from(3u8));
+        assert!(std::panic::catch_unwind(|| number_one / zero).is_err());
+        assert!(std::panic::catch_unwind(|| i256::MIN / (-i256::ONE)).is_err());
     }
 
     #[test]
@@ -2014,6 +2210,7 @@ mod tests {
             i256::from(0).overflowing_add(i256::from(0))
         );
         assert_eq!((i256::MIN, false), i256::from(0).overflowing_sub(i256::MIN));
+        assert_eq!((i256::ZERO, false), i256::MIN.overflowing_sub(i256::MIN));
         assert_eq!((-i256::ONE, false), i256::MAX.overflowing_sub(i256::MIN));
         assert_eq!(
             (i256::MAX, true),
@@ -2068,42 +2265,166 @@ mod tests {
 
     #[test]
     fn i256_bits_required_test() {
-        assert_eq!(i256::from(255u64).bits_required(), 8);
-        assert_eq!(i256::from(256u64).bits_required(), 9);
-        assert_eq!(i256::from(300u64).bits_required(), 9);
-        assert_eq!(i256::from(60000u64).bits_required(), 16);
-        assert_eq!(i256::from(70000u64).bits_required(), 17);
-        assert_eq!(i256::from(-128i64).bits_required(), 8);
-        assert_eq!(i256::from(-129i128).bits_required(), 9);
-        assert_eq!(i256::from(0i32).bits_required(), 0);
-        assert_eq!(i256::from(-1i16).bits_required(), 1);
-        assert_eq!(i256::from(-2i64).bits_required(), 2);
+        assert_eq!(i256::from(255).bits_required(), 9);
+        assert_eq!(i256::from(256).bits_required(), 10);
+        assert_eq!(i256::from(300).bits_required(), 10);
+        assert_eq!(i256::from(60000).bits_required(), 17);
+        assert_eq!(i256::from(70000).bits_required(), 18);
+        assert_eq!(i256::from(-128).bits_required(), 8);
+        assert_eq!(i256::from(-129).bits_required(), 9);
+        assert_eq!(i256::from(0).bits_required(), 1);
+        assert_eq!(i256::from(-1).bits_required(), 1);
+        assert_eq!(i256::from(-2).bits_required(), 2);
         assert_eq!(i256::MIN.bits_required(), 256);
-        assert_eq!(i256::MAX.bits_required(), 255);
+        assert_eq!(i256::MAX.bits_required(), 256);
     }
 
     #[test]
     fn i256_div_test() {
         assert_eq!(
-            (i256::from(3), i256::from(1)),
-            i256::from(7).div_rem_checked(i256::from(2i32)).unwrap()
+            Ok((i256::from(3), i256::from(1))),
+            i256::from(7).div_rem(i256::from(2i32))
         );
         assert_eq!(
-            (i256::from(-3), i256::from(1)),
-            i256::from(7).div_rem_checked(i256::from(-2i128)).unwrap()
+            Ok((i256::from(-3), i256::from(1))),
+            i256::from(7).div_rem(i256::from(-2i128))
         );
         assert_eq!(
-            (i256::from(-3), i256::from(-1)),
-            i256::from(-7).div_rem_checked(i256::from(2)).unwrap()
+            Ok((i256::from(-3), i256::from(-1))),
+            i256::from(-7).div_rem(i256::from(2))
         );
         assert_eq!(
-            (i256::from(3), i256::from(-1)),
-            i256::from(-7).div_rem_checked(i256::from(-2)).unwrap()
+            Ok((i256::from(3), i256::from(-1))),
+            i256::from(-7).div_rem(i256::from(-2))
         );
-        let res = std::panic::catch_unwind(|| i256::div_rem(i256::MAX, i256::ZERO));
+        assert!(i256::div_rem(i256::MAX, i256::ZERO).is_err());
+    }
+
+    #[test]
+    fn overflowing_div_est() {
+        assert_eq!(
+            (i256::from(3), false),
+            i256::from(7).overflowing_div(i256::from(2i32))
+        );
+        assert_eq!((i256::MIN, true), i256::MIN.overflowing_div(i256::from(-1)));
+        let res = std::panic::catch_unwind(|| i256::overflowing_div(i256::MAX, i256::ZERO));
         assert!(res.is_err());
-        let res = std::panic::catch_unwind(|| i256::div_rem(i256::MIN, i256::from(-1)));
+    }
+
+    #[test]
+    fn wrapping_div_est() {
+        assert_eq!(i1024::from(3), i1024::from(7).wrapping_div(2));
+        assert_eq!(i512::MIN, i512::MIN.wrapping_div(-1));
+        let res = std::panic::catch_unwind(|| i256::wrapping_div(i256::MAX, i256::ZERO));
         assert!(res.is_err());
+    }
+
+    #[test]
+    fn checked_div_est() {
+        assert_eq!(Some(i1024::from(3)), i1024::from(7).checked_div(2));
+        assert_eq!(Some(i512::MAX), i512::MAX.checked_div(1));
+        assert_eq!(Some(i512::MIN + 1), i512::MAX.checked_div(-1));
+        assert_eq!(None, i512::MIN.checked_div(-1));
+        assert_eq!(None, i512::MAX.checked_div(0));
+    }
+
+    #[test]
+    fn saturating_div_test() {
+        assert_eq!(i256::from(5).saturating_div(2), i256::from(2));
+        assert_eq!(i256::MAX.saturating_div(-i256::ONE), i256::MIN + 1);
+        assert_eq!(i256::MIN.saturating_div(-1), i256::MAX);
+    }
+
+    #[test]
+    fn overflowing_rem_est() {
+        assert_eq!(
+            (i256::from(1), false),
+            i256::from(7).overflowing_rem(i256::from(2i32))
+        );
+        assert_eq!(
+            (i256::ZERO, true),
+            i256::MIN.overflowing_rem(i256::from(-1))
+        );
+        let res = std::panic::catch_unwind(|| i256::overflowing_rem(i256::MAX, i256::ZERO));
+        assert!(res.is_err());
+    }
+
+    #[test]
+    fn wrapping_rem_test() {
+        assert_eq!(i1024::from(1), i1024::from(7).wrapping_rem(2));
+        assert_eq!(i512::ZERO, i512::MIN.wrapping_rem(-1));
+        let res = std::panic::catch_unwind(|| i256::wrapping_rem(i256::MAX, i256::ZERO));
+        assert!(res.is_err());
+    }
+
+    #[test]
+    fn checked_rem_test() {
+        assert_eq!(Some(i1024::from(1)), i1024::from(7).checked_rem(2));
+        assert_eq!(None, i512::MIN.checked_rem(-1));
+        assert_eq!(None, i512::MAX.checked_rem(0));
+    }
+
+    #[test]
+    fn div_euclid_test() {
+        assert_eq!(i1024::from(1), i1024::from(7).div_euclid(4));
+        assert_eq!(i1024::from(-1), i1024::from(7).div_euclid(-4));
+        assert_eq!(i1024::from(-2), i1024::from(-7).div_euclid(4));
+        assert_eq!(i1024::from(2), i1024::from(-7).div_euclid(-4));
+    }
+
+    #[test]
+    fn overflowing_div_euclid_test() {
+        assert_eq!(
+            (u512::from(2u8), false),
+            u512::from(5u8).overflowing_div_euclid(2u8)
+        );
+        assert_eq!((i1024::MIN, true), i1024::MIN.overflowing_div_euclid(-1));
+    }
+
+    #[test]
+    fn wrapping_div_euclid_test() {
+        assert_eq!(
+            u256::from(10u8),
+            u256::from(100u8).wrapping_div_euclid(10u8)
+        );
+        assert_eq!(i1024::MIN, i1024::MIN.wrapping_div_euclid(-1));
+    }
+
+    #[test]
+    fn checked_div_euclid_test() {
+        assert_eq!(None, u256::from(100u8).checked_div_euclid(0u8));
+        assert_eq!(None, i1024::MIN.checked_div_euclid(-1));
+        assert_eq!(Some(i1024::from(-3)), i1024::from(6).checked_div_euclid(-2));
+    }
+
+    #[test]
+    fn rem_euclid_test() {
+        assert_eq!(i1024::from(3), i1024::from(7).rem_euclid(4));
+        assert_eq!(i1024::from(1), i1024::from(-7).rem_euclid(4));
+        assert_eq!(i1024::from(3), i1024::from(7).rem_euclid(-4));
+        assert_eq!(i1024::from(1), i1024::from(-7).rem_euclid(-4));
+    }
+
+    #[test]
+    fn overflowing_rem_euclid_test() {
+        assert_eq!(
+            (u512::from(1u8), false),
+            u512::from(5u8).overflowing_rem_euclid(2u8)
+        );
+        assert_eq!((i1024::ZERO, true), i1024::MIN.overflowing_rem_euclid(-1));
+    }
+
+    #[test]
+    fn wrapping_rem_euclid_test() {
+        assert_eq!(u256::ZERO, u256::from(100u8).wrapping_rem_euclid(10u8));
+        assert_eq!(i1024::ZERO, i1024::MIN.wrapping_rem_euclid(-1));
+    }
+
+    #[test]
+    fn checked_rem_euclid_test() {
+        assert_eq!(None, u256::from(100u8).checked_rem_euclid(0u8));
+        assert_eq!(None, i1024::MIN.checked_rem_euclid(-1));
+        assert_eq!(Some(i1024::from(1)), i1024::from(5).checked_rem_euclid(2));
     }
 
     #[test]
@@ -2139,5 +2460,38 @@ mod tests {
         assert_eq!(i256::from(-2).leading_ones(), 255);
         assert_eq!(i256::from(-2).trailing_zeros(), 1);
         assert_eq!(i256::from(-2).trailing_ones(), 0);
+    }
+
+    #[test]
+    fn checked_shl_test() {
+        assert_eq!(i256::from(4).checked_shl(0), Some(i256::from(4)));
+        assert_eq!(i256::from(4).checked_shl(1), Some(i256::from(8)));
+        assert_eq!(i256::from(1).checked_shl(255), Some(i256::MIN));
+        assert_eq!(i256::from(4).checked_shl(255), Some(i256::from(0)));
+        assert_eq!(i256::from(4).checked_shl(256), None);
+        assert_eq!(u256::from(4u8).checked_shl(0), Some(u256::from(4u8)));
+        assert_eq!(u256::from(4u8).checked_shl(1), Some(u256::from(8u8)));
+        assert_eq!(u256::from(4u8).checked_shl(255), Some(u256::from(0u8)));
+        assert_eq!(u256::from(4u8).checked_shl(256), None);
+    }
+
+    #[test]
+    fn checked_shr_test() {
+        assert_eq!(i256::from(4).checked_shr(0), Some(i256::from(4)));
+        assert_eq!(i256::from(4).checked_shr(1), Some(i256::from(2)));
+        assert_eq!(i256::from(4).checked_shr(255), Some(i256::from(0)));
+        assert_eq!(i256::from(4).checked_shr(256), None);
+        assert_eq!(u256::from(4u8).checked_shr(0), Some(u256::from(4u8)));
+        assert_eq!(u256::from(4u8).checked_shr(1), Some(u256::from(2u8)));
+        assert_eq!(u256::from(4u8).checked_shr(255), Some(u256::from(0u8)));
+        assert_eq!(u256::from(4u8).checked_shr(256), None);
+    }
+
+    #[test]
+    fn wrapping_neg_test() {
+        assert_eq!(i256::from(2).wrapping_neg(), i256::from(-2));
+        assert_eq!(i256::MIN.wrapping_neg(), i256::MIN);
+        assert_eq!(i256::from(0).wrapping_neg(), i256::from(0));
+        assert_eq!(u256::from(1u8).wrapping_neg(), u256::MAX);
     }
 }
