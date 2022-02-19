@@ -29,6 +29,13 @@ macro_rules! construct_bigint {
         pub struct $name([u64; $n_words]);
 
         impl $name {
+            //todo tmp
+            #[inline]
+            /// Constructs an object from internal representation
+            pub const fn new(internal: [u64; $n_words]) -> $name {
+                $name(internal)
+            }
+
             #[inline]
             /// Converts the object to a raw pointer
             pub fn as_ptr(&self) -> *const u64 {
@@ -124,6 +131,29 @@ macro_rules! construct_bigint {
                     }
                     0x40 - arr[0].leading_zeros() as usize
                 }
+            }
+
+            // todo tmp
+            #[inline]
+            pub fn leading_zeros(&self) -> u32 {
+                for i in 0..$n_words {
+                    let leading_zeros = self[$n_words - i - 1].leading_zeros();
+                    if leading_zeros != 64 {
+                        return 64 * i as u32 + leading_zeros;
+                    }
+                }
+                64 * $n_words
+            }
+
+            #[inline]
+            pub fn trailing_zeros(&self) -> u32 {
+                for i in 0..$n_words {
+                    let trailing_zeros = self[i].trailing_zeros();
+                    if trailing_zeros != 64 {
+                        return 64 * i as u32 + trailing_zeros;
+                    }
+                }
+                64 * $n_words
             }
 
             #[inline]
@@ -287,6 +317,16 @@ macro_rules! construct_bigint {
                     Self::ZERO => None,
                     _ => Some(self.div_rem(other)),
                 }
+            }
+        }
+
+        impl From<bool> for $name {
+            fn from(init: bool) -> $name {
+                let mut ret = [0; $n_words];
+                if init {
+                    ret[0] = 1;
+                }
+                $name(ret)
             }
         }
 
@@ -489,11 +529,13 @@ macro_rules! construct_bigint {
                     ret[i] = res;
                 }
                 let ret = Self(ret);
-                (
-                    ret,
+                let overflow = if Self::MIN == Self::ZERO {
+                    carry > 0
+                } else {
                     (self.is_negative() == other.is_negative())
-                        && (self.is_negative() != ret.is_negative()),
-                )
+                        && (self.is_negative() != ret.is_negative())
+                };
+                (ret, overflow)
             }
 
             /// Wrapping (modular) addition. Computes `self + rhs`, wrapping around at
@@ -542,7 +584,15 @@ macro_rules! construct_bigint {
             where
                 T: Into<$name>,
             {
-                self.overflowing_add((!other.into()).wrapping_add($name::ONE))
+                let other = other.into();
+                if Self::MIN == Self::ZERO {
+                    (
+                        self.wrapping_add(!other).wrapping_add($name::ONE),
+                        self < other,
+                    )
+                } else {
+                    self.overflowing_add((!other).wrapping_add($name::ONE))
+                }
             }
 
             /// Wrapping (modular) subtraction. Computes `self - rhs`, wrapping around
@@ -1878,6 +1928,14 @@ mod tests {
         assert_eq!(true, i256::MAX.is_positive());
         assert_eq!(false, i256::MIN.is_positive());
         assert_eq!(true, i256::MIN.is_negative());
+    }
+
+    #[test]
+    fn u256_add_test() {
+        assert_eq!(
+            (u256::MAX - u256::ONE, true),
+            u256::MAX.overflowing_add(u256::MAX)
+        );
     }
 
     #[test]
