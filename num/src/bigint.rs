@@ -640,7 +640,7 @@ macro_rules! construct_bigint {
                 let rhs = other.into();
                 match self.div_rem(rhs) {
                     Err(DivError::Overflow) => (Self::MIN, true),
-                    res => (res.unwrap().0, false),
+                    res => (res.expect("Error occurred during bigint division").0, false),
                 }
             }
 
@@ -677,7 +677,7 @@ macro_rules! construct_bigint {
                 let rhs = other.into();
                 match self.div_rem(rhs) {
                     Err(DivError::Overflow) => Self::MAX,
-                    res => res.unwrap().0,
+                    res => res.expect("Error occurred during bigint division").0,
                 }
             }
 
@@ -693,7 +693,7 @@ macro_rules! construct_bigint {
                 let rhs = other.into();
                 match self.div_rem(rhs) {
                     Err(DivError::Overflow) => (Self::ZERO, true),
-                    res => (res.unwrap().1, false),
+                    res => (res.expect("Error occurred during bigint division").1, false),
                 }
             }
 
@@ -733,7 +733,9 @@ macro_rules! construct_bigint {
             where
                 T: Into<$name>,
             {
-                self.div_rem_euclid(other.into()).unwrap().0
+                self.div_rem_euclid(other.into())
+                    .expect("Error occurred during bigint division")
+                    .0
             }
 
             /// Calculates the quotient of Euclidean division `self.div_euclid(rhs)`.
@@ -747,7 +749,7 @@ macro_rules! construct_bigint {
             {
                 match self.div_rem_euclid(other.into()) {
                     Err(DivError::Overflow) => (Self::MIN, true),
-                    res => (res.unwrap().0, false),
+                    res => (res.expect("Error occurred during bigint division").0, false),
                 }
             }
 
@@ -784,7 +786,9 @@ macro_rules! construct_bigint {
             where
                 T: Into<$name>,
             {
-                self.div_rem_euclid(other.into()).unwrap().1
+                self.div_rem_euclid(other.into())
+                    .expect("Error occurred during bigint division")
+                    .1
             }
 
             /// Overflowing Euclidean remainder. Calculates `self.rem_euclid(rhs)`.
@@ -798,7 +802,7 @@ macro_rules! construct_bigint {
             {
                 match self.div_rem_euclid(other.into()) {
                     Err(DivError::Overflow) => (Self::ZERO, true),
-                    res => (res.unwrap().1, false),
+                    res => (res.expect("Error occurred during bigint division").1, false),
                 }
             }
 
@@ -929,7 +933,9 @@ macro_rules! construct_bigint {
             type Output = $name;
 
             fn div(self, other: T) -> $name {
-                self.div_rem(other.into()).unwrap().0
+                self.div_rem(other.into())
+                    .expect("Error occurred during bigint division")
+                    .0
             }
         }
         impl<T> ::core::ops::DivAssign<T> for $name
@@ -949,7 +955,9 @@ macro_rules! construct_bigint {
             type Output = $name;
 
             fn rem(self, other: T) -> $name {
-                self.div_rem(other.into()).unwrap().1
+                self.div_rem(other.into())
+                    .expect("Error occurred during bigint division")
+                    .1
             }
         }
         impl<T> ::core::ops::RemAssign<T> for $name
