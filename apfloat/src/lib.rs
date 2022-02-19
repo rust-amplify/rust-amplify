@@ -390,9 +390,10 @@ pub trait Float:
     fn from_bits(input: u256) -> Self;
     fn from_i256_r(input: i256, round: Round) -> StatusAnd<Self> {
         if input.is_negative() {
-            Self::from_u256_r(u256::new(input.wrapping_neg().into_inner()), -round).map(|r| -r)
+            Self::from_u256_r(u256::from_inner(input.wrapping_neg().into_inner()), -round)
+                .map(|r| -r)
         } else {
-            Self::from_u256_r(u256::new(input.into_inner()), round)
+            Self::from_u256_r(u256::from_inner(input.into_inner()), round)
         }
     }
     fn from_i256(input: i256) -> StatusAnd<Self> {
@@ -435,13 +436,13 @@ pub trait Float:
                 *is_exact = false;
                 Status::INVALID_OP.and(i256::from(-1) << (width - 1))
             } else {
-                status.and(i256::new(r.wrapping_neg().into_inner()))
+                status.and(i256::from_inner(r.wrapping_neg().into_inner()))
             }
         } else {
             // Positive case is simpler, can pretend it's a smaller unsigned
             // integer, and `to_u128` will take care of all the edge cases.
             self.to_u256_r(width - 1, round, is_exact)
-                .map(|r| i256::new(r.into_inner()))
+                .map(|r| i256::from_inner(r.into_inner()))
         }
     }
     fn to_i256(self, width: usize) -> StatusAnd<i256> {

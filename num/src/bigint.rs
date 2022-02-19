@@ -29,13 +29,6 @@ macro_rules! construct_bigint {
         pub struct $name([u64; $n_words]);
 
         impl $name {
-            //todo tmp
-            #[inline]
-            /// Constructs an object from internal representation
-            pub const fn new(internal: [u64; $n_words]) -> $name {
-                $name(internal)
-            }
-
             #[inline]
             /// Converts the object to a raw pointer
             pub fn as_ptr(&self) -> *const u64 {
@@ -64,7 +57,7 @@ macro_rules! construct_bigint {
 
             #[inline]
             /// Constructs integer type from the underlying array of words.
-            pub fn from_inner(array: [u64; $n_words]) -> Self {
+            pub const fn from_inner(array: [u64; $n_words]) -> Self {
                 Self(array)
             }
         }
@@ -133,7 +126,19 @@ macro_rules! construct_bigint {
                 }
             }
 
-            // todo tmp
+            /// Returns the number of leading ones in the binary representation of `self`.
+            #[inline]
+            pub fn leading_ones(&self) -> u32 {
+                for i in 0..$n_words {
+                    let leading_ones = (!self[$n_words - i - 1]).leading_zeros();
+                    if leading_ones != 64 {
+                        return 64 * i as u32 + leading_ones;
+                    }
+                }
+                64 * $n_words
+            }
+
+            /// Returns the number of leading zeros in the binary representation of `self`.
             #[inline]
             pub fn leading_zeros(&self) -> u32 {
                 for i in 0..$n_words {
@@ -145,6 +150,19 @@ macro_rules! construct_bigint {
                 64 * $n_words
             }
 
+            /// Returns the number of trailing ones in the binary representation of `self`.
+            #[inline]
+            pub fn trailing_ones(&self) -> u32 {
+                for i in 0..$n_words {
+                    let trailing_ones = (!self[i]).trailing_zeros();
+                    if trailing_ones != 64 {
+                        return 64 * i as u32 + trailing_ones;
+                    }
+                }
+                64 * $n_words
+            }
+
+            /// Returns the number of trailing zeros in the binary representation of `self`.
             #[inline]
             pub fn trailing_zeros(&self) -> u32 {
                 for i in 0..$n_words {
@@ -668,7 +686,7 @@ macro_rules! construct_bigint {
             /// Any larger values are equivalent to MAX + 1 - (val - MAX - 1)
             /// where MAX is the corresponding signed type's maximum.
             pub fn wrapping_neg(self) -> $name {
-                !self + Self::ONE
+                (!self).wrapping_add(Self::ONE)
             }
         }
 
@@ -1363,6 +1381,20 @@ macro_rules! construct_unsigned_bigint_methods {
     };
 }
 
+macro_rules! impl_from {
+    ( $from: ident, $n_words_from: expr, $to: ident, $n_words_to: expr ) => {
+        impl From<$from> for $to {
+            fn from(init: $from) -> $to {
+                let mut ret = [0u64; $n_words_to];
+                for i in 0..$n_words_from {
+                    ret[i] = init.0[i]
+                }
+                $to(ret)
+            }
+        }
+    };
+}
+
 construct_bigint!(i256, 4);
 construct_bigint!(i512, 8);
 construct_bigint!(i1024, 16);
@@ -1376,6 +1408,10 @@ construct_unsigned_bigint_methods!(u1024, 16);
 construct_signed_bigint_methods!(i256, 4);
 construct_signed_bigint_methods!(i512, 8);
 construct_signed_bigint_methods!(i1024, 16);
+
+impl_from!(u256, 4, u512, 8);
+impl_from!(u256, 4, u1024, 16);
+impl_from!(u512, 8, u1024, 16);
 
 #[cfg(test)]
 mod tests {
@@ -2078,5 +2114,30 @@ mod tests {
         assert!(i256::MIN < i256::ZERO);
         assert!(i256::from(200) < i256::from(10000000));
         assert!(i256::from(-3) < i256::from(87));
+    }
+
+    #[test]
+    fn u256_to_u512_test() {
+        assert_eq!(u512::from(u256::from(30u8)), u512::from(30u8));
+    }
+
+    #[test]
+    fn leading_zeros_test() {
+        assert_eq!(u512::ZERO.leading_zeros(), 512);
+        assert_eq!(u512::ZERO.leading_ones(), 0);
+        assert_eq!(u512::ZERO.trailing_zeros(), 512);
+        assert_eq!(u512::ZERO.trailing_ones(), 0);
+        assert_eq!(u512::MAX.leading_zeros(), 0);
+        assert_eq!(u512::MAX.leading_ones(), 512);
+        assert_eq!(u512::MAX.trailing_zeros(), 0);
+        assert_eq!(u512::MAX.trailing_ones(), 512);
+        assert_eq!(u256::from(32u8).leading_zeros(), 256 - 6);
+        assert_eq!(u256::from(32u8).leading_ones(), 0);
+        assert_eq!(u256::from(32u8).trailing_zeros(), 5);
+        assert_eq!(u256::from(32u8).trailing_ones(), 0);
+        assert_eq!(i256::from(-2).leading_zeros(), 0);
+        assert_eq!(i256::from(-2).leading_ones(), 255);
+        assert_eq!(i256::from(-2).trailing_zeros(), 1);
+        assert_eq!(i256::from(-2).trailing_ones(), 0);
     }
 }

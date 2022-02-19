@@ -82,7 +82,7 @@ pub trait Semantics: Sized {
     const QNAN_SIGNIFICAND: Limb = {
         let mut ret = [0u64; LIMB_BITS / 64];
         ret[Self::QNAN_BIT / 64] = 1 << (Self::QNAN_BIT % 64);
-        Limb::new(ret)
+        Limb::from_inner(ret)
     };
 
     fn from_bits(bits: u256) -> IeeeFloat<Self> {
@@ -198,7 +198,7 @@ impl Semantics for X87DoubleExtendedS {
         let mut ret = [0u64; LIMB_BITS / 64];
         ret[Self::QNAN_BIT / 64] |= 1 << (Self::QNAN_BIT % 64);
         ret[(Self::QNAN_BIT + 1) / 64] |= 1 << ((Self::QNAN_BIT + 1) % 64);
-        Limb::new(ret)
+        Limb::from_inner(ret)
     };
 
     /// Integer bit is explicit in this format. Intel hardware (387 and later)
