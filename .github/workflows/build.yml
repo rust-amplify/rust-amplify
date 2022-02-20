@@ -82,7 +82,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: check
-          args: --features compat --exclude amplify_apfloat
+          args: --features compat
       - name: Derive
         uses: actions-rs/cargo@v1
         with:
