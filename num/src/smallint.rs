@@ -242,7 +242,7 @@ macro_rules! construct_smallint {
             }
 
             #[inline]
-            fn div_rem(self, other: Self) -> Result<(Self, Self), DivError> {
+            pub fn div_rem(self, other: Self) -> Result<(Self, Self), DivError> {
                 //quotient and remainder will always be smaller than self so they're going to be in bounds
                 if other == Self(0) {
                     return Err(DivError::ZeroDiv)
