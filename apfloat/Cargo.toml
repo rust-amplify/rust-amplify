@@ -15,5 +15,5 @@ default = ["std"]
 std = []
 
 [dependencies]
-amplify_num = { version = "0.3.0", path = "../num" }
+amplify_num = { version = "0.4.0", path = "../num" }
 bitflags = "1.0"
