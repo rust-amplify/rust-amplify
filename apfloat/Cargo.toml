@@ -7,7 +7,7 @@ license = "MIT OR Apache-2.0"
 repository = "https://github.com/LNP-BP/rust-amplify"
 homepage = "https://github.com/LNP-BP"
 categories = ["no-std"]
-readme = "README.md"
+readme = "../README.md"
 keywords = ["float"]
 
 [features]
