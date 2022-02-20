@@ -14,7 +14,7 @@
 // If not, see <https://opensource.org/licenses/MIT>.
 
 use crate::{u256, u512, u1024};
-use core::ops::{Add, AddAssign};
+use core::ops::Add;
 
 macro_rules! construct_posit {
     ($name:ident, $bits:expr, $es:expr, $internal:ident, $zeros: expr, $ones: expr, $nar: expr, $guard:ident) => {
