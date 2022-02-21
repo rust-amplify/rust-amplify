@@ -1,7 +1,7 @@
 [package]
 authors = ["The Rust Project Developers", "Yudai Kiyofuji <own7000hr@gmail.com>"]
 name = "amplify_apfloat"
-version = "0.1.0"
+version = "0.1.1"
 description = "rustc_apfloat with u256 backend to utilize Octuple precision floating-point format"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/LNP-BP/rust-amplify"
