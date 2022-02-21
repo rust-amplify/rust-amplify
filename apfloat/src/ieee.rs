@@ -17,6 +17,7 @@ use std::fmt::{self, Write};
 use std::marker::PhantomData;
 use std::mem;
 use std::ops::Neg;
+#[cfg(any(feature = "std", feature = "alloc"))]
 use std::vec::Vec;
 
 #[must_use]
@@ -323,6 +324,7 @@ impl<S> Neg for IeeeFloat<S> {
     }
 }
 
+#[cfg(any(feature = "std", feature = "alloc"))]
 /// Prints this value as a decimal string.
 ///
 /// \param precision The maximum number of digits of
@@ -1210,6 +1212,7 @@ impl<S: Semantics> Float for IeeeFloat<S> {
         .normalize(round, Loss::ExactlyZero)
     }
 
+    #[cfg(any(feature = "std", feature = "alloc"))]
     fn from_str_r(mut s: &str, mut round: Round) -> Result<StatusAnd<Self>, ParseError> {
         if s.is_empty() {
             return Err(ParseError("Invalid string length"));
@@ -1856,6 +1859,7 @@ impl<S: Semantics> IeeeFloat<S> {
         Ok(r.normalize(round, loss.unwrap_or(Loss::ExactlyZero)))
     }
 
+    #[cfg(any(feature = "std", feature = "alloc"))]
     fn from_decimal_string(s: &str, round: Round) -> Result<StatusAnd<Self>, ParseError> {
         // Given a normal decimal floating point number of the form
         //

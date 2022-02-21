@@ -45,7 +45,7 @@ pub use amplify_derive::{Wrapper, Display, AsAny, From, Getters, Error};
 #[macro_use]
 extern crate serde_crate as serde;
 
-pub extern crate amplify_num as num;
+extern crate amplify_num;
 #[cfg(any(test, feature = "hex"))]
 pub use num::hex;
 #[cfg(feature = "stringly_conversions")]
@@ -76,6 +76,23 @@ mod to_serde_string;
 
 #[cfg(feature = "std")]
 pub mod flags;
+
+pub mod num {
+    //! Custom-sized numeric types
+    //!
+    //! Implementation of a various integer types with custom bit dimension. These
+    //! includes:
+    //! * large signed and unsigned integers, named *gib int types* (256, 512,
+    //!   1024-bit)
+    //! * custom sub-8 bit unsigned integers, named *small int types (5-, 6-, 7-bit)
+    //! * 24-bit signed integer.
+    //!
+    //! The functions here are designed to be fast.
+
+    pub use amplify_num::*;
+    #[cfg(feature = "apfloat")]
+    pub use amplify_apfloat as apfloat;
+}
 
 pub use crate::as_any::AsAny;
 pub use crate::bipolar::Bipolar;

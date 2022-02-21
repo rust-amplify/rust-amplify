@@ -7,13 +7,14 @@ license = "MIT OR Apache-2.0"
 repository = "https://github.com/LNP-BP/rust-amplify"
 homepage = "https://github.com/LNP-BP"
 categories = ["no-std"]
-readme = "README.md"
+readme = "../README.md"
 keywords = ["float"]
 
 [features]
 default = ["std"]
-std = []
+alloc = ["amplify_num/alloc"]
+std = ["amplify_num/std"]
 
 [dependencies]
-amplify_num = { version = "0.4.0", path = "../num" }
+amplify_num = { version = "0.4.0", path = "../num", no-default-features = true }
 bitflags = "1.0"

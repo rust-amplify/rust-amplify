@@ -60,7 +60,8 @@ extern crate bitflags;
 /// This replaces `std` in builds with `core`.
 #[cfg(not(feature = "std"))]
 mod std {
-    pub use alloc::{boxed, slice, string, vec};
+    #[cfg(feature = "alloc")]
+    pub use alloc::vec;
     pub use core::*;
 }
 

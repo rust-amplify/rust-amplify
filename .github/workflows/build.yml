@@ -15,7 +15,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        feature: [ serde, std, alloc, parse_arg, stringly_conversions, rand, c_raw, proc_attr, hex ]
+        feature: [ serde, std, alloc, parse_arg, stringly_conversions, rand, c_raw, proc_attr, hex, apfloat ]
     steps:
       - uses: actions/checkout@v2
       - name: Install rust stable
@@ -26,12 +26,12 @@ jobs:
       - name: Feature ${{matrix.feature}}
         uses: actions-rs/cargo@v1
         with:
-          command: build
+          command: check
           args: --no-default-features --features=${{matrix.feature}}
       - name: Defaults + ${{matrix.feature}}
         uses: actions-rs/cargo@v1
         with:
-          command: build
+          command: check
           args: --features=${{matrix.feature}}
   toolchains:
     runs-on: ubuntu-latest
@@ -49,14 +49,14 @@ jobs:
         if: matrix.toolchain != '1.41.1'
         uses: actions-rs/cargo@v1
         with:
-          command: build
+          command: check
           args: --workspace --all-targets --all-features
-      - name: All features except amplify_apfloat
+      - name: All compat features
         if: matrix.toolchain == '1.41.1'
         uses: actions-rs/cargo@v1
         with:
-          command: build
-          args: --workspace --all-targets --all-features --exclude amplify_apfloat
+          command: check
+          args: --workspace --all-targets --features compat --exclude amplify_apfloat
   ancient:
     runs-on: ubuntu-latest
     steps:
@@ -81,17 +81,17 @@ jobs:
       - name: Main repo
         uses: actions-rs/cargo@v1
         with:
-          command: build
-          args: --all-features
+          command: check
+          args: --features compat
       - name: Derive
         uses: actions-rs/cargo@v1
         with:
-          command: build
+          command: check
           args: --manifest-path ./derive/Cargo.toml
       - name: Syn
         uses: actions-rs/cargo@v1
         with:
-          command: build
+          command: check
           args: --manifest-path ./syn/Cargo.toml
   dependency:
     runs-on: ubuntu-latest
@@ -110,7 +110,7 @@ jobs:
       - name: Build dependency
         uses: actions-rs/cargo@v1
         with:
-          command: build
+          command: check
           args: --verbose
       - name: Clean up
         run: |
