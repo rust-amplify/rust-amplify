@@ -21,7 +21,7 @@ libc = { version = "0.2", optional = true }
 amplify_derive = { version = "2.10.0", path = "./derive", optional = true }
 amplify_syn = { version = "1.1", path = "./syn", optional = true }
 amplify_num = { version = "0.4.0", path = "./num" }
-amplify_apfloat = { version = "0.1.0", path = "./apfloat", no-default-features = true, optional = true }
+amplify_apfloat = { version = "0.1.1", path = "./apfloat", no-default-features = true, optional = true }
 parse_arg = { version = "0.1.4", optional = true }
 rand = { version = "0.8.4", optional = true }
 # This strange naming is a workaround for not being able to define required features for a dependency
