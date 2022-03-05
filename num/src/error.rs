@@ -52,6 +52,27 @@ impl core::fmt::Display for DivError {
     }
 }
 
+#[cfg(feature = "std")]
+impl std::error::Error for DivError {}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum PositDecodeError {
+    Zero,
+    NaR,
+}
+
+impl core::fmt::Display for PositDecodeError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match *self {
+            PositDecodeError::Zero => write!(f, "exception value zero"),
+            PositDecodeError::NaR => write!(f, "exception value NaR"),
+        }
+    }
+}
+
+#[cfg(feature = "std")]
+impl std::error::Error for PositDecodeError {}
+
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
 /// Invalid slice length
 pub struct ParseLengthError {
