@@ -16,5 +16,5 @@ alloc = ["amplify_num/alloc"]
 std = ["amplify_num/std"]
 
 [dependencies]
-amplify_num = { version = "0.4.0", path = "../num", no-default-features = true }
+amplify_num = { version = "0.4.0", path = "../num", default-features = false }
 bitflags = "1.0"
