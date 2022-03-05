@@ -44,6 +44,7 @@ name = "amplify_num"
 version = "0.4.0"
 dependencies = [
  "bincode",
+ "rand",
  "serde",
  "serde_json",
 ]
