@@ -50,13 +50,13 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: check
-          args: --workspace --all-targets --all-features
+          args: --workspace --lib --bins --tests --examples --all-features
       - name: All compat features
         if: matrix.toolchain == '1.41.1'
         uses: actions-rs/cargo@v1
         with:
           command: check
-          args: --workspace --all-targets --features compat --exclude amplify_apfloat
+          args: --workspace --lib --bins --tests --examples --features compat --exclude amplify_apfloat
   ancient:
     runs-on: ubuntu-latest
     steps:
