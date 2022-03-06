@@ -48,9 +48,11 @@ jobs:
       - name: All features
         if: matrix.toolchain != '1.41.1'
         uses: actions-rs/cargo@v1
+        env:
+          RUSTFLAGS: "--cfg bench"
         with:
           command: check
-          args: --workspace --lib --bins --tests --examples --all-features
+          args: --workspace --all-targets --all-features
       - name: All compat features
         if: matrix.toolchain == '1.41.1'
         uses: actions-rs/cargo@v1
