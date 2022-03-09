@@ -1971,14 +1971,16 @@ impl<S: Semantics> IeeeFloat<S> {
         //       42039/12655 < L < 28738/8651  [ numerator <= 65536 ]
 
         // Check for MAX_EXP.
-        if normalized_exp.saturating_sub(1).saturating_mul(42039) >= 12655 * S::MAX_EXP as i32 {
+        if normalized_exp.saturating_sub(1).saturating_mul(42039) as i64
+            >= 12655 * S::MAX_EXP as i64
+        {
             // Overflow and round.
             return Ok(Self::overflow_result(round));
         }
 
         // Check for MIN_EXP.
-        if normalized_exp.saturating_add(1).saturating_mul(28738)
-            <= 8651 * (S::MIN_EXP as i32 - S::PRECISION as i32)
+        if normalized_exp.saturating_add(1).saturating_mul(28738) as i64
+            <= 8651 * (S::MIN_EXP as i64 - S::PRECISION as i64)
         {
             // Underflow to zero and round.
             let r = if round == Round::TowardPositive {
