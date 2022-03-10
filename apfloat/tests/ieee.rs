@@ -714,6 +714,12 @@ fn decimal_strings_without_null_terminators() {
 }
 
 #[test]
+fn oct_decimal_string() {
+    assert_eq!(true, "0".parse::<Oct>().unwrap().is_zero());
+    assert_eq!("0.5", "0.5".parse::<Oct>().unwrap().to_string());
+}
+
+#[test]
 fn from_zero_decimal_string() {
     assert_eq!(0.0, "0".parse::<Double>().unwrap().to_f64());
     assert_eq!(0.0, "+0".parse::<Double>().unwrap().to_f64());
