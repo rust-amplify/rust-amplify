@@ -350,6 +350,36 @@ construct_smallint!(
     doc = "24-bit unsigned integer in the range `0..16_777_216`"
 );
 
+impl From<u24> for i32 {
+    fn from(val: u24) -> Self {
+        val.0 as i32
+    }
+}
+
+impl From<u24> for i64 {
+    fn from(val: u24) -> Self {
+        val.0 as i64
+    }
+}
+
+impl From<u24> for isize {
+    fn from(val: u24) -> Self {
+        val.0 as isize
+    }
+}
+
+impl From<u24> for u64 {
+    fn from(val: u24) -> Self {
+        val.0 as u64
+    }
+}
+
+impl From<u24> for usize {
+    fn from(val: u24) -> Self {
+        val.0 as usize
+    }
+}
+
 impl u24 {
     /// Create a native endian integer value from its representation as a byte
     /// array in little endian.
@@ -381,6 +411,36 @@ impl u24 {
         let mut inner = [0u8; 3];
         inner.copy_from_slice(&self.0.to_be_bytes()[1..]);
         inner
+    }
+
+    /// Converts into `i32` type.
+    pub fn into_i32(self) -> i32 {
+        self.0 as i32
+    }
+
+    /// Converts into `i64` type.
+    pub fn into_i64(self) -> i64 {
+        self.0 as i64
+    }
+
+    /// Converts into `isize` type.
+    pub fn into_isize(self) -> isize {
+        self.0 as isize
+    }
+
+    /// Converts into `u32` type.
+    pub fn into_u32(self) -> u32 {
+        self.0
+    }
+
+    /// Converts into `u64` type.
+    pub fn into_u64(self) -> u64 {
+        self.0 as u64
+    }
+
+    /// Converts into `usize` type.
+    pub fn into_usize(self) -> usize {
+        self.0 as usize
     }
 }
 
