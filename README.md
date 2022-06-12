@@ -165,3 +165,9 @@ As a reminder, minimum supported rust compiler version (MSRV) is 1.36.0, so it
 can be build with either nightly, dev, stable or 1.36+ version of the rust 
 compiler. Use `rustup` for getting the proper version, or add `+toolchain`
 parameter to both `cargo build` and `cargo test` commands.
+
+## Benchmark
+
+```shell
+RUSTFLAGS="--cfg bench" cargo bench
+```
