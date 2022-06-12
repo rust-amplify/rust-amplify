@@ -49,6 +49,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![cfg_attr(not(feature = "std"), feature(alloc))]
 
+extern crate core;
 #[cfg(not(feature = "std"))]
 #[macro_use]
 extern crate alloc;
@@ -65,11 +66,11 @@ mod std {
     pub use core::*;
 }
 
-use std::cmp::Ordering;
-use std::fmt;
-use std::ops::{Neg, Add, Sub, Mul, Div, Rem};
-use std::ops::{AddAssign, SubAssign, MulAssign, DivAssign, RemAssign};
-use std::str::FromStr;
+use core::fmt::{self, Display, Formatter};
+use core::cmp::Ordering;
+use core::ops::{Neg, Add, Sub, Mul, Div, Rem};
+use core::ops::{AddAssign, SubAssign, MulAssign, DivAssign, RemAssign};
+use core::str::FromStr;
 use amplify_num::{i256, u256};
 
 bitflags! {
@@ -172,6 +173,12 @@ pub const IEK_ZERO: ExpInt = ExpInt::min_value() + 1;
 
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
 pub struct ParseError(pub &'static str);
+
+impl Display for ParseError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        f.write_str(self.0)
+    }
+}
 
 /// A self-contained host- and target-independent arbitrary-precision
 /// floating-point software implementation.

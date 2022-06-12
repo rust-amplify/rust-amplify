@@ -24,7 +24,7 @@ dependencies = [
 
 [[package]]
 name = "amplify_apfloat"
-version = "0.1.2"
+version = "0.1.3"
 dependencies = [
  "amplify_num",
  "bitflags",
