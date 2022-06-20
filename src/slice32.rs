@@ -20,6 +20,7 @@ use core::str::FromStr;
 use core::ops::{Index, IndexMut, RangeFull};
 #[cfg(feature = "alloc")]
 use alloc::vec::Vec;
+use core::borrow::{Borrow, BorrowMut};
 
 #[cfg(all(feature = "hex", any(feature = "std", feature = "alloc")))]
 use crate::hex::{Error, FromHex, ToHex};
@@ -69,11 +70,51 @@ impl Slice32 {
         Some(Self(inner))
     }
 
+    /// Returns byte slice representation.
+    #[inline]
+    pub fn as_slice(&self) -> &[u8] {
+        self.as_ref()
+    }
+
+    /// Returns mutable byte slice representation.
+    #[inline]
+    pub fn as_slice_mut(&mut self) -> &mut [u8] {
+        self.as_mut()
+    }
+
     /// Returns vector representing internal slice data
     #[allow(clippy::wrong_self_convention)]
     #[cfg(any(test, feature = "std", feature = "alloc"))]
     pub fn to_vec(&self) -> Vec<u8> {
         self.0.to_vec()
+    }
+}
+
+impl AsRef<[u8]> for Slice32 {
+    #[inline]
+    fn as_ref(&self) -> &[u8] {
+        self.0.as_ref()
+    }
+}
+
+impl AsMut<[u8]> for Slice32 {
+    #[inline]
+    fn as_mut(&mut self) -> &mut [u8] {
+        self.0.as_mut()
+    }
+}
+
+impl Borrow<[u8]> for Slice32 {
+    #[inline]
+    fn borrow(&self) -> &[u8] {
+        self.0.borrow()
+    }
+}
+
+impl BorrowMut<[u8]> for Slice32 {
+    #[inline]
+    fn borrow_mut(&mut self) -> &mut [u8] {
+        self.0.borrow_mut()
     }
 }
 
