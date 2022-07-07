@@ -154,17 +154,9 @@ impl IndexMut<u8> for Slice32 {
     }
 }
 
-impl From<&[u8; 32]> for Slice32 {
-    #[inline]
-    fn from(inner: &[u8; 32]) -> Self {
-        Self(*inner)
-    }
-}
-
-impl From<[u8; 32]> for Slice32 {
-    #[inline]
-    fn from(inner: [u8; 32]) -> Self {
-        Self(inner)
+impl<T> From<T> for Slice32 where T: Into<[u8; 32]> {
+    fn from(array: T) -> Self {
+        Self(array.into())
     }
 }
 
