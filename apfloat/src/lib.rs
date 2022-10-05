@@ -183,8 +183,8 @@ impl Display for ParseError {
 /// A self-contained host- and target-independent arbitrary-precision
 /// floating-point software implementation.
 ///
-/// `apfloat` uses significand bignum integer arithmetic as provided by functions
-/// in the `ieee::sig`.
+/// `apfloat` uses significand bignum integer arithmetic as provided by
+/// functions in the `ieee::sig`.
 ///
 /// Written for clarity rather than speed, in particular with a view to use in
 /// the front-end of a cross compiler so that target arithmetic can be correctly
@@ -252,7 +252,6 @@ impl Display for ParseError {
 /// extended exponent range) (hard).
 ///
 /// New operations: sqrt, nexttoward.
-///
 pub trait Float:
     Copy
     + Default
@@ -312,7 +311,8 @@ pub trait Float:
     const SMALLEST: Self;
 
     /// Smallest (by magnitude) normalized finite number.
-    // FIXME(eddyb) should be const (but FloatPair::smallest_normalized is nontrivial).
+    // FIXME(eddyb) should be const (but FloatPair::smallest_normalized is
+    // nontrivial).
     fn smallest_normalized() -> Self;
 
     // Arithmetic
@@ -468,8 +468,9 @@ pub trait Float:
 
     // IEEE-754R 5.7.2 General operations.
 
-    /// Implements IEEE minNum semantics. Returns the smaller of the 2 arguments if
-    /// both are not NaN. If either argument is a NaN, returns the other argument.
+    /// Implements IEEE minNum semantics. Returns the smaller of the 2 arguments
+    /// if both are not NaN. If either argument is a NaN, returns the other
+    /// argument.
     fn min(self, other: Self) -> Self {
         if self.is_nan() {
             other
@@ -482,8 +483,9 @@ pub trait Float:
         }
     }
 
-    /// Implements IEEE maxNum semantics. Returns the larger of the 2 arguments if
-    /// both are not NaN. If either argument is a NaN, returns the other argument.
+    /// Implements IEEE maxNum semantics. Returns the larger of the 2 arguments
+    /// if both are not NaN. If either argument is a NaN, returns the other
+    /// argument.
     fn max(self, other: Self) -> Self {
         if self.is_nan() {
             other
@@ -502,7 +504,8 @@ pub trait Float:
     /// This applies to zeros and NaNs as well.
     fn is_negative(self) -> bool;
 
-    /// IEEE-754R isNormal: Returns true if and only if the current value is normal.
+    /// IEEE-754R isNormal: Returns true if and only if the current value is
+    /// normal.
     ///
     /// This implies that the current value of the float is not zero, subnormal,
     /// infinite, or NaN following the definition of normality from IEEE-754R.
@@ -527,7 +530,8 @@ pub trait Float:
     /// denormal.
     fn is_denormal(self) -> bool;
 
-    /// IEEE-754R isInfinite(): Returns true if and only if the float is infinity.
+    /// IEEE-754R isInfinite(): Returns true if and only if the float is
+    /// infinity.
     fn is_infinite(self) -> bool {
         self.category() == Category::Infinity
     }
@@ -556,8 +560,8 @@ pub trait Float:
         self.is_zero() && self.is_negative()
     }
 
-    /// Returns true if and only if the number has the smallest possible non-zero
-    /// magnitude in the current semantics.
+    /// Returns true if and only if the number has the smallest possible
+    /// non-zero magnitude in the current semantics.
     fn is_smallest(self) -> bool {
         Self::SMALLEST.copy_sign(self).bitwise_eq(self)
     }
@@ -590,7 +594,6 @@ pub trait Float:
     ///   NaN -> \c IEK_NAN
     ///   0   -> \c IEK_ZERO
     ///   Inf -> \c IEK_INF
-    ///
     fn ilogb(self) -> ExpInt;
 
     /// Returns: self * 2<sup>exp</sup> for integral exponents.
@@ -601,8 +604,9 @@ pub trait Float:
 
     /// Equivalent of C standard library function.
     ///
-    /// While the C standard says exp is an unspecified value for infinity and nan,
-    /// this returns INT_MAX for infinities, and INT_MIN for NaNs (see `ilogb`).
+    /// While the C standard says exp is an unspecified value for infinity and
+    /// nan, this returns INT_MAX for infinities, and INT_MIN for NaNs (see
+    /// `ilogb`).
     fn frexp_r(self, exp: &mut ExpInt, round: Round) -> Self;
     fn frexp(self, exp: &mut ExpInt) -> Self {
         self.frexp_r(exp, Round::NearestTiesToEven)

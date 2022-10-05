@@ -72,8 +72,8 @@ fn ppc_double_double_add_special() {
             Category::Infinity,
             Round::NearestTiesToEven,
         ),
-        // FIXME: change the 4th u256::from(0x75effffffffffffe to u256::from(0x75efffffffffffff when
-        // DoubleDouble's fallback is gone.
+        // FIXME: change the 4th u256::from(0x75effffffffffffe to u256::from(0x75efffffffffffff
+        // when DoubleDouble's fallback is gone.
         // LDBL_MAX + (1.011111... >> (1023 - 106) + (1.1111111...0 >> (1023 -
         // 160))) = Category::Normal
         (

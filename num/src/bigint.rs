@@ -102,7 +102,8 @@ macro_rules! construct_bigint {
                 arr[0] as u64
             }
 
-            /// Returns the number of leading ones in the binary representation of `self`.
+            /// Returns the number of leading ones in the binary representation of
+            /// `self`.
             #[inline]
             pub fn leading_ones(&self) -> u32 {
                 for i in 0..$n_words {
@@ -114,7 +115,8 @@ macro_rules! construct_bigint {
                 64 * $n_words
             }
 
-            /// Returns the number of leading zeros in the binary representation of `self`.
+            /// Returns the number of leading zeros in the binary representation of
+            /// `self`.
             #[inline]
             pub fn leading_zeros(&self) -> u32 {
                 for i in 0..$n_words {
@@ -126,7 +128,8 @@ macro_rules! construct_bigint {
                 64 * $n_words
             }
 
-            /// Returns the number of trailing ones in the binary representation of `self`.
+            /// Returns the number of trailing ones in the binary representation of
+            /// `self`.
             #[inline]
             pub fn trailing_ones(&self) -> u32 {
                 for i in 0..$n_words {
@@ -138,7 +141,8 @@ macro_rules! construct_bigint {
                 64 * $n_words
             }
 
-            /// Returns the number of trailing zeros in the binary representation of `self`.
+            /// Returns the number of trailing zeros in the binary representation of
+            /// `self`.
             #[inline]
             pub fn trailing_zeros(&self) -> u32 {
                 for i in 0..$n_words {
@@ -648,8 +652,8 @@ macro_rules! construct_bigint {
             /// wrapping around at the boundary of the type.
             ///
             /// The only case where such wrapping can occur is when one divides
-            /// `MIN / -1` on a signed type (where MIN is the negative minimal value for the type);
-            /// this is equivalent to -MIN, a positive value that is
+            /// `MIN / -1` on a signed type (where MIN is the negative minimal value for
+            /// the type); this is equivalent to -MIN, a positive value that is
             /// too large to represent in the type.
             /// In such a case, this function returns MIN itself.
             pub fn wrapping_div<T>(self, other: T) -> $name
@@ -780,8 +784,8 @@ macro_rules! construct_bigint {
             /// Calculates the least nonnegative remainder of `self (mod rhs)`.
             ///
             /// This is done as if by the Euclidean division algorithm –
-            /// given `r = self.rem_euclid(rhs)`, `self = rhs * self.div_euclid(rhs) + r`,
-            /// and `0 <= r < abs(rhs)`.
+            /// given `r = self.rem_euclid(rhs)`, `self = rhs * self.div_euclid(rhs) +
+            /// r`, and `0 <= r < abs(rhs)`.
             pub fn rem_euclid<T>(self, other: T) -> $name
             where
                 T: Into<$name>,
@@ -793,8 +797,8 @@ macro_rules! construct_bigint {
 
             /// Overflowing Euclidean remainder. Calculates `self.rem_euclid(rhs)`.
             ///
-            /// Returns a tuple of the remainder after dividing along with a boolean indicating
-            /// whether an arithmetic overflow would occur.
+            /// Returns a tuple of the remainder after dividing along with a boolean
+            /// indicating whether an arithmetic overflow would occur.
             /// If an overflow would occur then 0 is returned.
             pub fn overflowing_rem_euclid<T>(self, other: T) -> ($name, bool)
             where
@@ -829,7 +833,8 @@ macro_rules! construct_bigint {
             }
 
             /// Checked shift left. Computes self << rhs,
-            /// returning None if rhs is larger than or equal to the number of bits in self.
+            /// returning None if rhs is larger than or equal to the number of bits in
+            /// self.
             pub fn checked_shl(self, rhs: u32) -> Option<$name> {
                 match rhs < Self::BITS {
                     true => Some(self << (rhs as usize)),
@@ -838,7 +843,8 @@ macro_rules! construct_bigint {
             }
 
             /// Checked shift right. Computes self >> rhs,
-            /// returning None if rhs is larger than or equal to the number of bits in self.
+            /// returning None if rhs is larger than or equal to the number of bits in
+            /// self.
             pub fn checked_shr(self, rhs: u32) -> Option<$name> {
                 match rhs < Self::BITS {
                     true => Some(self >> (rhs as usize)),

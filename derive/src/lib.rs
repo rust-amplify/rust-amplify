@@ -187,11 +187,15 @@ use syn::DeriveInput;
 ///
 ///
 ///     assert_eq!(format!("{}", Message::Quit), "quit");
-///     assert_eq!(format!("{}", Message::Move{ x: 1, y: 2 }), "move { x: 1, y: 2 }");
-///     assert_eq!(format!("{}", Message::Write(String::from("msg"))), "write(msg)");
-///     assert_eq!(format!("{}", Message::ChangeColor(255, 0, 0)), "changecolor(255, 0, 0)");
+///     assert_eq!(format!("{}", Message::Move{ x: 1, y: 2 }),
+///         "move { x: 1, y: 2 }");
+///     assert_eq!(format!("{}", Message::Write(String::from("msg"))),
+///         "write(msg)");
+///     assert_eq!(format!("{}", Message::ChangeColor(255, 0, 0)),
+///         "changecolor(255, 0, 0)");
 ///     assert_eq!(format!("{}", Event::Init), "INIT");
-///     assert_eq!(format!("{}", Event::Load(Message::ChangeColor(0, 255, 0))), "LOAD(changecolor(0, 255, 0))");
+///     assert_eq!(format!("{}", Event::Load(Message::ChangeColor(0, 255, 0))),
+///         "LOAD(changecolor(0, 255, 0))");
 ///    ```
 /// # Example
 ///

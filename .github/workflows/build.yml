@@ -59,42 +59,6 @@ jobs:
         with:
           command: check
           args: --workspace --lib --bins --tests --examples --features compat --exclude amplify_apfloat
-  ancient:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Install rust 1.36.0
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: 1.36.0
-          override: true
-      - name: Clean Cargo.lock
-        run: rm -f Cargo.lock
-      - name: Fix Cargo.lock
-        uses: actions-rs/cargo@v1
-        with:
-          command: generate-lockfile
-          args: --verbose
-      - name: Pin serde_yaml
-        uses: actions-rs/cargo@v1
-        with:
-          command: update
-          args: -p serde_yaml --precise "0.8.17" --verbose
-      - name: Main repo
-        uses: actions-rs/cargo@v1
-        with:
-          command: check
-          args: --features compat
-      - name: Derive
-        uses: actions-rs/cargo@v1
-        with:
-          command: check
-          args: --manifest-path ./derive/Cargo.toml
-      - name: Syn
-        uses: actions-rs/cargo@v1
-        with:
-          command: check
-          args: --manifest-path ./syn/Cargo.toml
   dependency:
     runs-on: ubuntu-latest
     steps:

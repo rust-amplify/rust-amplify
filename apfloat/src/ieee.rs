@@ -208,7 +208,8 @@ impl Semantics for X87DoubleExtendedS {
     ///  exponent = all 1's, integer bit 0, significand nonzero ("pseudoNaN")
     ///  exponent = 0, integer bit 1 ("pseudodenormal")
     ///  exponent!=0 nor all 1's, integer bit 0 ("unnormal")
-    /// At the moment, the first two are treated as NaNs, the second two as Normal.
+    /// At the moment, the first two are treated as NaNs, the second two as
+    /// Normal.
     fn from_bits(bits: u256) -> IeeeFloat<Self> {
         let sign = bits & (Limb::ONE << (Self::BITS - 1));
         let exponent = (bits & !sign) >> Self::PRECISION;
@@ -1584,8 +1585,8 @@ impl<S: Semantics> IeeeFloat<S> {
     /// Returns TRUE if, when truncating the current number, with BIT the
     /// new LSB, with the given lost fraction and rounding mode, the result
     /// would need to be rounded away from zero (i.e., by increasing the
-    /// signficand). This routine must work for Category::Zero of both signs, and
-    /// Category::Normal numbers.
+    /// signficand). This routine must work for Category::Zero of both signs,
+    /// and Category::Normal numbers.
     fn round_away_from_zero(&self, round: Round, loss: Loss, bit: usize) -> bool {
         // NaNs and infinities should not have lost fractions.
         assert!(self.is_finite_non_zero() || self.is_zero());
@@ -2230,8 +2231,8 @@ impl<S: Semantics> IeeeFloat<S> {
 
             // The error from the true value, in half-ulps, on multiplying two
             // floating point numbers, which differ from the value they
-            // approximate by at most half_ulp_err1 and half_ulp_err2 half-ulps, is strictly less
-            // than the returned value.
+            // approximate by at most half_ulp_err1 and half_ulp_err2 half-ulps, is strictly
+            // less than the returned value.
             //
             // See "How to Read Floating Point Numbers Accurately" by William D Clinger.
             assert!(
@@ -2340,8 +2341,9 @@ impl Loss {
     }
 }
 
-/// Implementation details of IeeeFloat significands, such as big integer arithmetic.
-/// As a rule of thumb, no functions in this module should dynamically allocate.
+/// Implementation details of IeeeFloat significands, such as big integer
+/// arithmetic. As a rule of thumb, no functions in this module should
+/// dynamically allocate.
 mod sig {
     use std::cmp::Ordering;
     use std::mem;
@@ -2470,9 +2472,10 @@ mod sig {
         loss
     }
 
-    /// Copy the bit vector of width `src_bits` from `src`, starting at bit SRC_LSB,
-    /// to `dst`, such that the bit SRC_LSB becomes the least significant bit of `dst`.
-    /// All high bits above `src_bits` in `dst` are zero-filled.
+    /// Copy the bit vector of width `src_bits` from `src`, starting at bit
+    /// SRC_LSB, to `dst`, such that the bit SRC_LSB becomes the least
+    /// significant bit of `dst`. All high bits above `src_bits` in `dst`
+    /// are zero-filled.
     pub(super) fn extract(dst: &mut [Limb], src: &[Limb], src_bits: usize, src_lsb: usize) {
         if src_bits == 0 {
             return;
