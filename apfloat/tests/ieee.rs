@@ -387,8 +387,7 @@ fn next() {
     // is to ensure that guards in the code to check for min exponent
     // trigger properly.
     //     * nextUp(-0x1p-16381) -> -0x1.ffffffffffffffffffffffffffffp-16382
-    //     * nextDown(-0x1.ffffffffffffffffffffffffffffp-16382) ->
-    //         -0x1p-16381
+    //     * nextDown(-0x1.ffffffffffffffffffffffffffffp-16382) -> -0x1p-16381
     //     * nextUp(0x1.ffffffffffffffffffffffffffffp-16382) -> 0x1p-16382
     //     * nextDown(0x1p-16382) -> 0x1.ffffffffffffffffffffffffffffp-16382
 

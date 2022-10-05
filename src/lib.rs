@@ -80,11 +80,12 @@ pub mod flags;
 pub mod num {
     //! Custom-sized numeric types
     //!
-    //! Implementation of a various integer types with custom bit dimension. These
-    //! includes:
+    //! Implementation of a various integer types with custom bit dimension.
+    //! These includes:
     //! * large signed and unsigned integers, named *gib int types* (256, 512,
     //!   1024-bit)
-    //! * custom sub-8 bit unsigned integers, named *small int types (5-, 6-, 7-bit)
+    //! * custom sub-8 bit unsigned integers, named *small int types (5-, 6-,
+    //!   7-bit)
     //! * 24-bit signed integer.
     //!
     //! The functions here are designed to be fast.
