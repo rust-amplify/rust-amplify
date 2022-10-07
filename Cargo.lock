@@ -698,7 +698,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ff63080f492dd4d289ffcaed8d7ece38adfb423db910eb342c0e04d409536a7a"
 dependencies = [
  "paste",
- "serde_str_helpers 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
