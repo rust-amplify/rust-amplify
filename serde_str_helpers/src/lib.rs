@@ -88,13 +88,13 @@ impl<'a> From<DeserBorrowStr<'a>> for String {
 
 impl<'a> Borrow<str> for DeserBorrowStr<'a> {
     fn borrow(&self) -> &str {
-        &*self
+        self
     }
 }
 
 impl<'a> AsRef<str> for DeserBorrowStr<'a> {
     fn as_ref(&self) -> &str {
-        &*self
+        self
     }
 }
 

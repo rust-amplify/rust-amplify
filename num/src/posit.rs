@@ -520,7 +520,7 @@ construct_posit!(
     ::core::u128::MAX
 );
 construct_posit!(
-    Posi128,
+    Posit128,
     128,
     4,
     u128,
