@@ -17,7 +17,7 @@ use std::ops::Neg;
 use amplify_num::u256;
 
 #[must_use]
-#[derive(Copy, Clone, PartialEq, PartialOrd, Debug)]
+#[derive(Copy, Clone, Eq, PartialEq, PartialOrd, Debug)]
 pub struct DoubleFloat<F>(F, F);
 pub type DoubleDouble = DoubleFloat<ieee::Double>;
 

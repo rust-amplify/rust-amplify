@@ -416,52 +416,56 @@ impl<S: Semantics> fmt::Display for IeeeFloat<S> {
         let _: Loss = sig::shift_right(&mut sig, &mut exp, trailing_zeros as usize);
 
         // Change the exponent from 2^e to 10^e.
-        if exp == 0 {
-            // Nothing to do.
-        } else if exp > 0 {
-            // Just shift left.
-            let shift = exp as usize;
-            sig.resize(limbs_for_bits(S::PRECISION + shift), Limb::ZERO);
-            sig::shift_left(&mut sig, &mut exp, shift);
-        } else {
-            // exp < 0
-            let mut texp = -exp as usize;
+        match exp {
+            0i32 => {
+                // Nothing to do.
+            }
+            1..=i32::MAX => {
+                // Just shift left.
+                let shift = exp as usize;
+                sig.resize(limbs_for_bits(S::PRECISION + shift), Limb::ZERO);
+                sig::shift_left(&mut sig, &mut exp, shift);
+            }
+            i32::MIN..=-1 => {
+                // exp < 0
+                let mut texp = -exp as usize;
 
-            // We transform this using the identity:
-            //   (N)(2^-e) == (N)(5^e)(10^-e)
+                // We transform this using the identity:
+                //   (N)(2^-e) == (N)(5^e)(10^-e)
 
-            // Multiply significand by 5^e.
-            //   N * 5^0101 == N * 5^(1*1) * 5^(0*2) * 5^(1*4) * 5^(0*8)
-            let mut sig_scratch: Vec<Limb> = vec![];
-            let mut p5: Vec<Limb> = vec![];
-            let mut p5_scratch: Vec<Limb> = vec![];
-            while texp != 0 {
-                if p5.is_empty() {
-                    p5.push(Limb::from(5u8));
-                } else {
-                    p5_scratch.resize(p5.len() * 2, Limb::ZERO);
-                    let _: Loss =
-                        sig::mul(&mut p5_scratch, &mut 0, &p5, &p5, p5.len() * 2 * LIMB_BITS);
-                    while p5_scratch.last() == Some(&Limb::ZERO) {
-                        p5_scratch.pop();
+                // Multiply significand by 5^e.
+                //   N * 5^0101 == N * 5^(1*1) * 5^(0*2) * 5^(1*4) * 5^(0*8)
+                let mut sig_scratch: Vec<Limb> = vec![];
+                let mut p5: Vec<Limb> = vec![];
+                let mut p5_scratch: Vec<Limb> = vec![];
+                while texp != 0 {
+                    if p5.is_empty() {
+                        p5.push(Limb::from(5u8));
+                    } else {
+                        p5_scratch.resize(p5.len() * 2, Limb::ZERO);
+                        let _: Loss =
+                            sig::mul(&mut p5_scratch, &mut 0, &p5, &p5, p5.len() * 2 * LIMB_BITS);
+                        while p5_scratch.last() == Some(&Limb::ZERO) {
+                            p5_scratch.pop();
+                        }
+                        mem::swap(&mut p5, &mut p5_scratch);
                     }
-                    mem::swap(&mut p5, &mut p5_scratch);
-                }
-                if texp & 1 != 0 {
-                    sig_scratch.resize(sig.len() + p5.len(), Limb::ZERO);
-                    let _: Loss = sig::mul(
-                        &mut sig_scratch,
-                        &mut 0,
-                        &sig,
-                        &p5,
-                        (sig.len() + p5.len()) * LIMB_BITS,
-                    );
-                    while sig_scratch.last() == Some(&Limb::ZERO) {
-                        sig_scratch.pop();
+                    if texp & 1 != 0 {
+                        sig_scratch.resize(sig.len() + p5.len(), Limb::ZERO);
+                        let _: Loss = sig::mul(
+                            &mut sig_scratch,
+                            &mut 0,
+                            &sig,
+                            &p5,
+                            (sig.len() + p5.len()) * LIMB_BITS,
+                        );
+                        while sig_scratch.last() == Some(&Limb::ZERO) {
+                            sig_scratch.pop();
+                        }
+                        mem::swap(&mut sig, &mut sig_scratch);
                     }
-                    mem::swap(&mut sig, &mut sig_scratch);
+                    texp >>= 1;
                 }
-                texp >>= 1;
             }
         }
 
@@ -1229,8 +1233,8 @@ impl<S: Semantics> Float for IeeeFloat<S> {
         }
 
         // Handle a leading minus sign.
-        let minus = s.starts_with("-");
-        if minus || s.starts_with("+") {
+        let minus = s.starts_with('-');
+        if minus || s.starts_with('+') {
             s = &s[1..];
             if s.is_empty() {
                 return Err(ParseError("String has no digits"));
@@ -1843,12 +1847,10 @@ impl<S: Semantics> IeeeFloat<S> {
             } else {
                 (dot - first_sig_digit) as ExpInt
             }
+        } else if first_sig_digit - dot - 1 > i16::max_value() as _ {
+            panic!("Failed to convert to ExpInt")
         } else {
-            if first_sig_digit - dot - 1 > i16::max_value() as _ {
-                panic!("Failed to convert to ExpInt")
-            } else {
-                -((first_sig_digit - dot - 1) as ExpInt)
-            }
+            -((first_sig_digit - dot - 1) as ExpInt)
         };
         let exp_adjustment = exp_adjustment
             .saturating_mul(4)
@@ -2052,7 +2054,7 @@ impl<S: Semantics> IeeeFloat<S> {
         // Calculate pow(5, abs(dec_exp)) into `pow5_full`.
         // The *_calc Vec's are reused scratch space, as an optimization.
         let (pow5_full, mut pow5_calc, mut sig_calc, mut sig_scratch_calc) = {
-            let mut power = dec_exp.abs() as usize;
+            let mut power = dec_exp.unsigned_abs() as usize;
 
             let first_eight_powers: [Limb; 8] = [
                 1u8.into(),
@@ -2608,17 +2610,21 @@ mod sig {
         if *a_sign ^ b_sign {
             let (reverse, loss);
 
-            if bits == 0 {
-                reverse = cmp(a_sig, b_sig) == Ordering::Less;
-                loss = Loss::ExactlyZero;
-            } else if bits > 0 {
-                loss = shift_right(b_sig, &mut 0, (bits - 1) as usize);
-                shift_left(a_sig, a_exp, 1);
-                reverse = false;
-            } else {
-                loss = shift_right(a_sig, a_exp, (-bits - 1) as usize);
-                shift_left(b_sig, &mut 0, 1);
-                reverse = true;
+            match bits {
+                0 => {
+                    reverse = cmp(a_sig, b_sig) == Ordering::Less;
+                    loss = Loss::ExactlyZero;
+                }
+                1..=i32::MAX => {
+                    loss = shift_right(b_sig, &mut 0, (bits - 1) as usize);
+                    shift_left(a_sig, a_exp, 1);
+                    reverse = false;
+                }
+                i32::MIN..=-1 => {
+                    loss = shift_right(a_sig, a_exp, (-bits - 1) as usize);
+                    shift_left(b_sig, &mut 0, 1);
+                    reverse = true;
+                }
             }
 
             let borrow = Limb::from(loss != Loss::ExactlyZero);
