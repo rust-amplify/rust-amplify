@@ -350,7 +350,7 @@ impl Technique {
             }
             Fields::Unnamed(f) => {
                 let inner = (0..f.unnamed.len())
-                    .map(|i| format!("{{_{}}}", i.to_string()))
+                    .map(|i| format!("{{_{}}}", i))
                     .collect::<Vec<_>>()
                     .join(", ");
                 format!("{}({})", type_str_cased, inner)
@@ -556,7 +556,7 @@ fn inner_enum(input: &DeriveInput, data: &DataEnum) -> Result<TokenStream2> {
 
         let mut local = Technique::from_attrs(&v.attrs, v.span())?;
         let mut parent = global.clone();
-        let current = local.as_mut().or_else(|| parent.as_mut());
+        let current = local.as_mut().or(parent.as_mut());
         let mut current = current
             .map(|r| {
                 r.apply_docs(&v.attrs);
