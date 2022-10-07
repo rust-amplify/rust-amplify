@@ -33,6 +33,7 @@
     dead_code,
     warnings
 )]
+#![allow(clippy::large_enum_variant)]
 
 #[macro_use]
 extern crate quote;
