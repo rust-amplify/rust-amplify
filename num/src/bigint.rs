@@ -160,6 +160,11 @@ macro_rules! construct_bigint {
             }
 
             #[inline]
+            pub fn is_positive(&self) -> bool {
+                !self.is_negative() && !self.is_zero()
+            }
+
+            #[inline]
             pub fn abs(self) -> $name {
                 if !self.is_negative() {
                     return self;
@@ -1453,14 +1458,8 @@ macro_rules! construct_signed_bigint_methods {
             };
 
             #[inline]
-            pub fn is_positive(&self) -> bool {
-                !self.is_zero()
-                    && self[($name::INNER_LEN - 1) as usize] & 0x8000_0000_0000_0000 == 0
-            }
-
-            #[inline]
             pub fn is_negative(&self) -> bool {
-                !self.is_zero() && !self.is_positive()
+                self[($name::INNER_LEN - 1) as usize] & 0x8000_0000_0000_0000 != 0
             }
 
             /// Return the least number of bits needed to represent the number
@@ -1525,11 +1524,6 @@ macro_rules! construct_unsigned_bigint_methods {
 
             /// Maximum value
             pub const MAX: $name = $name([::core::u64::MAX; $n_words]);
-
-            #[inline]
-            pub fn is_positive(&self) -> bool {
-                !self.is_zero()
-            }
 
             #[inline]
             pub fn is_negative(&self) -> bool {
