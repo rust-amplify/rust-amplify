@@ -436,24 +436,28 @@ macro_rules! construct_bigint {
         impl Ord for $name {
             #[inline]
             fn cmp(&self, other: &$name) -> ::core::cmp::Ordering {
-                match (self.is_negative(), other.is_negative()) {
-                    (false, true) => ::core::cmp::Ordering::Greater,
-                    (true, false) => ::core::cmp::Ordering::Less,
-                    _ => {
-                        // We need to manually implement ordering because we use little-endian
-                        // and the auto derive is a lexicographic ordering(i.e. memcmp)
-                        // which with numbers is equivilant to big-endian
-                        for i in 0..$n_words {
-                            if self[$n_words - 1 - i] < other[$n_words - 1 - i] {
-                                return ::core::cmp::Ordering::Less;
-                            }
-                            if self[$n_words - 1 - i] > other[$n_words - 1 - i] {
-                                return ::core::cmp::Ordering::Greater;
-                            }
-                        }
-                        ::core::cmp::Ordering::Equal
+                // We need to manually implement ordering because the words in our array
+                // are in little-endian order, i.e. the most significant word is last in
+                // the array, and the auto derive for array Ord compares the elements
+                // from first to last.
+                for i in 0..$n_words {
+                    let self_word = self[$n_words - 1 - i];
+                    let other_word = other[$n_words - 1 - i];
+
+                    // If this is a signed type, start with signed comparison on the
+                    // most-significant word, then continue with unsigned comparisons on
+                    // the rest of the words.
+                    let res = if i == 0 && Self::IS_SIGNED_TYPE {
+                        (self_word as i64).cmp(&(other_word as i64))
+                    } else {
+                        self_word.cmp(&other_word)
+                    };
+
+                    if res != ::core::cmp::Ordering::Equal {
+                        return res;
                     }
                 }
+                ::core::cmp::Ordering::Equal
             }
         }
 
