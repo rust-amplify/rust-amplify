@@ -518,7 +518,7 @@ macro_rules! construct_bigint {
                     ret[i] = res;
                 }
                 let ret = Self(ret);
-                let overflow = if Self::MIN == Self::ZERO {
+                let overflow = if !Self::IS_SIGNED_TYPE {
                     carry > 0
                 } else {
                     self != Self::MIN
@@ -576,7 +576,7 @@ macro_rules! construct_bigint {
                 T: Into<$name>,
             {
                 let other = other.into();
-                if Self::MIN == Self::ZERO {
+                if !Self::IS_SIGNED_TYPE {
                     (
                         self.wrapping_add(!other).wrapping_add($name::ONE),
                         self < other,
@@ -1436,6 +1436,8 @@ macro_rules! construct_signed_bigint_methods {
         }
 
         impl $name {
+            const IS_SIGNED_TYPE: bool = true;
+
             /// Minimum value
             pub const MIN: $name = {
                 let mut min = [0u64; $n_words];
@@ -1516,6 +1518,8 @@ macro_rules! construct_signed_bigint_methods {
 macro_rules! construct_unsigned_bigint_methods {
     ( $ name: ident, $ n_words: expr ) => {
         impl $name {
+            const IS_SIGNED_TYPE: bool = false;
+
             /// Minimum value
             pub const MIN: $name = $name([0u64; $n_words]);
 
