@@ -160,6 +160,11 @@ macro_rules! construct_bigint {
             }
 
             #[inline]
+            pub fn is_positive(&self) -> bool {
+                !self.is_negative() && !self.is_zero()
+            }
+
+            #[inline]
             pub fn abs(self) -> $name {
                 if !self.is_negative() {
                     return self;
@@ -431,24 +436,28 @@ macro_rules! construct_bigint {
         impl Ord for $name {
             #[inline]
             fn cmp(&self, other: &$name) -> ::core::cmp::Ordering {
-                match (self.is_negative(), other.is_negative()) {
-                    (false, true) => ::core::cmp::Ordering::Greater,
-                    (true, false) => ::core::cmp::Ordering::Less,
-                    _ => {
-                        // We need to manually implement ordering because we use little-endian
-                        // and the auto derive is a lexicographic ordering(i.e. memcmp)
-                        // which with numbers is equivilant to big-endian
-                        for i in 0..$n_words {
-                            if self[$n_words - 1 - i] < other[$n_words - 1 - i] {
-                                return ::core::cmp::Ordering::Less;
-                            }
-                            if self[$n_words - 1 - i] > other[$n_words - 1 - i] {
-                                return ::core::cmp::Ordering::Greater;
-                            }
-                        }
-                        ::core::cmp::Ordering::Equal
+                // We need to manually implement ordering because the words in our array
+                // are in little-endian order, i.e. the most significant word is last in
+                // the array, and the auto derive for array Ord compares the elements
+                // from first to last.
+                for i in 0..$n_words {
+                    let self_word = self[$n_words - 1 - i];
+                    let other_word = other[$n_words - 1 - i];
+
+                    // If this is a signed type, start with signed comparison on the
+                    // most-significant word, then continue with unsigned comparisons on
+                    // the rest of the words.
+                    let res = if i == 0 && Self::IS_SIGNED_TYPE {
+                        (self_word as i64).cmp(&(other_word as i64))
+                    } else {
+                        self_word.cmp(&other_word)
+                    };
+
+                    if res != ::core::cmp::Ordering::Equal {
+                        return res;
                     }
                 }
+                ::core::cmp::Ordering::Equal
             }
         }
 
@@ -518,7 +527,7 @@ macro_rules! construct_bigint {
                     ret[i] = res;
                 }
                 let ret = Self(ret);
-                let overflow = if Self::MIN == Self::ZERO {
+                let overflow = if !Self::IS_SIGNED_TYPE {
                     carry > 0
                 } else {
                     self != Self::MIN
@@ -576,7 +585,7 @@ macro_rules! construct_bigint {
                 T: Into<$name>,
             {
                 let other = other.into();
-                if Self::MIN == Self::ZERO {
+                if !Self::IS_SIGNED_TYPE {
                     (
                         self.wrapping_add(!other).wrapping_add($name::ONE),
                         self < other,
@@ -1436,6 +1445,8 @@ macro_rules! construct_signed_bigint_methods {
         }
 
         impl $name {
+            const IS_SIGNED_TYPE: bool = true;
+
             /// Minimum value
             pub const MIN: $name = {
                 let mut min = [0u64; $n_words];
@@ -1451,14 +1462,8 @@ macro_rules! construct_signed_bigint_methods {
             };
 
             #[inline]
-            pub fn is_positive(&self) -> bool {
-                !self.is_zero()
-                    && self[($name::INNER_LEN - 1) as usize] & 0x8000_0000_0000_0000 == 0
-            }
-
-            #[inline]
             pub fn is_negative(&self) -> bool {
-                !self.is_zero() && !self.is_positive()
+                self[($name::INNER_LEN - 1) as usize] & 0x8000_0000_0000_0000 != 0
             }
 
             /// Return the least number of bits needed to represent the number
@@ -1516,16 +1521,13 @@ macro_rules! construct_signed_bigint_methods {
 macro_rules! construct_unsigned_bigint_methods {
     ( $ name: ident, $ n_words: expr ) => {
         impl $name {
+            const IS_SIGNED_TYPE: bool = false;
+
             /// Minimum value
             pub const MIN: $name = $name([0u64; $n_words]);
 
             /// Maximum value
             pub const MAX: $name = $name([::core::u64::MAX; $n_words]);
-
-            #[inline]
-            pub fn is_positive(&self) -> bool {
-                !self.is_zero()
-            }
 
             #[inline]
             pub fn is_negative(&self) -> bool {
