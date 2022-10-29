@@ -409,7 +409,7 @@ fn inner_struct(input: &DeriveInput, data: &DataStruct) -> Result<TokenStream2> 
     let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
     let ident_name = &input.ident;
 
-    let mut technique = Technique::from_attrs(&input.attrs, input.span())?.ok_or_else(|| {
+    let technique = Technique::from_attrs(&input.attrs, input.span())?.ok_or_else(|| {
         Error::new(
             input.span(),
             format!(
@@ -418,7 +418,6 @@ fn inner_struct(input: &DeriveInput, data: &DataStruct) -> Result<TokenStream2> 
             ),
         )
     })?;
-    technique.apply_docs(&input.attrs);
 
     let tokens_fmt = technique.to_fmt(false);
     let tokens_alt = technique.to_fmt(true);
