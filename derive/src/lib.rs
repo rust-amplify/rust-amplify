@@ -158,13 +158,18 @@ use syn::DeriveInput;
 ///    ```
 ///    You can also mix in this mode with other fors of display tags on a
 ///    specific options; in this case doc comments are ignored
-/// 6. Support of unit structs:
+/// 6. Support of unit structs and newtypes:
 ///    ```
 ///     # #[macro_use] extern crate amplify_derive;
 ///     /// Some unit struct
 ///     #[derive(Clone, Debug, Display, Error)]     
 ///     #[display(doc_comments)]
 ///     pub struct UnitStruct;
+///
+///     /// displaying the wrapped type data: '{0}'.
+///     #[derive(Clone, PartialEq, Eq, Debug, Display)]
+///     #[display(doc_comments)]
+///     pub struct NewType(pub String);
 ///    ```
 /// 7. Print the name of enum variant in lowercase/uppercase:
 ///    ```
