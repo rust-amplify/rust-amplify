@@ -24,7 +24,7 @@
 /// The trait works well with `#[derive(Wrapper)]` from `amplify_derive` crate
 pub trait Wrapper {
     /// Inner type wrapped by the current newtype
-    type Inner;
+    type Inner: Clone;
 
     /// Instantiates wrapper type with the inner data
     fn from_inner(inner: Self::Inner) -> Self;
@@ -38,10 +38,7 @@ pub trait Wrapper {
 
     /// Clones inner data of the wrapped type and return them
     #[inline]
-    fn to_inner(&self) -> Self::Inner
-    where
-        Self::Inner: Clone,
-    {
+    fn to_inner(&self) -> Self::Inner {
         self.as_inner().clone()
     }
 
