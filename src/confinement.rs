@@ -13,7 +13,7 @@
 // along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
-use std::collections::HashMap;
+use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet, VecDeque};
 use std::convert::TryFrom;
 use std::hash::Hash;
 use std::ops::Deref;
@@ -24,7 +24,7 @@ use crate::num::u24;
 pub trait Collection {
     type Item;
 
-    fn with_capacity(capacity: usize) -> Self;
+    fn with_cap(capacity: usize) -> Self;
 
     fn len(&self) -> usize;
 
@@ -35,7 +35,9 @@ pub trait Collection {
 
     fn add(&mut self, elem: Self::Item);
 
-    fn remove_at(&mut self, index: usize) -> Self::Item;
+    fn extend_from_iter<T>(&mut self, iter: T)
+    where
+        T: IntoIterator<Item = Self::Item>;
 
     fn clear(&mut self);
 }
@@ -49,10 +51,12 @@ pub trait KeyedCollection: Collection<Item = (Self::Key, Self::Value)> {
     fn eject(&mut self, key: &Self::Key) -> Option<Self::Value>;
 }
 
-impl<T> Collection for Vec<T> {
-    type Item = T;
+// Impls for main collection types
 
-    fn with_capacity(capacity: usize) -> Self {
+impl Collection for String {
+    type Item = char;
+
+    fn with_cap(capacity: usize) -> Self {
         Self::with_capacity(capacity)
     }
 
@@ -61,11 +65,123 @@ impl<T> Collection for Vec<T> {
     }
 
     fn add(&mut self, elem: Self::Item) {
-        Vec::push(self, elem)
+        self.push(elem)
     }
 
-    fn remove_at(&mut self, index: usize) -> Self::Item {
-        Vec::remove(self, index)
+    fn extend_from_iter<I>(&mut self, iter: I)
+    where
+        I: IntoIterator<Item = Self::Item>,
+    {
+        self.extend(iter)
+    }
+
+    fn clear(&mut self) {
+        self.clear()
+    }
+}
+
+impl<T> Collection for Vec<T> {
+    type Item = T;
+
+    fn with_cap(capacity: usize) -> Self {
+        Self::with_capacity(capacity)
+    }
+
+    fn len(&self) -> usize {
+        self.len()
+    }
+
+    fn add(&mut self, elem: Self::Item) {
+        self.push(elem)
+    }
+
+    fn extend_from_iter<I>(&mut self, iter: I)
+    where
+        I: IntoIterator<Item = Self::Item>,
+    {
+        self.extend(iter)
+    }
+
+    fn clear(&mut self) {
+        self.clear()
+    }
+}
+
+impl<T> Collection for VecDeque<T> {
+    type Item = T;
+
+    fn with_cap(capacity: usize) -> Self {
+        Self::with_capacity(capacity)
+    }
+
+    fn len(&self) -> usize {
+        self.len()
+    }
+
+    fn add(&mut self, elem: Self::Item) {
+        self.push_back(elem)
+    }
+
+    fn extend_from_iter<I>(&mut self, iter: I)
+    where
+        I: IntoIterator<Item = Self::Item>,
+    {
+        self.extend(iter)
+    }
+
+    fn clear(&mut self) {
+        self.clear()
+    }
+}
+
+impl<T: Eq + Hash> Collection for HashSet<T> {
+    type Item = T;
+
+    fn with_cap(capacity: usize) -> Self {
+        Self::with_capacity(capacity)
+    }
+
+    fn len(&self) -> usize {
+        self.len()
+    }
+
+    fn add(&mut self, elem: Self::Item) {
+        self.insert(elem);
+    }
+
+    fn extend_from_iter<I>(&mut self, iter: I)
+    where
+        I: IntoIterator<Item = Self::Item>,
+    {
+        self.extend(iter)
+    }
+
+    fn clear(&mut self) {
+        self.clear()
+    }
+}
+
+impl<T: Ord> Collection for BTreeSet<T> {
+    type Item = T;
+
+    #[doc(hidden)]
+    fn with_cap(_capacity: usize) -> Self {
+        BTreeSet::new()
+    }
+
+    fn len(&self) -> usize {
+        self.len()
+    }
+
+    fn add(&mut self, elem: Self::Item) {
+        self.insert(elem);
+    }
+
+    fn extend_from_iter<I>(&mut self, iter: I)
+    where
+        I: IntoIterator<Item = Self::Item>,
+    {
+        self.extend(iter)
     }
 
     fn clear(&mut self) {
@@ -76,7 +192,7 @@ impl<T> Collection for Vec<T> {
 impl<K: Eq + Hash, V> Collection for HashMap<K, V> {
     type Item = (K, V);
 
-    fn with_capacity(capacity: usize) -> Self {
+    fn with_cap(capacity: usize) -> Self {
         Self::with_capacity(capacity)
     }
 
@@ -88,8 +204,11 @@ impl<K: Eq + Hash, V> Collection for HashMap<K, V> {
         HashMap::insert(self, elem.0, elem.1);
     }
 
-    fn remove_at(&mut self, _index: usize) -> Self::Item {
-        panic!("HashMap doesn't have a concept of an index")
+    fn extend_from_iter<I>(&mut self, iter: I)
+    where
+        I: IntoIterator<Item = Self::Item>,
+    {
+        self.extend(iter)
     }
 
     fn clear(&mut self) {
@@ -110,11 +229,52 @@ impl<K: Eq + Hash, V> KeyedCollection for HashMap<K, V> {
     }
 }
 
+impl<K: Ord + Hash, V> Collection for BTreeMap<K, V> {
+    type Item = (K, V);
+
+    #[doc(hidden)]
+    fn with_cap(_capacity: usize) -> Self {
+        BTreeMap::new()
+    }
+
+    fn len(&self) -> usize {
+        self.len()
+    }
+
+    fn add(&mut self, elem: Self::Item) {
+        BTreeMap::insert(self, elem.0, elem.1);
+    }
+
+    fn extend_from_iter<I>(&mut self, iter: I)
+    where
+        I: IntoIterator<Item = Self::Item>,
+    {
+        self.extend(iter)
+    }
+
+    fn clear(&mut self) {
+        self.clear()
+    }
+}
+
+impl<K: Ord + Hash, V> KeyedCollection for BTreeMap<K, V> {
+    type Key = K;
+    type Value = V;
+
+    fn inject(&mut self, key: Self::Key, value: Self::Value) -> Option<Self::Value> {
+        BTreeMap::insert(self, key, value)
+    }
+
+    fn eject(&mut self, key: &Self::Key) -> Option<Self::Value> {
+        BTreeMap::remove(self, key)
+    }
+}
+
 // Errors
 
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug, Display, Error)]
 #[display(inner)]
-pub enum ConfinementError {
+pub enum Error {
     #[display(
         "operation results in collection size {len} less than lower boundary \
          of {min_len}, which is prohibited"
@@ -126,6 +286,11 @@ pub enum ConfinementError {
          which is prohibited"
     )]
     Oversize { len: usize, max_len: usize },
+
+    #[display(
+        "attempt to access the element at {index} which is outside of the collection length boundary {len}"
+    )]
+    OutOfBoundary { index: usize, len: usize },
 }
 
 // Confinement params
@@ -152,20 +317,18 @@ impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Deref
         &self.0
     }
 }
-// impl FromIterator
-// impl IntoIterator
 
 impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C, MIN_LEN, MAX_LEN> {
-    pub fn try_from(col: C) -> Result<Self, ConfinementError> {
+    pub fn try_from(col: C) -> Result<Self, Error> {
         let len = col.len();
         if len < MIN_LEN {
-            return Err(ConfinementError::Undersize {
+            return Err(Error::Undersize {
                 len,
                 min_len: MIN_LEN,
             });
         }
         if len > MAX_LEN {
-            return Err(ConfinementError::Oversize {
+            return Err(Error::Oversize {
                 len,
                 max_len: MAX_LEN,
             });
@@ -173,10 +336,18 @@ impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C, MIN_
         Ok(Self(col))
     }
 
-    pub fn push(&mut self, elem: C::Item) -> Result<(), ConfinementError> {
+    pub fn try_from_iter<I: IntoIterator<Item = C::Item>>(iter: I) -> Result<Self, Error> {
+        let mut col = C::with_cap(MIN_LEN);
+        for item in iter {
+            col.add(item);
+        }
+        Self::try_from(col)
+    }
+
+    pub fn push(&mut self, elem: C::Item) -> Result<(), Error> {
         let len = self.len();
-        if len >= MAX_LEN {
-            return Err(ConfinementError::Oversize {
+        if len == MAX_LEN || len + 1 >= MAX_LEN {
+            return Err(Error::Oversize {
                 len,
                 max_len: MAX_LEN,
             });
@@ -184,7 +355,12 @@ impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C, MIN_
         Ok(self.0.add(elem))
     }
 
-    // TODO: Add remove_at, append, extend
+    pub fn extend<T: IntoIterator<Item = C::Item>>(&mut self, iter: T) -> Result<(), Error> {
+        for elem in iter {
+            self.push(elem)?;
+        }
+        Ok(())
+    }
 
     pub fn unbox(self) -> C {
         self.0
@@ -200,7 +376,7 @@ where
     }
 
     pub fn with_capacity(capacity: usize) -> Self {
-        Self(C::with_capacity(capacity))
+        Self(C::with_cap(capacity))
     }
 
     pub fn clear(&mut self) {
@@ -265,22 +441,16 @@ where
 }
 
 impl<C: KeyedCollection, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C, MIN_LEN, MAX_LEN> {
-    pub fn insert(
-        &mut self,
-        key: C::Key,
-        value: C::Value,
-    ) -> Result<Option<C::Value>, ConfinementError> {
+    pub fn insert(&mut self, key: C::Key, value: C::Value) -> Result<Option<C::Value>, Error> {
         let len = self.len();
-        if len >= MAX_LEN {
-            return Err(ConfinementError::Oversize {
+        if len == MAX_LEN || len + 1 >= MAX_LEN {
+            return Err(Error::Oversize {
                 len,
                 max_len: MAX_LEN,
             });
         }
         Ok(self.0.inject(key, value))
     }
-
-    // TODO: Add remove, append, extend, clear
 }
 
 impl<C: KeyedCollection, const MAX_LEN: usize> Confined<C, ONE, MAX_LEN>
@@ -294,10 +464,174 @@ where
     }
 }
 
+impl<const MIN_LEN: usize, const MAX_LEN: usize> Confined<String, MIN_LEN, MAX_LEN> {
+    pub fn remove(&mut self, index: usize) -> Result<char, Error> {
+        let len = self.len();
+        if self.is_empty() || len - 1 <= MIN_LEN {
+            return Err(Error::Undersize {
+                len,
+                min_len: MIN_LEN,
+            });
+        }
+        if index >= len {
+            return Err(Error::OutOfBoundary { index, len });
+        }
+        Ok(self.0.remove(index))
+    }
+}
+
+impl<T, const MIN_LEN: usize, const MAX_LEN: usize> Confined<Vec<T>, MIN_LEN, MAX_LEN> {
+    pub fn remove(&mut self, index: usize) -> Result<T, Error> {
+        let len = self.len();
+        if self.is_empty() || len - 1 <= MIN_LEN {
+            return Err(Error::Undersize {
+                len,
+                min_len: MIN_LEN,
+            });
+        }
+        if index >= len {
+            return Err(Error::OutOfBoundary { index, len });
+        }
+        Ok(self.0.remove(index))
+    }
+}
+
+impl<T, const MIN_LEN: usize, const MAX_LEN: usize> Confined<VecDeque<T>, MIN_LEN, MAX_LEN> {
+    pub fn remove(&mut self, index: usize) -> Result<T, Error> {
+        let len = self.len();
+        if self.is_empty() || len - 1 <= MIN_LEN {
+            return Err(Error::Undersize {
+                len,
+                min_len: MIN_LEN,
+            });
+        }
+        if index >= len {
+            return Err(Error::OutOfBoundary { index, len });
+        }
+        Ok(self.0.remove(index).expect("element within the length"))
+    }
+}
+
+impl<T: Hash + Eq, const MIN_LEN: usize, const MAX_LEN: usize>
+    Confined<HashSet<T>, MIN_LEN, MAX_LEN>
+{
+    pub fn remove(&mut self, elem: &T) -> Result<bool, Error> {
+        let len = self.len();
+        if self.is_empty() || len - 1 <= MIN_LEN {
+            return Err(Error::Undersize {
+                len,
+                min_len: MIN_LEN,
+            });
+        }
+        Ok(self.0.remove(elem))
+    }
+
+    pub fn take(&mut self, elem: &T) -> Result<Option<T>, Error> {
+        let len = self.len();
+        if self.is_empty() || len - 1 <= MIN_LEN {
+            return Err(Error::Undersize {
+                len,
+                min_len: MIN_LEN,
+            });
+        }
+        Ok(self.0.take(elem))
+    }
+}
+
+impl<T: Ord, const MIN_LEN: usize, const MAX_LEN: usize> Confined<BTreeSet<T>, MIN_LEN, MAX_LEN> {
+    pub fn remove(&mut self, elem: &T) -> Result<bool, Error> {
+        let len = self.len();
+        if self.is_empty() || len - 1 <= MIN_LEN {
+            return Err(Error::Undersize {
+                len,
+                min_len: MIN_LEN,
+            });
+        }
+        Ok(self.0.remove(elem))
+    }
+
+    pub fn take(&mut self, elem: &T) -> Result<Option<T>, Error> {
+        let len = self.len();
+        if self.is_empty() || len - 1 <= MIN_LEN {
+            return Err(Error::Undersize {
+                len,
+                min_len: MIN_LEN,
+            });
+        }
+        Ok(self.0.take(elem))
+    }
+}
+
+impl<K: Hash + Eq, V, const MIN_LEN: usize, const MAX_LEN: usize>
+    Confined<HashMap<K, V>, MIN_LEN, MAX_LEN>
+{
+    pub fn remove(&mut self, key: &K) -> Result<Option<V>, Error> {
+        let len = self.len();
+        if self.is_empty() || len - 1 <= MIN_LEN {
+            return Err(Error::Undersize {
+                len,
+                min_len: MIN_LEN,
+            });
+        }
+        Ok(self.0.remove(key))
+    }
+}
+
+impl<K: Ord + Hash, V, const MIN_LEN: usize, const MAX_LEN: usize>
+    Confined<BTreeMap<K, V>, MIN_LEN, MAX_LEN>
+{
+    pub fn remove(&mut self, key: &K) -> Result<Option<V>, Error> {
+        let len = self.len();
+        if self.is_empty() || len - 1 <= MIN_LEN {
+            return Err(Error::Undersize {
+                len,
+                min_len: MIN_LEN,
+            });
+        }
+        Ok(self.0.remove(key))
+    }
+}
+
 // Type aliases
+
+pub type TinyString = Confined<String, ZERO, U8>;
+pub type SmallString = Confined<String, ZERO, U16>;
+pub type MediumString = Confined<String, ZERO, U24>;
+pub type LargeString = Confined<String, ZERO, U32>;
+pub type NonEmptyString = Confined<String, ONE, USIZE>;
 
 pub type TinyVec<T> = Confined<Vec<T>, ZERO, U8>;
 pub type SmallVec<T> = Confined<Vec<T>, ZERO, U16>;
 pub type MediumVec<T> = Confined<Vec<T>, ZERO, U24>;
 pub type LargeVec<T> = Confined<Vec<T>, ZERO, U32>;
 pub type NonEmptyVec<T> = Confined<Vec<T>, ONE, USIZE>;
+
+pub type TinyDeque<T> = Confined<VecDeque<T>, ZERO, U8>;
+pub type SmallDeque<T> = Confined<VecDeque<T>, ZERO, U16>;
+pub type MediumDeque<T> = Confined<VecDeque<T>, ZERO, U24>;
+pub type LargeDeque<T> = Confined<VecDeque<T>, ZERO, U32>;
+pub type NonEmptyDeque<T> = Confined<VecDeque<T>, ONE, USIZE>;
+
+pub type TinyHashSet<T> = Confined<HashSet<T>, ZERO, U8>;
+pub type SmallHashSet<T> = Confined<HashSet<T>, ZERO, U16>;
+pub type MediumHashSet<T> = Confined<HashSet<T>, ZERO, U24>;
+pub type LargeHashSet<T> = Confined<HashSet<T>, ZERO, U32>;
+pub type NonEmptyHashSet<T> = Confined<HashSet<T>, ONE, USIZE>;
+
+pub type TinyOrdSet<T> = Confined<BTreeSet<T>, ZERO, U8>;
+pub type SmallOrdSet<T> = Confined<BTreeSet<T>, ZERO, U16>;
+pub type MediumOrdSet<T> = Confined<BTreeSet<T>, ZERO, U24>;
+pub type LargeOrdSet<T> = Confined<BTreeSet<T>, ZERO, U32>;
+pub type NonEmptyOrdSet<T> = Confined<BTreeSet<T>, ONE, USIZE>;
+
+pub type TinyHashMap<K, V> = Confined<HashMap<K, V>, ZERO, U8>;
+pub type SmallHashMap<K, V> = Confined<HashMap<K, V>, ZERO, U16>;
+pub type MediumHashMap<K, V> = Confined<HashMap<K, V>, ZERO, U24>;
+pub type LargeHashMap<K, V> = Confined<HashMap<K, V>, ZERO, U32>;
+pub type NonEmptyHashMap<K, V> = Confined<HashMap<K, V>, ONE, USIZE>;
+
+pub type TinyOrdMap<K, V> = Confined<BTreeMap<K, V>, ZERO, U8>;
+pub type SmallOrdMap<K, V> = Confined<BTreeMap<K, V>, ZERO, U16>;
+pub type MediumOrdMap<K, V> = Confined<BTreeMap<K, V>, ZERO, U24>;
+pub type LargeOrdMap<K, V> = Confined<BTreeMap<K, V>, ZERO, U32>;
+pub type NonEmptyOrdMap<K, V> = Confined<BTreeMap<K, V>, ONE, USIZE>;
