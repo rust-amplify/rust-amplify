@@ -64,6 +64,7 @@ mod wrapper;
 
 mod as_any;
 mod bipolar;
+pub mod confinement;
 mod dumb_default;
 #[cfg(all(feature = "std", feature = "derive"))]
 mod io_error;
