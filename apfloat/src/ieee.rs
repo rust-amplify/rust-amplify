@@ -8,10 +8,6 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-use {Category, ExpInt, IEK_INF, IEK_NAN, IEK_ZERO};
-use {Float, FloatConvert, ParseError, Round, Status, StatusAnd};
-use amplify_num::u256;
-
 use std::cmp::{self, Ordering};
 use std::fmt::{self, Write};
 use std::marker::PhantomData;
@@ -19,6 +15,11 @@ use std::mem;
 use std::ops::Neg;
 #[cfg(any(feature = "std", feature = "alloc"))]
 use std::vec::Vec;
+
+use amplify_num::u256;
+
+use crate::{Category, ExpInt, IEK_INF, IEK_NAN, IEK_ZERO};
+use crate::{Float, FloatConvert, ParseError, Round, Status, StatusAnd};
 
 #[must_use]
 pub struct IeeeFloat<S> {
