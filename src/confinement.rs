@@ -340,7 +340,8 @@ impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C, MIN_
                 max_len: MAX_LEN,
             });
         }
-        Ok(self.0.push(elem))
+        self.0.push(elem);
+        Ok(())
     }
 
     /// Attempts to add all elements from an iterator to the confined collection. Fails if the
@@ -519,7 +520,8 @@ impl<T, const MIN_LEN: usize, const MAX_LEN: usize> Confined<VecDeque<T>, MIN_LE
                 max_len: MAX_LEN,
             });
         }
-        Ok(self.0.push_front(elem))
+        self.0.push_front(elem);
+        Ok(())
     }
 
     /// Appends an element to the deque. Errors if the new collection length will not fit the
@@ -532,7 +534,8 @@ impl<T, const MIN_LEN: usize, const MAX_LEN: usize> Confined<VecDeque<T>, MIN_LE
                 max_len: MAX_LEN,
             });
         }
-        Ok(self.0.push_back(elem))
+        self.0.push_back(elem);
+        Ok(())
     }
 
     /// Removes an element from the deque at a given index. Errors if the index exceeds the number
