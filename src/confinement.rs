@@ -277,7 +277,7 @@ pub enum Error {
 // Confinement params
 
 const ZERO: usize = 0;
-const ONE: usize = 0;
+const ONE: usize = 1;
 const U8: usize = u8::MAX as usize;
 const U16: usize = u16::MAX as usize;
 const U24: usize = 1usize << 24;
@@ -334,9 +334,9 @@ impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C, MIN_
     /// in the collection already maximal.
     pub fn push(&mut self, elem: C::Item) -> Result<(), Error> {
         let len = self.len();
-        if len == MAX_LEN || len + 1 >= MAX_LEN {
+        if len == MAX_LEN || len + 1 > MAX_LEN {
             return Err(Error::Oversize {
-                len,
+                len: len + 1,
                 max_len: MAX_LEN,
             });
         }
@@ -449,9 +449,9 @@ impl<C: KeyedCollection, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C,
     /// already contains maximum number of elements allowed by the confinement.
     pub fn insert(&mut self, key: C::Key, value: C::Value) -> Result<Option<C::Value>, Error> {
         let len = self.len();
-        if len == MAX_LEN || len + 1 >= MAX_LEN {
+        if len == MAX_LEN || len + 1 > MAX_LEN {
             return Err(Error::Oversize {
-                len,
+                len: len + 1,
                 max_len: MAX_LEN,
             });
         }
@@ -509,6 +509,32 @@ impl<T, const MIN_LEN: usize, const MAX_LEN: usize> Confined<Vec<T>, MIN_LEN, MA
 }
 
 impl<T, const MIN_LEN: usize, const MAX_LEN: usize> Confined<VecDeque<T>, MIN_LEN, MAX_LEN> {
+    /// Prepends an element to the deque. Errors if the new collection length will not fit the
+    /// confinement requirements.
+    pub fn push_from(&mut self, elem: T) -> Result<(), Error> {
+        let len = self.len();
+        if len == MAX_LEN || len + 1 > MAX_LEN {
+            return Err(Error::Oversize {
+                len: len + 1,
+                max_len: MAX_LEN,
+            });
+        }
+        Ok(self.0.push_front(elem))
+    }
+
+    /// Appends an element to the deque. Errors if the new collection length will not fit the
+    /// confinement requirements.
+    pub fn push_back(&mut self, elem: T) -> Result<(), Error> {
+        let len = self.len();
+        if len == MAX_LEN || len + 1 > MAX_LEN {
+            return Err(Error::Oversize {
+                len: len + 1,
+                max_len: MAX_LEN,
+            });
+        }
+        Ok(self.0.push_back(elem))
+    }
+
     /// Removes an element from the deque at a given index. Errors if the index exceeds the number
     /// of elements in the deque, of if the new deque length will be less than the confinement
     /// requirement. Returns the removed element otherwise.
@@ -721,3 +747,66 @@ pub type MediumOrdMap<K, V> = Confined<BTreeMap<K, V>, ZERO, U24>;
 pub type LargeOrdMap<K, V> = Confined<BTreeMap<K, V>, ZERO, U32>;
 /// [`BTreeMap`] which contains at least a single item.
 pub type NonEmptyOrdMap<K, V> = Confined<BTreeMap<K, V>, ONE, USIZE>;
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn fits_max() {
+        let mut s = TinyString::new();
+        assert!(s.is_empty());
+        for _ in 1..=255 {
+            s.push('a').unwrap();
+        }
+        assert_eq!(s.len_u8(), u8::MAX);
+        assert_eq!(s.len_u8(), s.len() as u8);
+        assert!(!s.is_empty());
+
+        let mut vec = TinyVec::new();
+        let mut deque = TinyDeque::new();
+        let mut set = TinyHashSet::new();
+        let mut bset = TinyOrdSet::new();
+        let mut map = TinyHashMap::new();
+        let mut bmap = TinyOrdMap::new();
+        assert!(vec.is_empty());
+        assert!(deque.is_empty());
+        assert!(set.is_empty());
+        assert!(bset.is_empty());
+        assert!(map.is_empty());
+        assert!(bmap.is_empty());
+        for index in 1..=255 {
+            vec.push(5u8).unwrap();
+            deque.push(5u8).unwrap();
+            set.push(index).unwrap();
+            bset.push(5u8).unwrap();
+            map.insert(5u8, 'a').unwrap();
+            bmap.insert(index, 'a').unwrap();
+        }
+        assert_eq!(vec.len_u8(), u8::MAX);
+        assert_eq!(deque.len_u8(), u8::MAX);
+        assert_eq!(set.len_u8(), u8::MAX);
+        assert_eq!(bset.len_u8(), 1);
+        assert_eq!(map.len_u8(), 1);
+        assert_eq!(bmap.len_u8(), u8::MAX);
+
+        vec.clear();
+        assert!(vec.is_empty());
+    }
+
+    #[test]
+    #[should_panic(expected = "Oversize")]
+    fn cant_go_above_max() {
+        let mut s = TinyString::new();
+        for _ in 1..=256 {
+            s.push('a').unwrap();
+        }
+    }
+
+    #[test]
+    #[should_panic(expected = "Undersize")]
+    fn cant_go_below_min() {
+        let mut s = NonEmptyString::with('a');
+        s.remove(0).unwrap();
+    }
+}
