@@ -6,8 +6,8 @@ edition = "2018"
 description = "Helpers for using serde with strings"
 keywords = ["serde", "deserialization", "zero-copy", "patterns"]
 categories = ["data-structures", "rust-patterns", "no-std"]
-repository = "https://github.com/LNP-BP/rust-amplify"
-homepage = "https://github.com/LNP-BP"
+repository = "https://github.com/rust-amplify/rust-amplify"
+homepage = "https://github.com/rust-amplify"
 license = "MIT"
 readme = "README.md"
 
