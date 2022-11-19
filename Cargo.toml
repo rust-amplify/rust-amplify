@@ -12,7 +12,8 @@ repository = "https://github.com/LNP-BP/rust-amplify"
 homepage = "https://github.com/LNP-BP"
 license = "MIT"
 readme = "README.md"
-edition = "2018"
+edition = "2021"
+rust-version = "1.59.0"
 exclude = [
     ".github",
     "derive",

@@ -14,7 +14,7 @@ Amplifying Rust language capabilities: multiple generic trait implementations,
 type wrappers, derive macros. Tiny library with zero non-optional dependencies.
 Able to work as `no_std`.
 
-Minimum supported rust compiler version (MSRV): 1.41.1.
+Minimum supported rust compiler version (MSRV): 1.59.0; rust edition 2021.
 
 ## Main features
 
