@@ -386,7 +386,7 @@ fn derive_field_methods(
             #fn_doc
             #[inline]
             pub fn #fn_name(&#mut_prefix self) -> #ret_prefix #ty {
-                #ret_prefix self.#field_name#ret_suffix
+                #ret_prefix self.#field_name #ret_suffix
             }
         })
     }

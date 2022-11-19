@@ -18,4 +18,4 @@ the [following code](https://github.com/LNP-BP/rust-amplify/tree/master/derive/s
 from `amplify_derive` crate, which uses this library for its custom derivation 
 macros.
 
-MSRV: 1.31 (required by `syn`)
+Minimum supported rust compiler version (MSRV): 1.59.0. Rust edition 2021.

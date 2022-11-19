@@ -8,13 +8,14 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-use {Category, ExpInt, Float, FloatConvert, Round, ParseError, Status, StatusAnd};
-use ieee;
-
 use std::cmp::Ordering;
 use std::fmt;
 use std::ops::Neg;
+
 use amplify_num::u256;
+
+use crate::ieee;
+use crate::{Category, ExpInt, Float, FloatConvert, Round, ParseError, Status, StatusAnd};
 
 #[must_use]
 #[derive(Copy, Clone, Eq, PartialEq, PartialOrd, Debug)]
