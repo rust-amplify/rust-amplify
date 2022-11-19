@@ -1,6 +1,10 @@
 Change Log
 ==========
 
+3.14.0
+------
+- New collection confinement module
+
 3.10.0
 ------
 - `FlagVec::is_empty` and `count_flags` methods
