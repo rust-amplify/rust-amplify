@@ -294,10 +294,38 @@ impl FlagVec {
         self.iter().count() as u16
     }
 
-    /// Returns byte slice representation of the inner data (slice of bytes,
-    /// with 8 bit flags per each byte)
+    /// Returns byte slice representation of the inner data
     pub fn as_slice(&self) -> &[u8] {
         &self.0
+    }
+
+    /// Returns inner byte vector containing all flags
+    pub fn to_vec(&self) -> Vec<u8> {
+        self.0.to_inner()
+    }
+
+    /// Returns inner byte vector containing all flags
+    pub fn into_vec(self) -> Vec<u8> {
+        self.0.into_inner()
+    }
+
+    /// Returns byte slice representation of the inner [`TinyVec`].
+    ///
+    /// Shrinks the inner data.
+    pub fn as_inner(&mut self) -> &TinyVec<u8> {
+        self.shrink();
+        &self.0
+    }
+
+    /// Returns byte slice representation of the inner [`TinyVec`]
+    pub fn to_inner(self) -> TinyVec<u8> {
+        self.shrunk().0
+    }
+
+    /// Returns byte slice representation of the inner [`TinyVec`]
+    pub fn into_inner(mut self) -> TinyVec<u8> {
+        self.shrink();
+        self.0
     }
 
     /// Returns a shrunk copy of the self
