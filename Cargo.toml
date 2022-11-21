@@ -37,6 +37,7 @@ amplify_syn = { version = "1.1", path = "./syn", optional = true }
 amplify_num = { version = "0.4.0", path = "./num" }
 amplify_apfloat = { version = "0.1.1", path = "./apfloat", optional = true }
 parse_arg = { version = "0.1.4", optional = true }
+ascii = "1.1.0"
 rand = { version = "0.8.4", optional = true }
 # This strange naming is a workaround for not being able to define required features for a dependency
 # See https://github.com/rust-lang/api-guidelines/issues/180 for the explanation and references.
