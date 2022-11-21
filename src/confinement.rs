@@ -326,6 +326,19 @@ impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Deref
     }
 }
 
+impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> IntoIterator
+    for Confined<C, MIN_LEN, MAX_LEN>
+where
+    C: IntoIterator,
+{
+    type Item = <C as IntoIterator>::Item;
+    type IntoIter = <C as IntoIterator>::IntoIter;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.0.into_iter()
+    }
+}
+
 impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C, MIN_LEN, MAX_LEN> {
     /// Tries to construct a confinement over a collection. Fails if the number of items in the
     /// collection exceeds one of the confinement bounds.
