@@ -1,7 +1,7 @@
 // Rust language amplification library providing multiple generic trait
 // implementations, type wrappers, derive macros and other language enhancements
 //
-// Written in 2019-2020 by
+// Written in 2019-2022 by
 //     Dr. Maxim Orlovsky <orlovsky@pandoracore.com>
 //     Martin Habovstiak <martin.habovstiak@gmail.com>
 //
@@ -71,12 +71,12 @@ mod bipolar;
 #[cfg(all(feature = "std", feature = "derive"))]
 #[macro_use]
 pub mod confinement;
+mod array;
 mod dumb_default;
 #[cfg(all(feature = "std", feature = "derive"))]
 mod io_error;
 #[cfg(feature = "c_raw")]
 mod raw;
-mod slice32;
 pub mod strategy;
 #[cfg(feature = "serde")]
 mod to_serde_string;
@@ -106,7 +106,7 @@ pub use crate::as_any::AsAny;
 pub use crate::bipolar::Bipolar;
 pub use crate::strategy::Holder;
 pub use crate::wrapper::Wrapper;
-pub use crate::slice32::Slice32;
+pub use crate::array::{Array, Array32, Array16, Array64};
 pub use crate::dumb_default::DumbDefault;
 #[cfg(feature = "serde")]
 pub use crate::to_serde_string::{ToYamlString, ToJsonString, ToTomlString};

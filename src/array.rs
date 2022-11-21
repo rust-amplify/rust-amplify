@@ -21,12 +21,34 @@ use core::ops::{Index, IndexMut, RangeFull};
 #[cfg(feature = "alloc")]
 use alloc::vec::Vec;
 use core::borrow::{Borrow, BorrowMut};
+use core::ops::{Range, RangeFrom, RangeInclusive, RangeTo, RangeToInclusive};
 
 #[cfg(all(feature = "hex", any(feature = "std", feature = "alloc")))]
 use crate::hex::{Error, FromHex, ToHex};
 use crate::Wrapper;
 
+/// Wrapper type for all slice-based 128-bit types implementing many important
+/// traits, so types based on it can simply derive their implementations.
+///
+/// Type keeps data in little-endian byte order and displays them in the same
+/// order (like bitcoin SHA256 single hash type).
+pub type Array16 = Array<16>;
+
 /// Wrapper type for all slice-based 256-bit types implementing many important
+/// traits, so types based on it can simply derive their implementations.
+///
+/// Type keeps data in little-endian byte order and displays them in the same
+/// order (like bitcoin SHA256 single hash type).
+pub type Array32 = Array<32>;
+
+/// Wrapper type for all slice-based 512-bit types implementing many important
+/// traits, so types based on it can simply derive their implementations.
+///
+/// Type keeps data in little-endian byte order and displays them in the same
+/// order (like bitcoin SHA256 single hash type).
+pub type Array64 = Array<64>;
+
+/// Wrapper type for all fixed arrays implementing many important
 /// traits, so types based on it can simply derive their implementations.
 ///
 /// Type keeps data in little-endian byte order and displays them in the same
@@ -36,8 +58,8 @@ use crate::Wrapper;
     derive(Serialize, Deserialize),
     serde(crate = "serde_crate")
 )]
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
-pub struct Slice32(
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct Array<const LEN: usize>(
     #[cfg_attr(
         all(feature = "serde", feature = "hex"),
         serde(
@@ -45,28 +67,38 @@ pub struct Slice32(
             deserialize_with = "serde_helpers::from_hex"
         )
     )]
-    [u8; 32],
+    [u8; LEN],
 );
 
-impl Slice32 {
+impl<const LEN: usize> Array<LEN> {
     #[cfg(feature = "rand")]
-    /// Generates 256-bit array from `bitcoin::secp256k1::rand::thread_rng`
-    /// random number generator
+    /// Generates array from `rand::thread_rng` random number generator
     pub fn random() -> Self {
         use rand::RngCore;
-        let mut entropy = [0u8; 32];
+        let mut entropy = [0u8; LEN];
         rand::thread_rng().fill_bytes(&mut entropy);
-        Slice32::from_inner(entropy)
+        Array::from_inner(entropy)
+    }
+
+    /// Constructs array filled with zero bytes
+    pub fn zero() -> Self {
+        Self([0u8; LEN])
+    }
+
+    /// Constructs array filled with given value
+    pub fn with(val: u8) -> Self {
+        Self([val; LEN])
     }
 
     /// Constructs 256-bit array from a provided slice. If the slice length
     /// is not equal to 32 bytes, returns `None`
-    pub fn from_slice(slice: impl AsRef<[u8]>) -> Option<Slice32> {
-        if slice.as_ref().len() != 32 {
+    pub fn from_slice(slice: impl AsRef<[u8]>) -> Option<Self> {
+        let slice = slice.as_ref();
+        if slice.len() != LEN {
             return None;
         }
-        let mut inner = [0u8; 32];
-        inner.copy_from_slice(slice.as_ref());
+        let mut inner = [0u8; LEN];
+        inner.copy_from_slice(slice);
         Some(Self(inner))
     }
 
@@ -90,35 +122,42 @@ impl Slice32 {
     }
 }
 
-impl AsRef<[u8]> for Slice32 {
+impl<const LEN: usize> Default for Array<LEN> {
+    fn default() -> Self {
+        let inner = [0u8; LEN];
+        Self(inner)
+    }
+}
+
+impl<const LEN: usize> AsRef<[u8]> for Array<LEN> {
     #[inline]
     fn as_ref(&self) -> &[u8] {
         self.0.as_ref()
     }
 }
 
-impl AsMut<[u8]> for Slice32 {
+impl<const LEN: usize> AsMut<[u8]> for Array<LEN> {
     #[inline]
     fn as_mut(&mut self) -> &mut [u8] {
         self.0.as_mut()
     }
 }
 
-impl Borrow<[u8]> for Slice32 {
+impl<const LEN: usize> Borrow<[u8]> for Array<LEN> {
     #[inline]
     fn borrow(&self) -> &[u8] {
         self.0.borrow()
     }
 }
 
-impl BorrowMut<[u8]> for Slice32 {
+impl<const LEN: usize> BorrowMut<[u8]> for Array<LEN> {
     #[inline]
     fn borrow_mut(&mut self) -> &mut [u8] {
         self.0.borrow_mut()
     }
 }
 
-impl Index<usize> for Slice32 {
+impl<const LEN: usize> Index<usize> for Array<LEN> {
     type Output = u8;
     #[inline]
     fn index(&self, index: usize) -> &Self::Output {
@@ -126,7 +165,7 @@ impl Index<usize> for Slice32 {
     }
 }
 
-impl Index<u8> for Slice32 {
+impl<const LEN: usize> Index<u8> for Array<LEN> {
     type Output = u8;
     #[inline]
     fn index(&self, index: u8) -> &Self::Output {
@@ -134,7 +173,47 @@ impl Index<u8> for Slice32 {
     }
 }
 
-impl Index<RangeFull> for Slice32 {
+impl<const LEN: usize> Index<Range<usize>> for Array<LEN> {
+    type Output = [u8];
+    #[inline]
+    fn index(&self, index: Range<usize>) -> &Self::Output {
+        &self.0[index]
+    }
+}
+
+impl<const LEN: usize> Index<RangeTo<usize>> for Array<LEN> {
+    type Output = [u8];
+    #[inline]
+    fn index(&self, index: RangeTo<usize>) -> &Self::Output {
+        &self.0[index]
+    }
+}
+
+impl<const LEN: usize> Index<RangeFrom<usize>> for Array<LEN> {
+    type Output = [u8];
+    #[inline]
+    fn index(&self, index: RangeFrom<usize>) -> &Self::Output {
+        &self.0[index]
+    }
+}
+
+impl<const LEN: usize> Index<RangeInclusive<usize>> for Array<LEN> {
+    type Output = [u8];
+    #[inline]
+    fn index(&self, index: RangeInclusive<usize>) -> &Self::Output {
+        &self.0[index]
+    }
+}
+
+impl<const LEN: usize> Index<RangeToInclusive<usize>> for Array<LEN> {
+    type Output = [u8];
+    #[inline]
+    fn index(&self, index: RangeToInclusive<usize>) -> &Self::Output {
+        &self.0[index]
+    }
+}
+
+impl<const LEN: usize> Index<RangeFull> for Array<LEN> {
     type Output = [u8];
     #[inline]
     fn index(&self, index: RangeFull) -> &Self::Output {
@@ -142,29 +221,29 @@ impl Index<RangeFull> for Slice32 {
     }
 }
 
-impl IndexMut<usize> for Slice32 {
+impl<const LEN: usize> IndexMut<usize> for Array<LEN> {
     fn index_mut(&mut self, index: usize) -> &mut Self::Output {
         &mut self.0[index]
     }
 }
 
-impl IndexMut<u8> for Slice32 {
+impl<const LEN: usize> IndexMut<u8> for Array<LEN> {
     fn index_mut(&mut self, index: u8) -> &mut Self::Output {
         &mut self.0[index as usize]
     }
 }
 
-impl<T> From<T> for Slice32
+impl<T, const LEN: usize> From<T> for Array<LEN>
 where
-    T: Into<[u8; 32]>,
+    T: Into<[u8; LEN]>,
 {
     fn from(array: T) -> Self {
         Self(array.into())
     }
 }
 
-impl Wrapper for Slice32 {
-    type Inner = [u8; 32];
+impl<const LEN: usize> Wrapper for Array<LEN> {
+    type Inner = [u8; LEN];
 
     #[inline]
     fn from_inner(inner: Self::Inner) -> Self {
@@ -188,7 +267,7 @@ impl Wrapper for Slice32 {
 }
 
 #[cfg(all(feature = "hex", any(feature = "std", feature = "alloc")))]
-impl Display for Slice32 {
+impl<const LEN: usize> Display for Array<LEN> {
     #[inline]
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         LowerHex::fmt(self, f)
@@ -196,14 +275,14 @@ impl Display for Slice32 {
 }
 
 #[cfg(all(feature = "hex", any(feature = "std", feature = "alloc")))]
-impl Debug for Slice32 {
+impl<const LEN: usize> Debug for Array<LEN> {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "Slice32({})", self.to_hex())
+        write!(f, "Array<{}>({})", LEN, self.to_hex())
     }
 }
 
 #[cfg(all(feature = "hex", any(feature = "std", feature = "alloc")))]
-impl FromStr for Slice32 {
+impl<const LEN: usize> FromStr for Array<LEN> {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -212,7 +291,7 @@ impl FromStr for Slice32 {
 }
 
 #[cfg(all(feature = "hex", any(feature = "std", feature = "alloc")))]
-impl FromHex for Slice32 {
+impl<const LEN: usize> FromHex for Array<LEN> {
     fn from_byte_iter<I>(iter: I) -> Result<Self, Error>
     where
         I: Iterator<Item = Result<u8, Error>> + ExactSizeIterator + DoubleEndedIterator,
@@ -221,14 +300,14 @@ impl FromHex for Slice32 {
         if vec.len() != 32 {
             return Err(Error::InvalidLength(32, vec.len()));
         }
-        let mut id = [0u8; 32];
+        let mut id = [0u8; LEN];
         id.copy_from_slice(&vec);
-        Ok(Slice32(id))
+        Ok(Array(id))
     }
 }
 
 #[cfg(all(feature = "hex", any(feature = "std", feature = "alloc")))]
-impl LowerHex for Slice32 {
+impl<const LEN: usize> LowerHex for Array<LEN> {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         if f.alternate() {
             write!(
@@ -244,7 +323,7 @@ impl LowerHex for Slice32 {
 }
 
 #[cfg(all(feature = "hex", any(feature = "std", feature = "alloc")))]
-impl UpperHex for Slice32 {
+impl<const LEN: usize> UpperHex for Array<LEN> {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         if f.alternate() {
             write!(
@@ -267,7 +346,7 @@ pub(crate) mod serde_helpers {
     use serde::{Deserialize, Deserializer, Serializer};
 
     /// Serializes `buffer` to a lowercase hex string.
-    pub fn to_hex<S>(buffer: &[u8; 32], serializer: S) -> Result<S::Ok, S::Error>
+    pub fn to_hex<S, const LEN: usize>(buffer: &[u8; LEN], serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
@@ -275,7 +354,7 @@ pub(crate) mod serde_helpers {
     }
 
     /// Deserializes a lowercase hex string to a `Vec<u8>`.
-    pub fn from_hex<'de, D>(deserializer: D) -> Result<[u8; 32], D::Error>
+    pub fn from_hex<'de, D, const LEN: usize>(deserializer: D) -> Result<[u8; LEN], D::Error>
     where
         D: Deserializer<'de>,
     {
@@ -283,11 +362,11 @@ pub(crate) mod serde_helpers {
         String::deserialize(deserializer).and_then(|string| {
             let vec =
                 Vec::<u8>::from_hex(&string).map_err(|_| D::Error::custom("wrong hex data"))?;
-            if vec.len() != 32 {
+            if vec.len() != LEN {
                 return Err(D::Error::custom("Wrong 32-byte slice data length"));
             }
-            let mut slice32 = [0u8; 32];
-            slice32.copy_from_slice(&vec[0..32]);
+            let mut slice32 = [0u8; LEN];
+            slice32.copy_from_slice(&vec[..LEN]);
             Ok(slice32)
         })
     }
@@ -295,33 +374,34 @@ pub(crate) mod serde_helpers {
 
 #[cfg(test)]
 mod test {
-    use super::{Error, Slice32};
+    use core::str::FromStr;
+
+    use super::*;
     use crate::Wrapper;
     use crate::hex::FromHex;
-    use core::str::FromStr;
 
     #[test]
     fn test_slice32_str() {
         let s = "a3401bcceb26201b55978ff705fecf7d8a0a03598ebeccf2a947030b91a0ff53";
-        let slice32 = Slice32::from_hex(s).unwrap();
-        assert_eq!(Slice32::from_str(s), Ok(slice32));
+        let slice32 = Array32::from_hex(s).unwrap();
+        assert_eq!(Array32::from_str(s), Ok(slice32));
 
-        assert_eq!(Slice32::from_hex(&s.to_uppercase()), Ok(slice32));
+        assert_eq!(Array32::from_hex(&s.to_uppercase()), Ok(slice32));
         assert_eq!(
-            Slice32::from_str(&s[..30]),
+            Array32::from_str(&s[..30]),
             Err(Error::InvalidLength(32, 15))
         );
 
         assert_eq!(&slice32.to_string(), s);
         assert_eq!(format!("{:x}", slice32), s);
         assert_eq!(format!("{:X}", slice32), s.to_uppercase());
-        assert_eq!(format!("{:?}", slice32), format!("Slice32({})", s));
+        assert_eq!(format!("{:?}", slice32), format!("Array<32>({})", s));
     }
 
     #[test]
     fn test_encoding() {
         let s = "a3401bcceb26201b55978ff705fecf7d8a0a03598ebeccf2a947030b91a0ff53";
-        let slice32 = Slice32::from_hex(s).unwrap();
+        let slice32 = Array::from_hex(s).unwrap();
 
         let data = [
             0xa3, 0x40, 0x1b, 0xcc, 0xeb, 0x26, 0x20, 0x1b, 0x55, 0x97, 0x8f, 0xf7, 0x05, 0xfe,
@@ -329,8 +409,8 @@ mod test {
             0x91, 0xa0, 0xff, 0x53,
         ];
 
-        assert_eq!(Slice32::from_slice(&data), Some(slice32));
-        assert_eq!(Slice32::from_slice(&data[..30]), None);
+        assert_eq!(Array32::from_slice(&data), Some(slice32));
+        assert_eq!(Array32::from_slice(&data[..30]), None);
         assert_eq!(&slice32.to_vec(), &data);
         assert_eq!(&slice32.as_inner()[..], &data);
         assert_eq!(slice32.to_inner(), data);
