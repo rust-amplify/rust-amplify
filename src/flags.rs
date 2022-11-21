@@ -22,6 +22,8 @@ use std::hash::{Hash, Hasher};
 use std::ops::{BitAnd, BitOr, BitXor};
 use std::str::FromStr;
 
+use crate::confinement::TinyVec;
+
 /// A single feature flag, represented by it's number inside feature vector
 pub type FlagNo = u16;
 
@@ -34,7 +36,7 @@ pub struct FlagRef<'a> {
 
 /// Structure holding a given set of features
 #[derive(Clone)]
-pub struct FlagVec(Vec<u8>);
+pub struct FlagVec(TinyVec<u8>);
 
 impl BitOr for FlagVec {
     type Output = Self;
@@ -268,7 +270,7 @@ impl FlagVec {
 
     /// Constructs a features vector of zero feature flag set
     pub fn new() -> FlagVec {
-        FlagVec(vec![])
+        FlagVec(empty!())
     }
 
     /// Constructs a features vector of `upto` feature flag in unset state
@@ -276,14 +278,14 @@ impl FlagVec {
         if upto == 0 {
             FlagVec::default()
         } else {
-            FlagVec(vec![0u8; Self::bits_to_bytes(upto)])
+            FlagVec(tiny_vec![0u8; Self::bits_to_bytes(upto)])
         }
     }
 
     /// Detects whether structure contains any flags set
     #[inline]
     pub fn is_empty(&self) -> bool {
-        self.shrunk().0 == &[] as &[u8]
+        self.shrunk().0.is_empty()
     }
 
     /// Counts number of flags set
@@ -294,14 +296,8 @@ impl FlagVec {
 
     /// Returns byte slice representation of the inner data (slice of bytes,
     /// with 8 bit flags per each byte)
-    pub fn as_inner(&self) -> &[u8] {
+    pub fn as_slice(&self) -> &[u8] {
         &self.0
-    }
-
-    /// Constructs flag vector from inner representation (slice of bytes, with
-    /// 8 bit flags per each byte)
-    pub fn from_inner(slice: Vec<u8>) -> Self {
-        Self(slice)
     }
 
     /// Returns a shrunk copy of the self
@@ -354,7 +350,7 @@ impl FlagVec {
         }
 
         let old = self.0.clone();
-        self.0 = vec![0u8; Self::bits_to_bytes(upto)];
+        self.0 = tiny_vec![0u8; Self::bits_to_bytes(upto)];
         self.0[..old.len()].copy_from_slice(&old);
         true
     }
@@ -377,8 +373,10 @@ impl FlagVec {
         let used = Self::bits_to_bytes(top);
         if used < self.0.len() {
             let old = self.0.clone();
-            self.0 = vec![0u8; used as usize];
-            self.0.copy_from_slice(&old[..used]);
+            self.0 = tiny_vec![0u8; used as usize];
+            for pos in 0..used {
+                self.0[pos] = old[pos];
+            }
             return true;
         }
         false
