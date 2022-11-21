@@ -525,6 +525,24 @@ impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C, MIN_
         Self::try_from(col)
     }
 
+    /// Returns inner collection type
+    pub fn as_inner(&self) -> &C {
+        &self.0
+    }
+
+    /// Clones inner collection type and returns it
+    pub fn to_inner(&self) -> C
+    where
+        C: Clone,
+    {
+        self.0.clone()
+    }
+
+    /// Decomposes into the inner collection type
+    pub fn into_inner(self) -> C {
+        self.0
+    }
+
     /// Attempts to add a single element to the confined collection. Fails if the number of elements
     /// in the collection already maximal.
     pub fn push(&mut self, elem: C::Item) -> Result<(), Error> {
