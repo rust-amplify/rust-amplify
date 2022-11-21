@@ -20,6 +20,7 @@ use std::convert::TryFrom;
 use std::hash::Hash;
 use std::ops::Deref;
 use std::usize;
+use ascii::{AsciiChar, AsciiString};
 
 use crate::num::u24;
 
@@ -67,6 +68,26 @@ pub trait KeyedCollection: Collection<Item = (Self::Key, Self::Value)> {
 
 impl Collection for String {
     type Item = char;
+
+    fn with_capacity(capacity: usize) -> Self {
+        Self::with_capacity(capacity)
+    }
+
+    fn len(&self) -> usize {
+        self.len()
+    }
+
+    fn push(&mut self, elem: Self::Item) {
+        self.push(elem)
+    }
+
+    fn clear(&mut self) {
+        self.clear()
+    }
+}
+
+impl Collection for AsciiString {
+    type Item = AsciiChar;
 
     fn with_capacity(capacity: usize) -> Self {
         Self::with_capacity(capacity)
@@ -684,6 +705,17 @@ pub type MediumString = Confined<String, ZERO, U24>;
 pub type LargeString = Confined<String, ZERO, U32>;
 /// [`String`] which contains at least a single character.
 pub type NonEmptyString = Confined<String, ONE, USIZE>;
+
+/// [`AsciiString`] with maximum 255 characters.
+pub type TinyAscii = Confined<AsciiString, ZERO, U8>;
+/// [`AsciiString`] with maximum 2^16-1 characters.
+pub type SmallAscii = Confined<AsciiString, ZERO, U16>;
+/// [`AsciiString`] with maximum 2^24-1 characters.
+pub type MediumAscii = Confined<AsciiString, ZERO, U24>;
+/// [`AsciiString`] with maximum 2^32-1 characters.
+pub type LargeAscii = Confined<AsciiString, ZERO, U32>;
+/// [`AsciiString`] which contains at least a single character.
+pub type NonEmptyAscii = Confined<AsciiString, ONE, USIZE>;
 
 /// [`Vec`] with maximum 255 items of type `T`.
 pub type TinyVec<T> = Confined<Vec<T>, ZERO, U8>;
