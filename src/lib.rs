@@ -69,6 +69,7 @@ mod wrapper;
 mod as_any;
 mod bipolar;
 #[cfg(all(feature = "std", feature = "derive"))]
+#[macro_use]
 pub mod confinement;
 mod dumb_default;
 #[cfg(all(feature = "std", feature = "derive"))]

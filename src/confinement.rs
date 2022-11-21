@@ -799,6 +799,28 @@ macro_rules! confined_vec {
     )
 }
 
+/// Helper macro to construct confined vector of a [`TinyVec`] type
+#[macro_export]
+macro_rules! tiny_vec {
+    ($elem:expr; $n:expr) => (
+        TinyVec::try_from(vec![$elem; $n]).expect("inline tiny_vec literal contains invalid number of items")
+    );
+    ($($x:expr),+ $(,)?) => (
+        TinyVec::try_from(vec![$($x,)+]).expect("inline tiny_vec literal contains invalid number of items")
+    )
+}
+
+/// Helper macro to construct confined vector of a [`SmallVec`] type
+#[macro_export]
+macro_rules! small_vec {
+    ($elem:expr; $n:expr) => (
+        SmallVec::try_from(vec![$elem; $n]).expect("inline small_vec literal contains invalid number of items")
+    );
+    ($($x:expr),+ $(,)?) => (
+        SmallVec::try_from(vec![$($x,)+]).expect("inline small_vec literal contains invalid number of items")
+    )
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
