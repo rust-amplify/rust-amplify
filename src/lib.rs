@@ -72,7 +72,7 @@ mod bipolar;
 #[macro_use]
 pub mod confinement;
 mod array;
-mod dumb_default;
+mod dumb;
 #[cfg(all(feature = "std", feature = "derive"))]
 mod io_error;
 #[cfg(feature = "c_raw")]
@@ -107,7 +107,7 @@ pub use crate::bipolar::Bipolar;
 pub use crate::strategy::Holder;
 pub use crate::wrapper::Wrapper;
 pub use crate::array::{Array, Array32, Array16, Array64};
-pub use crate::dumb_default::DumbDefault;
+pub use crate::dumb::Dumb;
 #[cfg(feature = "serde")]
 pub use crate::to_serde_string::{ToYamlString, ToJsonString, ToTomlString};
 #[cfg(all(feature = "std", feature = "derive"))]

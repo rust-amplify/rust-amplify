@@ -77,11 +77,11 @@ macro_rules! default {
     };
 }
 
-/// Shorthand for `DumbDefault::dumb_default()`
+/// Shorthand for `Dumb::dumb()`
 #[macro_export]
 macro_rules! dumb {
     () => {
-        $crate::DumbDefault::dumb_default()
+        $crate::Dumb::dumb()
     };
 }
 
