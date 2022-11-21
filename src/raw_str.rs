@@ -1,9 +1,8 @@
 // Rust language amplification library providing multiple generic trait
 // implementations, type wrappers, derive macros and other language enhancements
 //
-// Written in 2019-2020 by
+// Written in 2019-2022 by
 //     Dr. Maxim Orlovsky <orlovsky@pandoracore.com>
-//     Martin Habovstiak <martin.habovstiak@gmail.com>
 //
 // To the extent possible under law, the author(s) have dedicated all
 // copyright and related and neighboring rights to this software to
@@ -17,18 +16,18 @@
 use libc::c_char;
 use std::ffi::{CStr, CString};
 
-pub trait TryIntoRaw {
-    fn try_into_raw(self) -> Option<*const c_char>;
+pub trait TryIntoRawStr {
+    fn try_into_raw_str(self) -> Option<*const c_char>;
 }
 
-pub trait TryFromRaw {
-    fn try_from_raw(ptr: *mut c_char) -> Option<Self>
+pub trait TryFromRawStr {
+    fn try_from_raw_str(ptr: *mut c_char) -> Option<Self>
     where
         Self: Sized;
 }
 
-impl TryIntoRaw for String {
-    fn try_into_raw(self) -> Option<*const c_char> {
+impl TryIntoRawStr for String {
+    fn try_into_raw_str(self) -> Option<*const c_char> {
         CString::new(self)
             .map(CString::into_raw)
             .map(|ptr| ptr as *const c_char)
@@ -36,8 +35,8 @@ impl TryIntoRaw for String {
     }
 }
 
-impl TryFromRaw for String {
-    fn try_from_raw(ptr: *mut c_char) -> Option<String> {
+impl TryFromRawStr for String {
+    fn try_from_raw_str(ptr: *mut c_char) -> Option<String> {
         unsafe { CString::from_raw(ptr) }.into_string().ok()
     }
 }
@@ -64,6 +63,6 @@ impl TryIntoString for *mut c_char {
         if self.is_null() {
             return None;
         }
-        String::try_from_raw(self)
+        String::try_from_raw_str(self)
     }
 }

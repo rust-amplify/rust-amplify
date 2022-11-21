@@ -76,7 +76,7 @@ mod dumb;
 #[cfg(all(feature = "std", feature = "derive"))]
 mod io_error;
 #[cfg(feature = "c_raw")]
-mod raw;
+mod raw_str;
 pub mod strategy;
 #[cfg(feature = "serde")]
 mod to_serde_string;
