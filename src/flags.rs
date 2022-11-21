@@ -309,6 +309,11 @@ impl FlagVec {
         self.0.into_inner()
     }
 
+    /// Constructs flags from the inner representation in form of [`TinyVec`].
+    pub fn from_inner(vec: TinyVec<u8>) -> Self {
+        Self(vec)
+    }
+
     /// Returns byte slice representation of the inner [`TinyVec`].
     ///
     /// Shrinks the inner data.
