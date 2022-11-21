@@ -16,15 +16,15 @@
 #[macro_use]
 mod wrapper;
 mod as_any;
-mod bipolar;
 mod dumb;
+mod join_split;
 #[cfg(feature = "c_raw")]
 mod raw_str;
 #[cfg(feature = "serde")]
 mod to_serde_string;
 
 pub use as_any::AsAny;
-pub use bipolar::Bipolar;
+pub use join_split::JoinSplit;
 pub use wrapper::Wrapper;
 pub use dumb::Dumb;
 #[cfg(feature = "serde")]

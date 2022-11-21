@@ -14,17 +14,17 @@
 // If not, see <https://opensource.org/licenses/MIT>.
 
 /// Trait for splittable streams and other types, which can be separated into
-/// some two types ([`Bipolar::Left`], [`Bipolar::Right`]), like a reader and
+/// some two types ([`JoinSplit::A`], [`JoinSplit::B`]), like a reader and
 /// writer streams.
-pub trait Bipolar {
+pub trait JoinSplit {
     /// First separable type (like reader)
-    type Left;
+    type A;
     /// Second separable type (like writer)
-    type Right;
+    type B;
 
     /// Reconstruct the type from the halves
-    fn join(left: Self::Left, right: Self::Right) -> Self;
+    fn join(left: Self::A, right: Self::B) -> Self;
 
     /// Split the type into two
-    fn split(self) -> (Self::Left, Self::Right);
+    fn split(self) -> (Self::A, Self::B);
 }
