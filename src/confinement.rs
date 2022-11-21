@@ -990,10 +990,10 @@ macro_rules! confined_vec {
 #[macro_export]
 macro_rules! tiny_vec {
     ($elem:expr; $n:expr) => (
-        TinyVec::try_from(vec![$elem; $n]).expect("inline tiny_vec literal contains invalid number of items")
+        $crate::confinement::TinyVec::try_from(vec![$elem; $n]).expect("inline tiny_vec literal contains invalid number of items")
     );
     ($($x:expr),+ $(,)?) => (
-        TinyVec::try_from(vec![$($x,)+]).expect("inline tiny_vec literal contains invalid number of items")
+        $crate::confinement::TinyVec::try_from(vec![$($x,)+]).expect("inline tiny_vec literal contains invalid number of items")
     )
 }
 
@@ -1001,10 +1001,10 @@ macro_rules! tiny_vec {
 #[macro_export]
 macro_rules! small_vec {
     ($elem:expr; $n:expr) => (
-        SmallVec::try_from(vec![$elem; $n]).expect("inline small_vec literal contains invalid number of items")
+        $crate::confinement::SmallVec::try_from(vec![$elem; $n]).expect("inline small_vec literal contains invalid number of items")
     );
     ($($x:expr),+ $(,)?) => (
-        SmallVec::try_from(vec![$($x,)+]).expect("inline small_vec literal contains invalid number of items")
+        $crate::confinement::SmallVec::try_from(vec![$($x,)+]).expect("inline small_vec literal contains invalid number of items")
     )
 }
 
