@@ -309,6 +309,11 @@ const USIZE: usize = usize::MAX;
 
 /// The confinement for the collection.
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
+#[cfg_attr(
+    feature = "serde",
+    derive(Serialize, Deserialize),
+    serde(crate = "serde_crate")
+)]
 pub struct Confined<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize>(C);
 
 impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Deref
