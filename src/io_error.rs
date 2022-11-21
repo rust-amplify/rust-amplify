@@ -1,7 +1,7 @@
 // Rust language amplification library providing multiple generic trait
 // implementations, type wrappers, derive macros and other language enhancements
 //
-// Written in 2019-2020 by
+// Written in 2019-2022 by
 //     Dr. Maxim Orlovsky <orlovsky@pandoracore.com>
 //     Martin Habovstiak <martin.habovstiak@gmail.com>
 //
