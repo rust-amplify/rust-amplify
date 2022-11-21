@@ -63,26 +63,16 @@ pub extern crate ascii;
 
 #[macro_use]
 mod macros;
-#[macro_use]
-mod wrapper;
 
-mod as_any;
-mod bipolar;
-#[cfg(all(feature = "std", feature = "derive"))]
-#[macro_use]
-pub mod confinement;
-mod array;
-mod dumb;
 #[cfg(all(feature = "std", feature = "derive"))]
 mod io_error;
-#[cfg(feature = "c_raw")]
-mod raw_str;
 pub mod strategy;
-#[cfg(feature = "serde")]
-mod to_serde_string;
 
-#[cfg(feature = "std")]
-pub mod flags;
+mod collection;
+pub use collection::*;
+
+mod traits;
+pub use traits::*;
 
 pub mod num {
     //! Custom-sized numeric types
@@ -102,13 +92,6 @@ pub mod num {
     pub use amplify_apfloat as apfloat;
 }
 
-pub use crate::as_any::AsAny;
-pub use crate::bipolar::Bipolar;
-pub use crate::strategy::Holder;
-pub use crate::wrapper::Wrapper;
-pub use crate::array::{Array, Array32, Array16, Array64};
-pub use crate::dumb::Dumb;
-#[cfg(feature = "serde")]
-pub use crate::to_serde_string::{ToYamlString, ToJsonString, ToTomlString};
 #[cfg(all(feature = "std", feature = "derive"))]
 pub use crate::io_error::IoError;
+pub use crate::strategy::Holder;
