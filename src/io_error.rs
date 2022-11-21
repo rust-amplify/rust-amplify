@@ -14,10 +14,11 @@
 // along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
-use ::std::io;
-use ::std::fmt::{Debug, Display, Formatter, self};
-
-use crate::Wrapper;
+use std::cmp::Ordering;
+use std::io;
+use std::fmt::{Debug, Display, Formatter, self};
+use std::error::Error as StdError;
+use std::hash::{Hash, Hasher};
 
 /// Copyable & cloneable I/O error type represented by the error kind function.
 ///
@@ -27,39 +28,98 @@ use crate::Wrapper;
 /// ```
 /// use amplify::{IoError, Error, Display, From};
 ///
-/// #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, From, Debug, Display, Error)]
+/// #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, From, Debug, Display, Error)]
 /// enum Error {
-///     #[from(::std::io::Error)]
+///     #[from(std::io::Error)]
 ///     #[display(inner)]
 ///     Io(IoError),
 /// }
 /// ```
-#[derive(Wrapper, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, From, Error)]
-#[amplify_crate(crate)]
-pub struct IoError(io::ErrorKind);
+#[derive(Error)]
+pub struct IoError {
+    kind: io::ErrorKind,
+    display: String,
+    debug: String,
+    details: Option<Box<dyn StdError + Send + Sync>>,
+}
+
+impl IoError {
+    /// Returns [`io::ErrorKind`] of this error.
+    pub fn kind(&self) -> io::ErrorKind {
+        self.kind
+    }
+}
+
+impl Clone for IoError {
+    fn clone(&self) -> Self {
+        Self {
+            kind: self.kind,
+            display: self.display.clone(),
+            debug: self.debug.clone(),
+            details: None,
+        }
+    }
+}
+
+impl PartialEq for IoError {
+    fn eq(&self, other: &Self) -> bool {
+        self.kind == other.kind && self.debug == other.debug
+    }
+}
+
+impl Eq for IoError {}
+
+impl PartialOrd for IoError {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for IoError {
+    fn cmp(&self, other: &Self) -> Ordering {
+        match self.kind.cmp(&other.kind) {
+            Ordering::Equal => self.debug.cmp(&other.debug),
+            ordering => ordering,
+        }
+    }
+}
+
+impl Hash for IoError {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        state.write(&self.debug.as_bytes())
+    }
+}
 
 impl Display for IoError {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        let err = io::Error::from(*self.as_inner());
+        let err = io::Error::from(self.clone());
         Display::fmt(&err, f)
     }
 }
 
 impl Debug for IoError {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        let err = io::Error::from(*self.as_inner());
+        let err = io::Error::from(self.clone());
         Debug::fmt(&err, f)
     }
 }
 
 impl From<io::Error> for IoError {
     fn from(err: io::Error) -> Self {
-        IoError::from_inner(err.kind())
+        IoError {
+            kind: err.kind(),
+            display: err.to_string(),
+            debug: format!("{:?}", err),
+            details: err.into_inner(),
+        }
     }
 }
 
 impl From<IoError> for io::Error {
     fn from(err: IoError) -> Self {
-        io::Error::from(err.into_inner())
+        match err.details {
+            Some(details) => io::Error::new(err.kind, details),
+            None => io::Error::from(err.kind),
+        }
     }
 }
