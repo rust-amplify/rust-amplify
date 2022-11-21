@@ -308,7 +308,7 @@ const USIZE: usize = usize::MAX;
 // Confined collection
 
 /// The confinement for the collection.
-#[derive(Clone, Hash, Debug)]
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 pub struct Confined<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize>(C);
 
 impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Deref
