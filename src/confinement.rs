@@ -783,6 +783,17 @@ pub type LargeOrdMap<K, V> = Confined<BTreeMap<K, V>, ZERO, U32>;
 /// [`BTreeMap`] which contains at least a single item.
 pub type NonEmptyOrdMap<K, V> = Confined<BTreeMap<K, V>, ONE, USIZE>;
 
+/// Helper macro to construct confined vector of a given type
+#[macro_export]
+macro_rules! confined_vec {
+    ($ty:ty; $elem:expr; $n:expr) => (
+        <$ty>::try_from(vec![$elem; $n]).expect("inline confined_vec literal contains invalid number of items")
+    );
+    ($ty:ty; $($x:expr),+ $(,)?) => (
+        <$ty>::try_from(vec![$($x,)+]).expect("inline confined_vec literal contains invalid number of items")
+    )
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
