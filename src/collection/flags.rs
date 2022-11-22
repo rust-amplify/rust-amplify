@@ -324,7 +324,7 @@ impl FlagVec {
     }
 
     /// Returns byte slice representation of the inner [`TinyVec`]
-    pub fn to_inner(self) -> TinyVec<u8> {
+    pub fn to_inner(&self) -> TinyVec<u8> {
         self.shrunk().0
     }
 
