@@ -15,6 +15,7 @@
 
 //! Confinement puts a constrain on the number of elements within a collection.
 
+use core::fmt::{self, Display, Formatter};
 use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet, VecDeque};
 use std::convert::TryFrom;
 use std::hash::Hash;
@@ -259,13 +260,9 @@ impl<K: Ord + Hash, V> KeyedCollection for BTreeMap<K, V> {
 // Errors
 
 /// Errors when confinement constraints were not met.
-#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug, Display, Error)]
+#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 pub enum Error {
     /// Operation results in collection reduced below the required minimum number of elements.
-    #[display(
-        "operation results in collection size {len} less than lower boundary \
-         of {min_len}, which is prohibited"
-    )]
     Undersize {
         /** Current collection length */
         len: usize,
@@ -274,10 +271,6 @@ pub enum Error {
     },
 
     /// Operation results in collection growth above the required maximum number of elements.
-    #[display(
-        "operation results in collection size {len} exceeding {max_len}, \
-         which is prohibited"
-    )]
     Oversize {
         /** Current collection length */
         len: usize,
@@ -286,9 +279,6 @@ pub enum Error {
     },
 
     /// Attempt to address an index outside of the collection bounds.
-    #[display(
-        "attempt to access the element at {index} which is outside of the collection length boundary {len}"
-    )]
     OutOfBoundary {
         /** Index which was outside of the bounds */
         index: usize,
@@ -296,6 +286,30 @@ pub enum Error {
         len: usize,
     },
 }
+
+impl Display for Error {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            Error::Undersize { len, min_len } => write!(
+                f,
+                "operation results in collection size {len} less than lower boundary \
+                 of {min_len}, which is prohibited"
+            ),
+            Error::Oversize { len, max_len } => write!(
+                f,
+                "operation results in collection size {len} exceeding {max_len}, \
+                which is prohibited"
+            ),
+            Error::OutOfBoundary { index, len } => write!(
+                f,
+                "attempt to access the element at {index} which is outside of the \
+                collection length boundary {len}"
+            ),
+        }
+    }
+}
+
+impl std::error::Error for Error {}
 
 // Confinement params
 

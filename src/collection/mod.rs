@@ -13,7 +13,7 @@
 // along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
-#[cfg(all(feature = "std", feature = "derive"))]
+#[cfg(feature = "std")]
 #[macro_use]
 pub mod confinement;
 mod array;
