@@ -100,7 +100,7 @@ pub mod num {
 pub use crate::as_any::AsAny;
 pub use crate::bipolar::Bipolar;
 pub use crate::strategy::Holder;
-pub use crate::wrapper::Wrapper;
+pub use crate::wrapper::{Wrapper, WrapperMut};
 pub use crate::slice32::Slice32;
 pub use crate::dumb_default::DumbDefault;
 #[cfg(feature = "serde")]

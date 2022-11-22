@@ -32,10 +32,6 @@ pub trait Wrapper {
     /// Returns reference to the inner representation for the wrapper type
     fn as_inner(&self) -> &Self::Inner;
 
-    /// Returns a mutable reference to the inner representation for the wrapper
-    /// type
-    fn as_inner_mut(&mut self) -> &mut Self::Inner;
-
     /// Clones inner data of the wrapped type and return them
     #[inline]
     fn to_inner(&self) -> Self::Inner
@@ -58,6 +54,13 @@ pub trait Wrapper {
     }
 }
 
+/// Trait allowing mutable reference borrowing for the wrapped inner type.
+pub trait WrapperMut: Wrapper {
+    /// Returns a mutable reference to the inner representation for the wrapper
+    /// type
+    fn as_inner_mut(&mut self) -> &mut Self::Inner;
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
@@ -76,12 +79,14 @@ mod test {
             &self.0
         }
 
-        fn as_inner_mut(&mut self) -> &mut Self::Inner {
-            &mut self.0
-        }
-
         fn into_inner(self) -> Self::Inner {
             self.0
+        }
+    }
+
+    impl WrapperMut for TestWrapper {
+        fn as_inner_mut(&mut self) -> &mut Self::Inner {
+            &mut self.0
         }
     }
 
