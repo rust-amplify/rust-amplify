@@ -13,16 +13,14 @@ you'll learn.
 
 ## Communications Channels
 
-Communication about LNP/BP standards & imlementations happens primarily in Telegram group
-https://t.me/rgbtelegram (due to historical reasons), but also #lnp-pb on IRC Freenode.
-Some of the preliminary proposals and ideas are posted in [Discussions](https://github.com/LNP-BP/LNPBPs/discussions) of the 
-corresponding repository.
+Communication happens in GitHub 
+[Discussions](https://github.com/rust-amplify/rust-amplify/discussions).
 
 Discussion about code base improvements happens in GitHub issues and pull
 requests.
 
-Major projects are tracked [here](https://github.com/orgs/LNP-BP/projects).
-Major milestones are tracked [here](https://github.com/LNP-BP/rust-lnpbp/milestones).
+Major projects are tracked [here](https://github.com/orgs/rust-amplify/projects).
+Major milestones are tracked [here](https://github.com/rust-amplify/rust-lnpbp/milestones).
 
 Contribution Workflow
 ---------------------

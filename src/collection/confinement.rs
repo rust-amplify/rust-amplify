@@ -1,7 +1,7 @@
 // Rust language amplification library providing multiple generic trait
 // implementations, type wrappers, derive macros and other language enhancements
 //
-// Written in 2019-2020 by
+// Written in 2022 by
 //     Dr. Maxim Orlovsky <orlovsky@pandoracore.com>
 //
 // To the extent possible under law, the author(s) have dedicated all
@@ -15,11 +15,15 @@
 
 //! Confinement puts a constrain on the number of elements within a collection.
 
+use core::fmt::{self, Display, Formatter};
 use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet, VecDeque};
 use std::convert::TryFrom;
 use std::hash::Hash;
-use std::ops::Deref;
+use std::ops::{
+    Deref, Index, IndexMut, Range, RangeFrom, RangeFull, RangeInclusive, RangeTo, RangeToInclusive,
+};
 use std::usize;
+use ascii::{AsciiChar, AsciiString};
 
 use crate::num::u24;
 
@@ -67,6 +71,26 @@ pub trait KeyedCollection: Collection<Item = (Self::Key, Self::Value)> {
 
 impl Collection for String {
     type Item = char;
+
+    fn with_capacity(capacity: usize) -> Self {
+        Self::with_capacity(capacity)
+    }
+
+    fn len(&self) -> usize {
+        self.len()
+    }
+
+    fn push(&mut self, elem: Self::Item) {
+        self.push(elem)
+    }
+
+    fn clear(&mut self) {
+        self.clear()
+    }
+}
+
+impl Collection for AsciiString {
+    type Item = AsciiChar;
 
     fn with_capacity(capacity: usize) -> Self {
         Self::with_capacity(capacity)
@@ -236,13 +260,9 @@ impl<K: Ord + Hash, V> KeyedCollection for BTreeMap<K, V> {
 // Errors
 
 /// Errors when confinement constraints were not met.
-#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug, Display, Error)]
+#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 pub enum Error {
     /// Operation results in collection reduced below the required minimum number of elements.
-    #[display(
-        "operation results in collection size {len} less than lower boundary \
-         of {min_len}, which is prohibited"
-    )]
     Undersize {
         /** Current collection length */
         len: usize,
@@ -251,10 +271,6 @@ pub enum Error {
     },
 
     /// Operation results in collection growth above the required maximum number of elements.
-    #[display(
-        "operation results in collection size {len} exceeding {max_len}, \
-         which is prohibited"
-    )]
     Oversize {
         /** Current collection length */
         len: usize,
@@ -263,9 +279,6 @@ pub enum Error {
     },
 
     /// Attempt to address an index outside of the collection bounds.
-    #[display(
-        "attempt to access the element at {index} which is outside of the collection length boundary {len}"
-    )]
     OutOfBoundary {
         /** Index which was outside of the bounds */
         index: usize,
@@ -273,6 +286,30 @@ pub enum Error {
         len: usize,
     },
 }
+
+impl Display for Error {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            Error::Undersize { len, min_len } => write!(
+                f,
+                "operation results in collection size {len} less than lower boundary \
+                 of {min_len}, which is prohibited"
+            ),
+            Error::Oversize { len, max_len } => write!(
+                f,
+                "operation results in collection size {len} exceeding {max_len}, \
+                which is prohibited"
+            ),
+            Error::OutOfBoundary { index, len } => write!(
+                f,
+                "attempt to access the element at {index} which is outside of the \
+                collection length boundary {len}"
+            ),
+        }
+    }
+}
+
+impl std::error::Error for Error {}
 
 // Confinement params
 
@@ -287,7 +324,12 @@ const USIZE: usize = usize::MAX;
 // Confined collection
 
 /// The confinement for the collection.
-#[derive(Clone, Hash, Debug)]
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
+#[cfg_attr(
+    feature = "serde",
+    derive(Serialize, Deserialize),
+    serde(crate = "serde_crate")
+)]
 pub struct Confined<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize>(C);
 
 impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Deref
@@ -297,6 +339,173 @@ impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Deref
 
     fn deref(&self) -> &Self::Target {
         &self.0
+    }
+}
+
+impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> IntoIterator
+    for Confined<C, MIN_LEN, MAX_LEN>
+where
+    C: IntoIterator,
+{
+    type Item = <C as IntoIterator>::Item;
+    type IntoIter = <C as IntoIterator>::IntoIter;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.0.into_iter()
+    }
+}
+
+impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Index<usize>
+    for Confined<C, MIN_LEN, MAX_LEN>
+where
+    C: Index<usize, Output = C::Item>,
+{
+    type Output = C::Item;
+
+    fn index(&self, index: usize) -> &Self::Output {
+        self.0.index(index)
+    }
+}
+
+impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> IndexMut<usize>
+    for Confined<C, MIN_LEN, MAX_LEN>
+where
+    C: IndexMut<usize, Output = C::Item>,
+{
+    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+        self.0.index_mut(index)
+    }
+}
+
+impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Index<Range<usize>>
+    for Confined<C, MIN_LEN, MAX_LEN>
+where
+    C: Index<Range<usize>, Output = [C::Item]>,
+{
+    type Output = [C::Item];
+
+    fn index(&self, index: Range<usize>) -> &Self::Output {
+        self.0.index(index)
+    }
+}
+
+impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> IndexMut<Range<usize>>
+    for Confined<C, MIN_LEN, MAX_LEN>
+where
+    C: IndexMut<Range<usize>, Output = [C::Item]>,
+{
+    fn index_mut(&mut self, index: Range<usize>) -> &mut Self::Output {
+        self.0.index_mut(index)
+    }
+}
+
+impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Index<RangeTo<usize>>
+    for Confined<C, MIN_LEN, MAX_LEN>
+where
+    C: Index<RangeTo<usize>, Output = [C::Item]>,
+{
+    type Output = [C::Item];
+
+    fn index(&self, index: RangeTo<usize>) -> &Self::Output {
+        self.0.index(index)
+    }
+}
+
+impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> IndexMut<RangeTo<usize>>
+    for Confined<C, MIN_LEN, MAX_LEN>
+where
+    C: IndexMut<RangeTo<usize>, Output = [C::Item]>,
+{
+    fn index_mut(&mut self, index: RangeTo<usize>) -> &mut Self::Output {
+        self.0.index_mut(index)
+    }
+}
+
+impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Index<RangeFrom<usize>>
+    for Confined<C, MIN_LEN, MAX_LEN>
+where
+    C: Index<RangeFrom<usize>, Output = [C::Item]>,
+{
+    type Output = [C::Item];
+
+    fn index(&self, index: RangeFrom<usize>) -> &Self::Output {
+        self.0.index(index)
+    }
+}
+
+impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> IndexMut<RangeFrom<usize>>
+    for Confined<C, MIN_LEN, MAX_LEN>
+where
+    C: IndexMut<RangeFrom<usize>, Output = [C::Item]>,
+{
+    fn index_mut(&mut self, index: RangeFrom<usize>) -> &mut Self::Output {
+        self.0.index_mut(index)
+    }
+}
+
+impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Index<RangeInclusive<usize>>
+    for Confined<C, MIN_LEN, MAX_LEN>
+where
+    C: Index<RangeInclusive<usize>, Output = [C::Item]>,
+{
+    type Output = [C::Item];
+
+    fn index(&self, index: RangeInclusive<usize>) -> &Self::Output {
+        self.0.index(index)
+    }
+}
+
+impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> IndexMut<RangeInclusive<usize>>
+    for Confined<C, MIN_LEN, MAX_LEN>
+where
+    C: IndexMut<RangeInclusive<usize>, Output = [C::Item]>,
+{
+    fn index_mut(&mut self, index: RangeInclusive<usize>) -> &mut Self::Output {
+        self.0.index_mut(index)
+    }
+}
+
+impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Index<RangeToInclusive<usize>>
+    for Confined<C, MIN_LEN, MAX_LEN>
+where
+    C: Index<RangeToInclusive<usize>, Output = [C::Item]>,
+{
+    type Output = [C::Item];
+
+    fn index(&self, index: RangeToInclusive<usize>) -> &Self::Output {
+        self.0.index(index)
+    }
+}
+
+impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> IndexMut<RangeToInclusive<usize>>
+    for Confined<C, MIN_LEN, MAX_LEN>
+where
+    C: IndexMut<RangeToInclusive<usize>, Output = [C::Item]>,
+{
+    fn index_mut(&mut self, index: RangeToInclusive<usize>) -> &mut Self::Output {
+        self.0.index_mut(index)
+    }
+}
+
+impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Index<RangeFull>
+    for Confined<C, MIN_LEN, MAX_LEN>
+where
+    C: Index<RangeFull, Output = [C::Item]>,
+{
+    type Output = [C::Item];
+
+    fn index(&self, index: RangeFull) -> &Self::Output {
+        self.0.index(index)
+    }
+}
+
+impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> IndexMut<RangeFull>
+    for Confined<C, MIN_LEN, MAX_LEN>
+where
+    C: IndexMut<RangeFull, Output = [C::Item]>,
+{
+    fn index_mut(&mut self, index: RangeFull) -> &mut Self::Output {
+        self.0.index_mut(index)
     }
 }
 
@@ -328,6 +537,24 @@ impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C, MIN_
             col.push(item);
         }
         Self::try_from(col)
+    }
+
+    /// Returns inner collection type
+    pub fn as_inner(&self) -> &C {
+        &self.0
+    }
+
+    /// Clones inner collection type and returns it
+    pub fn to_inner(&self) -> C
+    where
+        C: Clone,
+    {
+        self.0.clone()
+    }
+
+    /// Decomposes into the inner collection type
+    pub fn into_inner(self) -> C {
+        self.0
     }
 
     /// Attempts to add a single element to the confined collection. Fails if the number of elements
@@ -685,6 +912,17 @@ pub type LargeString = Confined<String, ZERO, U32>;
 /// [`String`] which contains at least a single character.
 pub type NonEmptyString = Confined<String, ONE, USIZE>;
 
+/// [`AsciiString`] with maximum 255 characters.
+pub type TinyAscii = Confined<AsciiString, ZERO, U8>;
+/// [`AsciiString`] with maximum 2^16-1 characters.
+pub type SmallAscii = Confined<AsciiString, ZERO, U16>;
+/// [`AsciiString`] with maximum 2^24-1 characters.
+pub type MediumAscii = Confined<AsciiString, ZERO, U24>;
+/// [`AsciiString`] with maximum 2^32-1 characters.
+pub type LargeAscii = Confined<AsciiString, ZERO, U32>;
+/// [`AsciiString`] which contains at least a single character.
+pub type NonEmptyAscii = Confined<AsciiString, ONE, USIZE>;
+
 /// [`Vec`] with maximum 255 items of type `T`.
 pub type TinyVec<T> = Confined<Vec<T>, ZERO, U8>;
 /// [`Vec`] with maximum 2^16-1 items of type `T`.
@@ -750,6 +988,39 @@ pub type MediumOrdMap<K, V> = Confined<BTreeMap<K, V>, ZERO, U24>;
 pub type LargeOrdMap<K, V> = Confined<BTreeMap<K, V>, ZERO, U32>;
 /// [`BTreeMap`] which contains at least a single item.
 pub type NonEmptyOrdMap<K, V> = Confined<BTreeMap<K, V>, ONE, USIZE>;
+
+/// Helper macro to construct confined vector of a given type
+#[macro_export]
+macro_rules! confined_vec {
+    ($ty:ty; $elem:expr; $n:expr) => (
+        <$ty>::try_from(vec![$elem; $n]).expect("inline confined_vec literal contains invalid number of items")
+    );
+    ($ty:ty; $($x:expr),+ $(,)?) => (
+        <$ty>::try_from(vec![$($x,)+]).expect("inline confined_vec literal contains invalid number of items")
+    )
+}
+
+/// Helper macro to construct confined vector of a [`TinyVec`] type
+#[macro_export]
+macro_rules! tiny_vec {
+    ($elem:expr; $n:expr) => (
+        $crate::confinement::TinyVec::try_from(vec![$elem; $n]).expect("inline tiny_vec literal contains invalid number of items")
+    );
+    ($($x:expr),+ $(,)?) => (
+        $crate::confinement::TinyVec::try_from(vec![$($x,)+]).expect("inline tiny_vec literal contains invalid number of items")
+    )
+}
+
+/// Helper macro to construct confined vector of a [`SmallVec`] type
+#[macro_export]
+macro_rules! small_vec {
+    ($elem:expr; $n:expr) => (
+        $crate::confinement::SmallVec::try_from(vec![$elem; $n]).expect("inline small_vec literal contains invalid number of items")
+    );
+    ($($x:expr),+ $(,)?) => (
+        $crate::confinement::SmallVec::try_from(vec![$($x,)+]).expect("inline small_vec literal contains invalid number of items")
+    )
+}
 
 #[cfg(test)]
 mod test {

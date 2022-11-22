@@ -13,18 +13,19 @@
 // along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
-/// Trait for splittable streams and other types, which can be separated into
-/// some two types ([`Bipolar::Left`], [`Bipolar::Right`]), like a reader and
-/// writer streams.
-pub trait Bipolar {
-    /// First separable type (like reader)
-    type Left;
-    /// Second separable type (like writer)
-    type Right;
+#[macro_use]
+mod wrapper;
+mod as_any;
+mod dumb;
+mod join_split;
+#[cfg(feature = "c_raw")]
+mod raw_str;
+#[cfg(feature = "serde")]
+mod to_serde_string;
 
-    /// Reconstruct the type from the halves
-    fn join(left: Self::Left, right: Self::Right) -> Self;
-
-    /// Split the type into two
-    fn split(self) -> (Self::Left, Self::Right);
-}
+pub use as_any::AsAny;
+pub use join_split::JoinSplit;
+pub use wrapper::{Wrapper, WrapperMut};
+pub use dumb::Dumb;
+#[cfg(feature = "serde")]
+pub use to_serde_string::{ToYamlString, ToJsonString, ToTomlString};

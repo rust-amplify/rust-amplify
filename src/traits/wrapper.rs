@@ -1,7 +1,7 @@
 // Rust language amplification library providing multiple generic trait
 // implementations, type wrappers, derive macros and other language enhancements
 //
-// Written in 2019-2020 by
+// Written in 2019-2022 by
 //     Dr. Maxim Orlovsky <orlovsky@pandoracore.com>
 //     Martin Habovstiak <martin.habovstiak@gmail.com>
 //
@@ -24,7 +24,7 @@
 /// The trait works well with `#[derive(Wrapper)]` from `amplify_derive` crate
 pub trait Wrapper {
     /// Inner type wrapped by the current newtype
-    type Inner: Clone;
+    type Inner;
 
     /// Instantiates wrapper type with the inner data
     fn from_inner(inner: Self::Inner) -> Self;
@@ -32,13 +32,12 @@ pub trait Wrapper {
     /// Returns reference to the inner representation for the wrapper type
     fn as_inner(&self) -> &Self::Inner;
 
-    /// Returns a mutable reference to the inner representation for the wrapper
-    /// type
-    fn as_inner_mut(&mut self) -> &mut Self::Inner;
-
     /// Clones inner data of the wrapped type and return them
     #[inline]
-    fn to_inner(&self) -> Self::Inner {
+    fn to_inner(&self) -> Self::Inner
+    where
+        Self::Inner: Clone,
+    {
         self.as_inner().clone()
     }
 
@@ -53,6 +52,13 @@ pub trait Wrapper {
     {
         Self::from_inner(*self.as_inner())
     }
+}
+
+/// Trait allowing mutable reference borrowing for the wrapped inner type.
+pub trait WrapperMut: Wrapper {
+    /// Returns a mutable reference to the inner representation for the wrapper
+    /// type
+    fn as_inner_mut(&mut self) -> &mut Self::Inner;
 }
 
 #[cfg(test)]
@@ -73,12 +79,14 @@ mod test {
             &self.0
         }
 
-        fn as_inner_mut(&mut self) -> &mut Self::Inner {
-            &mut self.0
-        }
-
         fn into_inner(self) -> Self::Inner {
             self.0
+        }
+    }
+
+    impl WrapperMut for TestWrapper {
+        fn as_inner_mut(&mut self) -> &mut Self::Inner {
+            &mut self.0
         }
     }
 
