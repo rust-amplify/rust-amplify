@@ -985,14 +985,14 @@ fn get_params(input: &DeriveInput) -> Result<(TokenStream2, Type)> {
         Data::Struct(ref data) => data,
         Data::Enum(_) => {
             return Err(Error::new_spanned(
-                &input,
+                input,
                 "Deriving wrapper is not supported in enums",
             ))
         }
         //strict_encode_inner_enum(&input, &data),
         Data::Union(_) => {
             return Err(Error::new_spanned(
-                &input,
+                input,
                 "Deriving wrapper is not supported in unions",
             ))
         }
@@ -1058,7 +1058,7 @@ fn get_params(input: &DeriveInput) -> Result<(TokenStream2, Type)> {
         }
         Fields::Unit => {
             return Err(Error::new_spanned(
-                &input,
+                input,
                 "Deriving wrapper is meaningless for unit structs",
             ))
         }
