@@ -25,6 +25,7 @@ use core::borrow::{Borrow, BorrowMut};
 #[cfg(all(feature = "hex", any(feature = "std", feature = "alloc")))]
 use crate::hex::{Error, FromHex, ToHex};
 use crate::Wrapper;
+use crate::wrapper::WrapperMut;
 
 /// Wrapper type for all slice-based 256-bit types implementing many important
 /// traits, so types based on it can simply derive their implementations.
@@ -177,13 +178,14 @@ impl Wrapper for Slice32 {
     }
 
     #[inline]
-    fn as_inner_mut(&mut self) -> &mut Self::Inner {
-        &mut self.0
-    }
-
-    #[inline]
     fn into_inner(self) -> Self::Inner {
         self.0
+    }
+}
+
+impl WrapperMut for Slice32 {
+    fn as_inner_mut(&mut self) -> &mut Self::Inner {
+        &mut self.0
     }
 }
 
