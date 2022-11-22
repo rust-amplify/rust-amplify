@@ -86,7 +86,7 @@ impl Ord for IoError {
 
 impl Hash for IoError {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        state.write(&self.debug.as_bytes())
+        state.write(self.debug.as_bytes())
     }
 }
 
