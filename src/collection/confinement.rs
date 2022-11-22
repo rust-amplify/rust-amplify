@@ -22,12 +22,13 @@ use std::hash::Hash;
 use std::ops::{
     Deref, Index, IndexMut, Range, RangeFrom, RangeFull, RangeInclusive, RangeTo, RangeToInclusive,
 };
-use std::usize;
+use std::{io, usize};
 use ascii::{AsciiChar, AsciiString};
 
 use crate::num::u24;
 
-/// Trait implemented by a collection types which need to support collection confinement.
+/// Trait implemented by a collection types which need to support collection
+/// confinement.
 pub trait Collection: Extend<Self::Item> {
     /// Item type contained within the collection.
     type Item;
@@ -51,19 +52,20 @@ pub trait Collection: Extend<Self::Item> {
     fn clear(&mut self);
 }
 
-/// Trait implemented by key-value maps which need to support collection confinement.
+/// Trait implemented by key-value maps which need to support collection
+/// confinement.
 pub trait KeyedCollection: Collection<Item = (Self::Key, Self::Value)> {
     /// Key type for the collection.
     type Key: Eq + Hash;
     /// Value type for the collection.
     type Value;
 
-    /// Inserts a new value under a key. Returns previous value if a value under the key was already
-    /// present in the collection.
+    /// Inserts a new value under a key. Returns previous value if a value under
+    /// the key was already present in the collection.
     fn insert(&mut self, key: Self::Key, value: Self::Value) -> Option<Self::Value>;
 
-    /// Removes a value stored under a given key, returning the owned value, if it was in the
-    /// collection.
+    /// Removes a value stored under a given key, returning the owned value, if
+    /// it was in the collection.
     fn remove(&mut self, key: &Self::Key) -> Option<Self::Value>;
 }
 
@@ -262,19 +264,23 @@ impl<K: Ord + Hash, V> KeyedCollection for BTreeMap<K, V> {
 /// Errors when confinement constraints were not met.
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 pub enum Error {
-    /// Operation results in collection reduced below the required minimum number of elements.
+    /// Operation results in collection reduced below the required minimum
+    /// number of elements.
     Undersize {
         /** Current collection length */
         len: usize,
-        /** Minimum number of elements which must be present in the collection */
+        /** Minimum number of elements which must be present in the
+         * collection */
         min_len: usize,
     },
 
-    /// Operation results in collection growth above the required maximum number of elements.
+    /// Operation results in collection growth above the required maximum number
+    /// of elements.
     Oversize {
         /** Current collection length */
         len: usize,
-        /** Maximum number of elements which must be present in the collection */
+        /** Maximum number of elements which must be present in the
+         * collection */
         max_len: usize,
     },
 
@@ -510,8 +516,8 @@ where
 }
 
 impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C, MIN_LEN, MAX_LEN> {
-    /// Tries to construct a confinement over a collection. Fails if the number of items in the
-    /// collection exceeds one of the confinement bounds.
+    /// Tries to construct a confinement over a collection. Fails if the number
+    /// of items in the collection exceeds one of the confinement bounds.
     pub fn try_from(col: C) -> Result<Self, Error> {
         let len = col.len();
         if len < MIN_LEN {
@@ -529,8 +535,9 @@ impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C, MIN_
         Ok(Self(col))
     }
 
-    /// Tries to construct a confinement with a collection of elements taken from an iterator.
-    /// Fails if the number of items in the collection exceeds one of the confinement bounds.
+    /// Tries to construct a confinement with a collection of elements taken
+    /// from an iterator. Fails if the number of items in the collection
+    /// exceeds one of the confinement bounds.
     pub fn try_from_iter<I: IntoIterator<Item = C::Item>>(iter: I) -> Result<Self, Error> {
         let mut col = C::with_capacity(MIN_LEN);
         for item in iter {
@@ -557,8 +564,8 @@ impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C, MIN_
         self.0
     }
 
-    /// Attempts to add a single element to the confined collection. Fails if the number of elements
-    /// in the collection already maximal.
+    /// Attempts to add a single element to the confined collection. Fails if
+    /// the number of elements in the collection already maximal.
     pub fn push(&mut self, elem: C::Item) -> Result<(), Error> {
         let len = self.len();
         if len == MAX_LEN || len + 1 > MAX_LEN {
@@ -571,8 +578,9 @@ impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C, MIN_
         Ok(())
     }
 
-    /// Attempts to add all elements from an iterator to the confined collection. Fails if the
-    /// number of elements in the collection already maximal.
+    /// Attempts to add all elements from an iterator to the confined
+    /// collection. Fails if the number of elements in the collection
+    /// already maximal.
     pub fn extend<T: IntoIterator<Item = C::Item>>(&mut self, iter: T) -> Result<(), Error> {
         for elem in iter {
             self.push(elem)?;
@@ -595,8 +603,8 @@ where
         Self::default()
     }
 
-    /// Constructs a new confinement containing no elements, but with a pre-allocated storage for
-    /// the `capacity` of elements.
+    /// Constructs a new confinement containing no elements, but with a
+    /// pre-allocated storage for the `capacity` of elements.
     pub fn with_capacity(capacity: usize) -> Self {
         Self(C::with_capacity(capacity))
     }
@@ -620,7 +628,8 @@ impl<C: Collection, const MAX_LEN: usize> Confined<C, ONE, MAX_LEN>
 where
     C: Default,
 {
-    /// Constructs a confinement with a collection made of a single required element.
+    /// Constructs a confinement with a collection made of a single required
+    /// element.
     pub fn with(elem: C::Item) -> Self {
         let mut c = C::default();
         c.push(elem);
@@ -632,8 +641,9 @@ impl<C: Collection, const MIN_LEN: usize> Confined<C, MIN_LEN, U8>
 where
     C: Default,
 {
-    /// Returns number of elements in the confined collection as `u8`. The confinement guarantees
-    /// that the collection length can't exceed `u8::MAX`.
+    /// Returns number of elements in the confined collection as `u8`. The
+    /// confinement guarantees that the collection length can't exceed
+    /// `u8::MAX`.
     pub fn len_u8(&self) -> u8 {
         self.len() as u8
     }
@@ -643,8 +653,9 @@ impl<C: Collection, const MIN_LEN: usize> Confined<C, MIN_LEN, U16>
 where
     C: Default,
 {
-    /// Returns number of elements in the confined collection as `u16`. The confinement guarantees
-    /// that the collection length can't exceed `u16::MAX`.
+    /// Returns number of elements in the confined collection as `u16`. The
+    /// confinement guarantees that the collection length can't exceed
+    /// `u16::MAX`.
     pub fn len_u16(&self) -> u16 {
         self.len() as u16
     }
@@ -654,8 +665,9 @@ impl<C: Collection, const MIN_LEN: usize> Confined<C, MIN_LEN, U24>
 where
     C: Default,
 {
-    /// Returns number of elements in the confined collection as `u24`. The confinement guarantees
-    /// that the collection length can't exceed `u24::MAX`.
+    /// Returns number of elements in the confined collection as `u24`. The
+    /// confinement guarantees that the collection length can't exceed
+    /// `u24::MAX`.
     pub fn len_u24(&self) -> u24 {
         u24::try_from(self.len() as u32).expect("confinement broken")
     }
@@ -665,16 +677,18 @@ impl<C: Collection, const MIN_LEN: usize> Confined<C, MIN_LEN, U32>
 where
     C: Default,
 {
-    /// Returns number of elements in the confined collection as `u32`. The confinement guarantees
-    /// that the collection length can't exceed `u32::MAX`.
+    /// Returns number of elements in the confined collection as `u32`. The
+    /// confinement guarantees that the collection length can't exceed
+    /// `u32::MAX`.
     pub fn len_u32(&self) -> u32 {
         self.len() as u32
     }
 }
 
 impl<C: KeyedCollection, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C, MIN_LEN, MAX_LEN> {
-    /// Inserts a new value into the confined collection under a given key. Fails if the collection
-    /// already contains maximum number of elements allowed by the confinement.
+    /// Inserts a new value into the confined collection under a given key.
+    /// Fails if the collection already contains maximum number of elements
+    /// allowed by the confinement.
     pub fn insert(&mut self, key: C::Key, value: C::Value) -> Result<Option<C::Value>, Error> {
         let len = self.len();
         if len == MAX_LEN || len + 1 > MAX_LEN {
@@ -691,7 +705,8 @@ impl<C: KeyedCollection, const MAX_LEN: usize> Confined<C, ONE, MAX_LEN>
 where
     C: Default,
 {
-    /// Constructs a confinement with a collection made of a single required key-value pair.
+    /// Constructs a confinement with a collection made of a single required
+    /// key-value pair.
     pub fn with_key_value(key: C::Key, value: C::Value) -> Self {
         let mut c = C::default();
         c.insert(key, value);
@@ -700,8 +715,9 @@ where
 }
 
 impl<const MIN_LEN: usize, const MAX_LEN: usize> Confined<String, MIN_LEN, MAX_LEN> {
-    /// Removes a single character from the confined string, unless the string doesn't shorten more
-    /// than the confinement requirement. Errors otherwise.
+    /// Removes a single character from the confined string, unless the string
+    /// doesn't shorten more than the confinement requirement. Errors
+    /// otherwise.
     pub fn remove(&mut self, index: usize) -> Result<char, Error> {
         let len = self.len();
         if self.is_empty() || len - 1 <= MIN_LEN {
@@ -718,9 +734,10 @@ impl<const MIN_LEN: usize, const MAX_LEN: usize> Confined<String, MIN_LEN, MAX_L
 }
 
 impl<T, const MIN_LEN: usize, const MAX_LEN: usize> Confined<Vec<T>, MIN_LEN, MAX_LEN> {
-    /// Removes an element from the vector at a given index. Errors if the index exceeds the number
-    /// of elements in the vector, of if the new vector length will be less than the confinement
-    /// requirement. Returns the removed element otherwise.
+    /// Removes an element from the vector at a given index. Errors if the index
+    /// exceeds the number of elements in the vector, of if the new vector
+    /// length will be less than the confinement requirement. Returns the
+    /// removed element otherwise.
     pub fn remove(&mut self, index: usize) -> Result<T, Error> {
         let len = self.len();
         if self.is_empty() || len - 1 <= MIN_LEN {
@@ -737,8 +754,8 @@ impl<T, const MIN_LEN: usize, const MAX_LEN: usize> Confined<Vec<T>, MIN_LEN, MA
 }
 
 impl<T, const MIN_LEN: usize, const MAX_LEN: usize> Confined<VecDeque<T>, MIN_LEN, MAX_LEN> {
-    /// Prepends an element to the deque. Errors if the new collection length will not fit the
-    /// confinement requirements.
+    /// Prepends an element to the deque. Errors if the new collection length
+    /// will not fit the confinement requirements.
     pub fn push_from(&mut self, elem: T) -> Result<(), Error> {
         let len = self.len();
         if len == MAX_LEN || len + 1 > MAX_LEN {
@@ -751,8 +768,8 @@ impl<T, const MIN_LEN: usize, const MAX_LEN: usize> Confined<VecDeque<T>, MIN_LE
         Ok(())
     }
 
-    /// Appends an element to the deque. Errors if the new collection length will not fit the
-    /// confinement requirements.
+    /// Appends an element to the deque. Errors if the new collection length
+    /// will not fit the confinement requirements.
     pub fn push_back(&mut self, elem: T) -> Result<(), Error> {
         let len = self.len();
         if len == MAX_LEN || len + 1 > MAX_LEN {
@@ -765,9 +782,10 @@ impl<T, const MIN_LEN: usize, const MAX_LEN: usize> Confined<VecDeque<T>, MIN_LE
         Ok(())
     }
 
-    /// Removes an element from the deque at a given index. Errors if the index exceeds the number
-    /// of elements in the deque, of if the new deque length will be less than the confinement
-    /// requirement. Returns the removed element otherwise.
+    /// Removes an element from the deque at a given index. Errors if the index
+    /// exceeds the number of elements in the deque, of if the new deque
+    /// length will be less than the confinement requirement. Returns the
+    /// removed element otherwise.
     pub fn remove(&mut self, index: usize) -> Result<T, Error> {
         let len = self.len();
         if self.is_empty() || len - 1 <= MIN_LEN {
@@ -786,9 +804,10 @@ impl<T, const MIN_LEN: usize, const MAX_LEN: usize> Confined<VecDeque<T>, MIN_LE
 impl<T: Hash + Eq, const MIN_LEN: usize, const MAX_LEN: usize>
     Confined<HashSet<T>, MIN_LEN, MAX_LEN>
 {
-    /// Removes an element from the set. Errors if the index exceeds the number of elements in the
-    /// set, of if the new collection length will be less than the confinement requirement. Returns
-    /// if the element was present in the set.
+    /// Removes an element from the set. Errors if the index exceeds the number
+    /// of elements in the set, of if the new collection length will be less
+    /// than the confinement requirement. Returns if the element was present
+    /// in the set.
     pub fn remove(&mut self, elem: &T) -> Result<bool, Error> {
         if !self.0.contains(elem) {
             return Ok(false);
@@ -803,9 +822,10 @@ impl<T: Hash + Eq, const MIN_LEN: usize, const MAX_LEN: usize>
         Ok(self.0.remove(elem))
     }
 
-    /// Removes an element from the set. Errors if the index exceeds the number of elements in the
-    /// set, of if the new collection length will be less than the confinement requirement. Returns
-    /// the removed element otherwise.
+    /// Removes an element from the set. Errors if the index exceeds the number
+    /// of elements in the set, of if the new collection length will be less
+    /// than the confinement requirement. Returns the removed element
+    /// otherwise.
     pub fn take(&mut self, elem: &T) -> Result<Option<T>, Error> {
         if !self.0.contains(elem) {
             return Ok(None);
@@ -822,9 +842,10 @@ impl<T: Hash + Eq, const MIN_LEN: usize, const MAX_LEN: usize>
 }
 
 impl<T: Ord, const MIN_LEN: usize, const MAX_LEN: usize> Confined<BTreeSet<T>, MIN_LEN, MAX_LEN> {
-    /// Removes an element from the set. Errors if the index exceeds the number of elements in the
-    /// set, of if the new collection length will be less than the confinement requirement. Returns
-    /// if the element was present in the set.
+    /// Removes an element from the set. Errors if the index exceeds the number
+    /// of elements in the set, of if the new collection length will be less
+    /// than the confinement requirement. Returns if the element was present
+    /// in the set.
     pub fn remove(&mut self, elem: &T) -> Result<bool, Error> {
         if !self.0.contains(elem) {
             return Ok(false);
@@ -839,9 +860,10 @@ impl<T: Ord, const MIN_LEN: usize, const MAX_LEN: usize> Confined<BTreeSet<T>, M
         Ok(self.0.remove(elem))
     }
 
-    /// Removes an element from the set. Errors if the index exceeds the number of elements in the
-    /// set, of if the new collection length will be less than the confinement requirement. Returns
-    /// the removed element otherwise.
+    /// Removes an element from the set. Errors if the index exceeds the number
+    /// of elements in the set, of if the new collection length will be less
+    /// than the confinement requirement. Returns the removed element
+    /// otherwise.
     pub fn take(&mut self, elem: &T) -> Result<Option<T>, Error> {
         if !self.0.contains(elem) {
             return Ok(None);
@@ -860,9 +882,10 @@ impl<T: Ord, const MIN_LEN: usize, const MAX_LEN: usize> Confined<BTreeSet<T>, M
 impl<K: Hash + Eq, V, const MIN_LEN: usize, const MAX_LEN: usize>
     Confined<HashMap<K, V>, MIN_LEN, MAX_LEN>
 {
-    /// Removes an element from the map. Errors if the index exceeds the number of elements in the
-    /// map, of if the new collection length will be less than the confinement requirement. Returns
-    /// the removed value otherwise.
+    /// Removes an element from the map. Errors if the index exceeds the number
+    /// of elements in the map, of if the new collection length will be less
+    /// than the confinement requirement. Returns the removed value
+    /// otherwise.
     pub fn remove(&mut self, key: &K) -> Result<Option<V>, Error> {
         if !self.0.contains_key(key) {
             return Ok(None);
@@ -881,9 +904,10 @@ impl<K: Hash + Eq, V, const MIN_LEN: usize, const MAX_LEN: usize>
 impl<K: Ord + Hash, V, const MIN_LEN: usize, const MAX_LEN: usize>
     Confined<BTreeMap<K, V>, MIN_LEN, MAX_LEN>
 {
-    /// Removes an element from the map. Errors if the index exceeds the number of elements in the
-    /// map, of if the new collection length will be less than the confinement requirement. Returns
-    /// the removed value otherwise.
+    /// Removes an element from the map. Errors if the index exceeds the number
+    /// of elements in the map, of if the new collection length will be less
+    /// than the confinement requirement. Returns the removed value
+    /// otherwise.
     pub fn remove(&mut self, key: &K) -> Result<Option<V>, Error> {
         if !self.0.contains_key(key) {
             return Ok(None);
@@ -896,6 +920,23 @@ impl<K: Ord + Hash, V, const MIN_LEN: usize, const MAX_LEN: usize>
             });
         }
         Ok(self.0.remove(key))
+    }
+}
+
+// io::Writer
+
+impl<const MAX_LEN: usize> io::Write for Confined<Vec<u8>, ZERO, MAX_LEN> {
+    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+        if buf.len() + self.len() >= MAX_LEN {
+            return Err(io::Error::from(io::ErrorKind::OutOfMemory));
+        }
+        self.0.extend(buf);
+        Ok(buf.len())
+    }
+
+    fn flush(&mut self) -> io::Result<()> {
+        // Do nothing
+        Ok(())
     }
 }
 
