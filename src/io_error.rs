@@ -115,6 +115,17 @@ impl From<io::Error> for IoError {
     }
 }
 
+impl From<io::ErrorKind> for IoError {
+    fn from(kind: io::ErrorKind) -> Self {
+        IoError {
+            kind,
+            display: kind.to_string(),
+            debug: format!("{:?}", kind),
+            details: None,
+        }
+    }
+}
+
 impl From<IoError> for io::Error {
     fn from(err: IoError) -> Self {
         match err.details {
