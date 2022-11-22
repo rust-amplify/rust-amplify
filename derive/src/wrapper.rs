@@ -60,6 +60,7 @@ enum Wrapper {
     BitAnd,
     BitOr,
     BitXor,
+    // Group operations
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]

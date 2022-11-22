@@ -665,36 +665,46 @@ pub fn derive_getters(input: TokenStream) -> TokenStream {
 ///
 /// You can implement additional derives, it they are implemented for the wrapped
 /// type, using `#[wrapper()]` proc macro:
-/// * [`core::ops::Deref`]
-/// * [`core::str::FromStr`]
-/// * [`std::fmt::Debug`]
-/// * [`std::fmt::Display`]
-/// * [`std::fmt::LowerHex`]
-/// * [`std::fmt::UpperHex`]
-/// * [`std::fmt::LowerExp`]
-/// * [`std::fmt::UpperExp`]
-/// * [`std::fmt::Octal`]
-/// * [`core::borrow::BorrowSlice`]
-/// * [`core::ops::Index`]
-// TODO: Switch Index* to Index for Range*
-/// * [`core::ops::IndexRange`]
-/// * [`core::ops::IndexTo`]
-/// * [`core::ops::IndexFrom`]
-/// * [`core::ops::IndexInclusive`]
-/// * [`core::ops::IndexToInclusive`]
-/// * [`core::ops::IndexFull`]
-/// * [`core::ops::Neg`]
-/// * [`core::ops::Add`]
-/// * [`core::ops::Sub`]
-/// * [`core::ops::Mul`]
-/// * [`core::ops::Div`]
-/// * [`core::ops::Rem`]
-/// * [`core::ops::Shl`]
-/// * [`core::ops::Shr`]
-/// * [`core::ops::Not`]
-/// * [`core::ops::BitAnd`]
-/// * [`core::ops::BitOr`]
-/// * [`core::ops::BitXor`]
+/// 1. Reference access to the inner type:
+///    * `Deref` for implementing [`core::ops::Deref`]
+///    * `BorrowSlice` for implementing [`core::borrow::Borrow`]`<[Self::Inner]>`
+/// 2. Formatting:
+///    * `FromStr` for implementing [`core::str::FromStr`]
+///    * `Debug` for implementing [`core::fmt::Debug`]
+///    * `Display` for implementing [`core::fmt::Display`]
+///    * `Deref` for implementing [`core::fmt::LowerHex`]
+///    * `LowerHex` for implementing [`core::fmt::UpperHex`]
+///    * `LowerExp` for implementing [`core::fmt::LowerExp`]
+///    * `UpperExp` for implementing [`core::fmt::UpperExp`]
+///    * `Octal` for implementing [`core::fmt::Octal`]
+/// 3. Indexed access to the inner type:
+///    * `Index` for implementing [`core::ops::Index`]`<usize>`
+///    * `IndexRange` for implementing
+///      [`core::ops::Index`]`<`[`core::ops::Range`]`<usize>>`
+///    * `IndexTo` for implementing
+///      [`core::ops::Index`]`<`[`core::ops::RangeTo`]`<usize>>`
+///    * `IndexFrom` for implementing
+///      [`core::ops::Index`]`<`[`core::ops::RangeFrom`]`<usize>>`
+///    * `IndexInclusive` for implementing
+///      [`core::ops::Index`]`<`[`core::ops::RangeInclusive`]`<usize>>`
+///    * `IndexToInclusive` for implementing
+///      [`core::ops::Index`]`<`[`core::ops::RangeToInclusive`]`<usize>>`
+///    * `IndexFull` for implementing
+///      [`core::ops::Index`]`<`[`core::ops::RangeFrom`]`<usize>>`
+/// 4. Arithmetic operations:
+///    * `Neg` for implementing [`core::ops::Neg`]
+///    * `Add` for implementing [`core::ops::Add`]
+///    * `Sub` for implementing [`core::ops::Sub`]
+///    * `Mul` for implementing [`core::ops::Mul`]
+///    * `Div` for implementing [`core::ops::Div`]
+///    * `Rem` for implementing [`core::ops::Rem`]
+/// 5. Boolean and bit-wise operations:
+///    * `Not` for implementing [`core::ops::Not`]
+///    * `BitAnd` for implementing [`core::ops::BitAnd`]
+///    * `BitOr` for implementing [`core::ops::BitOr`]
+///    * `BitXor` for implementing [`core::ops::BitXor`]
+///    * `Shl` for implementing [`core::ops::Shl`]
+///    * `Shr` for implementing [`core::ops::Shr`]
 ///
 /// There are shortcuts for derivations:
 /// * `#[wrapper(Hex)]` will derive both `LowerHex` and `UpperHex`;
@@ -783,26 +793,36 @@ pub fn derive_wrapper(input: TokenStream) -> TokenStream {
 ///
 /// You can implement additional derives, it they are implemented for the wrapped
 /// type, using `#[wrapper()]` proc macro:
-// TODO: Switch Index* to IndexMut for Range*
-/// * [`core::ops::DerefMut`]
-/// * [`core::borrow::BorrowSliceMut`]
-/// * [`core::ops::IndexMut`]
-/// * [`core::ops::IndexRangeMut`]
-/// * [`core::ops::IndexToMut`]
-/// * [`core::ops::IndexFromMut`]
-/// * [`core::ops::IndexInclusiveMut`]
-/// * [`core::ops::IndexToInclusiveMut`]
-/// * [`core::ops::IndexFull`]
-/// * [`core::ops::AddAssign`]
-/// * [`core::ops::SubAssign`]
-/// * [`core::ops::MulAssign`]
-/// * [`core::ops::DivAssign`]
-/// * [`core::ops::RemAssign`]
-/// * [`core::ops::ShlAssign`]
-/// * [`core::ops::ShrAssign`]
-/// * [`core::ops::BitAndAssign`]
-/// * [`core::ops::BitOrAssign`]
-/// * [`core::ops::BitXorAssign`]
+/// 1. Reference access to the inner type:
+///    * `DerefMut` for implementing [`core::ops::DerefMut`]
+///    * `BorrowSliceMut` for implementing
+///      [`core::borrow::BorrowMut`]`<[Self::Inner]>`
+/// 2. Indexed access to the inner type:
+///    * `IndexMut` for implementing [`core::ops::IndexMut`]`<usize>`
+///    * `IndexRangeMut` for implementing
+///      [`core::ops::IndexMut`]`<`[`core::ops::Range`]`<usize>>`
+///    * `IndexToMut` for implementing
+///      [`core::ops::IndexMut`]`<`[`core::ops::RangeTo`]`<usize>>`
+///    * `IndexFromMut` for implementing
+///      [`core::ops::IndexMut`]`<`[`core::ops::RangeFrom`]`<usize>>`
+///    * `IndexInclusiveMut` for implementing
+///      [`core::ops::IndexMut`]`<`[`core::ops::RangeInclusive`]`<usize>>`
+///    * `IndexToInclusiveMut` for implementing
+///      [`core::ops::IndexMut`]`<`[`core::ops::RangeToInclusive`]`<usize>>`
+///    * `IndexFullMut` for implementing
+///      [`core::ops::IndexMut`]`<`[`core::ops::RangeFrom`]`<usize>>`
+/// 3. Arithmetic operations:
+///    * `AddAssign` for implementing [`core::ops::AddAssign`]
+///    * `SubAssign` for implementing [`core::ops::SubAssign`]
+///    * `MulAssign` for implementing [`core::ops::MulAssign`]
+///    * `DivAssign` for implementing [`core::ops::DivAssign`]
+///    * `RemAssign` for implementing [`core::ops::RemAssign`]
+/// 4. Boolean and bit-wise operations:
+///    * `BitAndAssign` for implementing [`core::ops::BitAndAssign`]
+///    * `BitOrAssign` for implementing [`core::ops::BitOrAssign`]
+///    * `BitXorAssign` for implementing [`core::ops::BitXorAssign`]
+///    * `ShlAssign` for implementing [`core::ops::ShlAssign`]
+///    * `ShrAssign` for implementing [`core::ops::ShrAssign`]
 ///
 /// There are shortcuts for derivations:
 /// * `#[wrapper(IndexRangesMut)]` will derive all index traits working with
