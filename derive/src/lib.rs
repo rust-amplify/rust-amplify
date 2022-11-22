@@ -649,7 +649,7 @@ pub fn derive_getters(input: TokenStream) -> TokenStream {
         .into()
 }
 
-/// Creates rust new type wrapping existing type. Can be used in sturctures
+/// Creates rust new type wrapping existing type. Can be used in structures
 /// containing multiple named or unnamed fields; in this case the field you'd
 /// like to wrap should be marked with `#[wrap]` attribute; otherwise the first
 /// field is assumed to be the wrapped one.
@@ -661,43 +661,65 @@ pub fn derive_getters(input: TokenStream) -> TokenStream {
 /// Supports automatic implementation of the following traits:
 /// * `amplify::Wrapper`
 /// * [`AsRef`]
-/// * [`AsMut`]
-/// * [`std::borrow::Borrow`]
-/// * [`std::borrow::BorrowMut`]
-/// * [`std::ops::Deref`]
-/// * [`std::ops::DerefMut`]
+/// * [`core::borrow::Borrow`]
 ///
-/// You can implement additonal derives, it they are implemented for the wrapped
+/// You can implement additional derives, it they are implemented for the wrapped
 /// type, using `#[wrapper()]` proc macro:
-/// * [`std::fmt::LowerHex`]
-/// * [`std::fmt::UpperHex`]
-/// * [`std::fmt::LowerExp`]
-/// * [`std::fmt::UpperExp`]
-/// * [`std::fmt::Octal`]
-/// * [`std::ops::Index`]
-/// * [`std::ops::IndexMut`]
-/// * [`std::ops::Neg`]
-/// * [`std::ops::Not`]
-/// * [`std::ops::Add`]
-/// * [`std::ops::AddAssign`]
-/// * [`std::ops::Sub`]
-/// * [`std::ops::SubAssign`]
-/// * [`std::ops::Mul`]
-/// * [`std::ops::MulAssign`]
-/// * [`std::ops::Div`]
-/// * [`std::ops::DivAssign`]
-/// * [`std::ops::Rem`]
-/// * [`std::ops::RemAssign`]
-/// * [`std::ops::Shl`]
-/// * [`std::ops::ShlAssign`]
-/// * [`std::ops::Shr`]
-/// * [`std::ops::ShrAssign`]
-/// * [`std::ops::BitAnd`]
-/// * [`std::ops::BitAndAssign`]
-/// * [`std::ops::BitOr`]
-/// * [`std::ops::BitOrAssign`]
-/// * [`std::ops::BitXor`]
-/// * [`std::ops::BitXorAssign`]
+/// 1. Reference access to the inner type:
+///    * `Deref` for implementing [`core::ops::Deref`]
+///    * `BorrowSlice` for implementing [`core::borrow::Borrow`]`<[Self::Inner]>`
+/// 2. Formatting:
+///    * `FromStr` for implementing [`core::str::FromStr`]
+///    * `Debug` for implementing [`core::fmt::Debug`]
+///    * `Display` for implementing [`core::fmt::Display`]
+///    * `Deref` for implementing [`core::fmt::LowerHex`]
+///    * `LowerHex` for implementing [`core::fmt::UpperHex`]
+///    * `LowerExp` for implementing [`core::fmt::LowerExp`]
+///    * `UpperExp` for implementing [`core::fmt::UpperExp`]
+///    * `Octal` for implementing [`core::fmt::Octal`]
+/// 3. Indexed access to the inner type:
+///    * `Index` for implementing [`core::ops::Index`]`<usize>`
+///    * `IndexRange` for implementing
+///      [`core::ops::Index`]`<`[`core::ops::Range`]`<usize>>`
+///    * `IndexTo` for implementing
+///      [`core::ops::Index`]`<`[`core::ops::RangeTo`]`<usize>>`
+///    * `IndexFrom` for implementing
+///      [`core::ops::Index`]`<`[`core::ops::RangeFrom`]`<usize>>`
+///    * `IndexInclusive` for implementing
+///      [`core::ops::Index`]`<`[`core::ops::RangeInclusive`]`<usize>>`
+///    * `IndexToInclusive` for implementing
+///      [`core::ops::Index`]`<`[`core::ops::RangeToInclusive`]`<usize>>`
+///    * `IndexFull` for implementing
+///      [`core::ops::Index`]`<`[`core::ops::RangeFrom`]`<usize>>`
+/// 4. Arithmetic operations:
+///    * `Neg` for implementing [`core::ops::Neg`]
+///    * `Add` for implementing [`core::ops::Add`]
+///    * `Sub` for implementing [`core::ops::Sub`]
+///    * `Mul` for implementing [`core::ops::Mul`]
+///    * `Div` for implementing [`core::ops::Div`]
+///    * `Rem` for implementing [`core::ops::Rem`]
+/// 5. Boolean and bit-wise operations:
+///    * `Not` for implementing [`core::ops::Not`]
+///    * `BitAnd` for implementing [`core::ops::BitAnd`]
+///    * `BitOr` for implementing [`core::ops::BitOr`]
+///    * `BitXor` for implementing [`core::ops::BitXor`]
+///    * `Shl` for implementing [`core::ops::Shl`]
+///    * `Shr` for implementing [`core::ops::Shr`]
+///
+/// There are shortcuts for derivations:
+/// * `#[wrapper(Hex)]` will derive both `LowerHex` and `UpperHex`;
+/// * `#[wrapper(Exp)]` will derive both `LowerExp` and `UpperExp`;
+/// * `#[wrapper(NumberFmt)]` will derive all number formatting traits
+///    (`LowerHex`, `UpperHex`, `LowerExp`, `UpperExp`, `Octal`);
+/// * `#[wrapper(RangeOps)]` will derive all index traits working with ranges
+///    (`IndexRange`, `IndexTo`, `IndexFrom`, `IndexInclusive`,
+///    `IndexToInclusive`, `IndexFull`);
+/// * `#[wrapper(MathOps)]` will derive all arithmetic operations
+///    (`Neg`, `Add`, `Sub`, `Mul`, `Div`, `Rem`);
+/// * `#[wrapper(BoolOps)]` will derive all boolean operations
+///    (`Not`, `BitAnd`, `BitOr`, `BitXor`);
+/// * `#[wrapper(BitOps)]` will derive all boolean operations *and bit shifts*
+///    (`Not`, `BitAnd`, `BitOr`, `BitXor`, `Shl`, `Shr`).
 ///
 /// Other traits, such as [`PartialEq`], [`Eq`], [`PartialOrd`], [`Ord`],
 /// [`Hash`] can be implemented using standard `#[derive]` attribute in the
@@ -715,10 +737,7 @@ pub fn derive_getters(input: TokenStream) -> TokenStream {
 /// )]
 /// #[display(inner)]
 /// #[wrapper(LowerHex, UpperHex, Octal)]
-/// #[wrapper(Neg, Add, Sub, Div, Mul, Rem)]
-/// #[wrapper(AddAssign, SubAssign, DivAssign, MulAssign, RemAssign)]
-/// #[wrapper(Not, Shl, Shr, BitAnd, BitOr, BitXor)]
-/// #[wrapper(ShlAssign, ShrAssign, BitAndAssign, BitOrAssign, BitXorAssign)]
+/// #[wrapper(MathOps, BitOps)]
 /// struct Int64(i64);
 /// ```
 ///
@@ -751,13 +770,90 @@ pub fn derive_getters(input: TokenStream) -> TokenStream {
 /// use amplify::Wrapper;
 ///
 /// #[derive(Wrapper, From)]
-/// #[wrapper(Index, IndexRange, IndexFrom, IndexTo, IndexInclusive, IndexFull)]
+/// #[wrapper(Index, RangeOps)]
 /// struct VecNewtype(Vec<u8>);
 /// ```
 #[proc_macro_derive(Wrapper, attributes(wrap, wrapper, amplify_crate))]
 pub fn derive_wrapper(input: TokenStream) -> TokenStream {
     let derive_input = parse_macro_input!(input as DeriveInput);
     wrapper::inner(derive_input)
+        .unwrap_or_else(|e| e.to_compile_error())
+        .into()
+}
+
+/// Derives [`WrapperMut`] and allows deriving other traits accessing the
+/// wrapped type which require mutable access to the inner type. Requires that
+/// the type already implements `amplify::Wrapper`.
+///
+/// Supports automatic implementation of the following traits:
+/// * `amplify::WrapperMut`
+/// * [`AsMut`]
+/// * [`core::borrow::BorrowMut`]
+///
+/// You can implement additional derives, it they are implemented for the wrapped
+/// type, using `#[wrapper()]` proc macro:
+/// 1. Reference access to the inner type:
+///    * `DerefMut` for implementing [`core::ops::DerefMut`]
+///    * `BorrowSliceMut` for implementing
+///      [`core::borrow::BorrowMut`]`<[Self::Inner]>`
+/// 2. Indexed access to the inner type:
+///    * `IndexMut` for implementing [`core::ops::IndexMut`]`<usize>`
+///    * `IndexRangeMut` for implementing
+///      [`core::ops::IndexMut`]`<`[`core::ops::Range`]`<usize>>`
+///    * `IndexToMut` for implementing
+///      [`core::ops::IndexMut`]`<`[`core::ops::RangeTo`]`<usize>>`
+///    * `IndexFromMut` for implementing
+///      [`core::ops::IndexMut`]`<`[`core::ops::RangeFrom`]`<usize>>`
+///    * `IndexInclusiveMut` for implementing
+///      [`core::ops::IndexMut`]`<`[`core::ops::RangeInclusive`]`<usize>>`
+///    * `IndexToInclusiveMut` for implementing
+///      [`core::ops::IndexMut`]`<`[`core::ops::RangeToInclusive`]`<usize>>`
+///    * `IndexFullMut` for implementing
+///      [`core::ops::IndexMut`]`<`[`core::ops::RangeFrom`]`<usize>>`
+/// 3. Arithmetic operations:
+///    * `AddAssign` for implementing [`core::ops::AddAssign`]
+///    * `SubAssign` for implementing [`core::ops::SubAssign`]
+///    * `MulAssign` for implementing [`core::ops::MulAssign`]
+///    * `DivAssign` for implementing [`core::ops::DivAssign`]
+///    * `RemAssign` for implementing [`core::ops::RemAssign`]
+/// 4. Boolean and bit-wise operations:
+///    * `BitAndAssign` for implementing [`core::ops::BitAndAssign`]
+///    * `BitOrAssign` for implementing [`core::ops::BitOrAssign`]
+///    * `BitXorAssign` for implementing [`core::ops::BitXorAssign`]
+///    * `ShlAssign` for implementing [`core::ops::ShlAssign`]
+///    * `ShrAssign` for implementing [`core::ops::ShrAssign`]
+///
+/// There are shortcuts for derivations:
+/// * `#[wrapper(RangeMut)]` will derive all index traits working with
+///    ranges (`IndexRangeMut`, `IndexToMut`, `IndexFromMut`,
+///    `IndexInclusiveMut`, `IndexToInclusiveMut`, `IndexFullMut`);
+/// * `#[wrapper(MathAssign)]` will derive all arithmetic operations
+///    (`AddAssign`, `SubAssign`, `MulAssign`, `DivAssign`, `RemAssign`);
+/// * `#[wrapper(BoolAssign)]` will derive all boolean operations
+///    (`BitAndAssign`, `BitOrAssign`, `BitXorAssign`);
+/// * `#[wrapper(BitAssign)]` will derive all boolean operations
+///    *and bit shifts* (`BitAndAssign`, `BitOrAssign`, `BitXorAssign`,
+///    `ShlAssign`, `ShrAssign`);
+///
+/// # Example
+///
+/// ```
+/// # #[macro_use] extern crate amplify_derive;
+/// use amplify::{Wrapper, WrapperMut};
+///
+/// #[derive(
+///     Wrapper, WrapperMut, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Default, From, Debug,
+///     Display,
+/// )]
+/// #[display(inner)]
+/// #[wrapper(NumberFmt, MathOps, BoolOps)]
+/// #[wrapper_mut(MathAssign, BitAssign)]
+/// struct Int64(i64);
+/// ```
+#[proc_macro_derive(WrapperMut, attributes(wrap, wrapper_mut, amplify_crate))]
+pub fn derive_wrapper_mut(input: TokenStream) -> TokenStream {
+    let derive_input = parse_macro_input!(input as DeriveInput);
+    wrapper::inner_mut(derive_input)
         .unwrap_or_else(|e| e.to_compile_error())
         .into()
 }

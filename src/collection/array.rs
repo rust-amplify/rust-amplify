@@ -25,7 +25,7 @@ use core::ops::{Range, RangeFrom, RangeInclusive, RangeTo, RangeToInclusive};
 
 #[cfg(all(feature = "hex", any(feature = "std", feature = "alloc")))]
 use crate::hex::{Error, FromHex, ToHex};
-use crate::Wrapper;
+use crate::{Wrapper, WrapperMut};
 
 /// Wrapper type for all slice-based 128-bit types implementing many important
 /// traits, so types based on it can simply derive their implementations.
@@ -291,13 +291,14 @@ impl<T, const LEN: usize> Wrapper for Array<T, LEN> {
     }
 
     #[inline]
-    fn as_inner_mut(&mut self) -> &mut Self::Inner {
-        &mut self.0
-    }
-
-    #[inline]
     fn into_inner(self) -> Self::Inner {
         self.0
+    }
+}
+
+impl<T, const LEN: usize> WrapperMut for Array<T, LEN> {
+    fn as_inner_mut(&mut self) -> &mut Self::Inner {
+        &mut self.0
     }
 }
 

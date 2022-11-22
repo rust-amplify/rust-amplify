@@ -25,7 +25,7 @@ mod to_serde_string;
 
 pub use as_any::AsAny;
 pub use join_split::JoinSplit;
-pub use wrapper::Wrapper;
+pub use wrapper::{Wrapper, WrapperMut};
 pub use dumb::Dumb;
 #[cfg(feature = "serde")]
 pub use to_serde_string::{ToYamlString, ToJsonString, ToTomlString};
