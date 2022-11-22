@@ -3,7 +3,6 @@
 //
 // Written in 2019-2020 by
 //     Dr. Maxim Orlovsky <orlovsky@pandoracore.com>
-//     Martin Habovstiak <martin.habovstiak@gmail.com>
 //
 // To the extent possible under law, the author(s) have dedicated all
 // copyright and related and neighboring rights to this software to
@@ -14,12 +13,18 @@
 // along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
-/// Used as an alternative to default for test and prototyping purposes, when a
-/// type can't have a default value, but you need to generate some dumb data.
-pub trait DumbDefault
-where
-    Self: Sized,
-{
-    /// Returns an object initialized with dumb data
-    fn dumb_default() -> Self;
+/// Trait for splittable streams and other types, which can be separated into
+/// some two types ([`JoinSplit::A`], [`JoinSplit::B`]), like a reader and
+/// writer streams.
+pub trait JoinSplit {
+    /// First separable type (like reader)
+    type A;
+    /// Second separable type (like writer)
+    type B;
+
+    /// Reconstruct the type from the halves
+    fn join(left: Self::A, right: Self::B) -> Self;
+
+    /// Split the type into two
+    fn split(self) -> (Self::A, Self::B);
 }
