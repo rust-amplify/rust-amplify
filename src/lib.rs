@@ -36,7 +36,6 @@ extern crate alloc;
 extern crate core;
 
 #[cfg(feature = "derive")]
-#[macro_use]
 extern crate amplify_derive;
 #[cfg(feature = "derive")]
 pub use amplify_derive::{Wrapper, Display, AsAny, From, Getters, Error};
@@ -64,8 +63,8 @@ pub extern crate ascii;
 #[macro_use]
 mod macros;
 
-#[cfg(all(feature = "std", feature = "derive"))]
-mod io_error;
+#[cfg(feature = "std")]
+mod io_util;
 pub mod strategy;
 
 mod collection;
@@ -92,6 +91,6 @@ pub mod num {
     pub use amplify_apfloat as apfloat;
 }
 
-#[cfg(all(feature = "std", feature = "derive"))]
-pub use crate::io_error::IoError;
+#[cfg(feature = "std")]
+pub use crate::io_util::{IoError, WriteCounter};
 pub use crate::strategy::Holder;

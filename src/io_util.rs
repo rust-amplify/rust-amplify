@@ -20,6 +20,25 @@ use std::fmt::{Debug, Display, Formatter, self};
 use std::error::Error as StdError;
 use std::hash::{Hash, Hasher};
 
+/// A simple way to count bytes written through [`io::Write`].
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Default, Debug)]
+pub struct WriteCounter {
+    /// Count of bytes which passed through this writer
+    pub count: usize,
+}
+
+impl io::Write for WriteCounter {
+    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+        let len = buf.len();
+        self.count += len;
+        Ok(len)
+    }
+
+    fn flush(&mut self) -> io::Result<()> {
+        Ok(())
+    }
+}
+
 /// Copyable & cloneable I/O error type represented by the error kind function.
 ///
 /// Available only when both `std` and `derive` features are present.
@@ -35,7 +54,6 @@ use std::hash::{Hash, Hasher};
 ///     Io(IoError),
 /// }
 /// ```
-#[derive(Error)]
 pub struct IoError {
     kind: io::ErrorKind,
     display: String,
@@ -103,6 +121,8 @@ impl Debug for IoError {
         Debug::fmt(&err, f)
     }
 }
+
+impl std::error::Error for IoError {}
 
 impl From<io::Error> for IoError {
     fn from(err: io::Error) -> Self {
