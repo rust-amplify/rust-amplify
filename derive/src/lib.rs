@@ -711,7 +711,7 @@ pub fn derive_getters(input: TokenStream) -> TokenStream {
 /// * `#[wrapper(Exp)]` will derive both `LowerExp` and `UpperExp`;
 /// * `#[wrapper(NumberFmt)]` will derive all number formatting traits
 ///    (`LowerHex`, `UpperHex`, `LowerExp`, `UpperExp`, `Octal`);
-/// * `#[wrapper(IndexRanges)]` will derive all index traits working with ranges
+/// * `#[wrapper(RangeOps)]` will derive all index traits working with ranges
 ///    (`IndexRange`, `IndexTo`, `IndexFrom`, `IndexInclusive`,
 ///    `IndexToInclusive`, `IndexFull`);
 /// * `#[wrapper(MathOps)]` will derive all arithmetic operations
@@ -737,8 +737,7 @@ pub fn derive_getters(input: TokenStream) -> TokenStream {
 /// )]
 /// #[display(inner)]
 /// #[wrapper(LowerHex, UpperHex, Octal)]
-/// #[wrapper(Neg, Add, Sub, Div, Mul, Rem)]
-/// #[wrapper(Not, Shl, Shr, BitAnd, BitOr, BitXor)]
+/// #[wrapper(MathOps, BitOps)]
 /// struct Int64(i64);
 /// ```
 ///
@@ -771,7 +770,7 @@ pub fn derive_getters(input: TokenStream) -> TokenStream {
 /// use amplify::Wrapper;
 ///
 /// #[derive(Wrapper, From)]
-/// #[wrapper(Index, IndexRange, IndexFrom, IndexTo, IndexInclusive, IndexFull)]
+/// #[wrapper(Index, RangeOps)]
 /// struct VecNewtype(Vec<u8>);
 /// ```
 #[proc_macro_derive(Wrapper, attributes(wrap, wrapper, amplify_crate))]
@@ -825,7 +824,7 @@ pub fn derive_wrapper(input: TokenStream) -> TokenStream {
 ///    * `ShrAssign` for implementing [`core::ops::ShrAssign`]
 ///
 /// There are shortcuts for derivations:
-/// * `#[wrapper(IndexRangesMut)]` will derive all index traits working with
+/// * `#[wrapper(RangeMut)]` will derive all index traits working with
 ///    ranges (`IndexRangeMut`, `IndexToMut`, `IndexFromMut`,
 ///    `IndexInclusiveMut`, `IndexToInclusiveMut`, `IndexFullMut`);
 /// * `#[wrapper(MathAssign)]` will derive all arithmetic operations
@@ -847,11 +846,8 @@ pub fn derive_wrapper(input: TokenStream) -> TokenStream {
 ///     Display,
 /// )]
 /// #[display(inner)]
-/// #[wrapper(LowerHex, UpperHex, Octal)]
-/// #[wrapper(Neg, Add, Sub, Div, Mul, Rem)]
-/// #[wrapper_mut(AddAssign, SubAssign, DivAssign, MulAssign, RemAssign)]
-/// #[wrapper(Not, Shl, Shr, BitAnd, BitOr, BitXor)]
-/// #[wrapper_mut(ShlAssign, ShrAssign, BitAndAssign, BitOrAssign, BitXorAssign)]
+/// #[wrapper(NumberFmt, MathOps, BoolOps)]
+/// #[wrapper_mut(MathAssign, BitAssign)]
 /// struct Int64(i64);
 /// ```
 #[proc_macro_derive(WrapperMut, attributes(wrap, wrapper_mut, amplify_crate))]

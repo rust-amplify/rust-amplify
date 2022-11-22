@@ -61,6 +61,13 @@ enum Wrapper {
     BitOr,
     BitXor,
     // Group operations
+    Hex,
+    Exp,
+    NumberFmt,
+    RangeOps,
+    MathOps,
+    BoolOps,
+    BitOps,
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
@@ -88,12 +95,18 @@ enum WrapperMut {
     BitAndAssign,
     BitOrAssign,
     BitXorAssign,
+    // Group operations
+    RangeMut,
+    MathAssign,
+    BoolAssign,
+    BitAssign,
 }
 
-pub trait FromPath: Sized {
+pub trait FromPath: Sized + Copy {
     const IDENT: &'static str;
     const DERIVE: &'static str;
     fn from_path(path: &Path) -> Result<Option<Self>>;
+    fn populate(self, list: &mut Vec<Self>);
 }
 
 impl FromPath for Wrapper {
@@ -139,10 +152,67 @@ impl FromPath for Wrapper {
                     "BitAnd" => Some(Wrapper::BitAnd),
                     "BitOr" => Some(Wrapper::BitOr),
                     "BitXor" => Some(Wrapper::BitXor),
+
+                    "Hex" => Some(Wrapper::Hex),
+                    "Exp" => Some(Wrapper::Exp),
+                    "NumberFmt" => Some(Wrapper::NumberFmt),
+                    "RangeOps" => Some(Wrapper::RangeOps),
+                    "MathOps" => Some(Wrapper::MathOps),
+                    "BoolOps" => Some(Wrapper::BoolOps),
+                    "BitOps" => Some(Wrapper::BitOps),
                     _ => None,
                 })
             },
         )
+    }
+
+    fn populate(self, list: &mut Vec<Self>) {
+        let ext = match self {
+            Wrapper::Hex => &[Wrapper::LowerHex, Wrapper::UpperHex] as &[_],
+            Wrapper::Exp => &[Wrapper::LowerExp, Wrapper::UpperExp] as &[_],
+            Wrapper::NumberFmt => &[
+                Wrapper::LowerHex,
+                Wrapper::UpperHex,
+                Wrapper::LowerExp,
+                Wrapper::UpperExp,
+                Wrapper::Octal,
+            ] as &[_],
+            Wrapper::RangeOps => &[
+                Wrapper::IndexRange,
+                Wrapper::IndexFrom,
+                Wrapper::IndexTo,
+                Wrapper::IndexInclusive,
+                Wrapper::IndexToInclusive,
+                Wrapper::IndexFull,
+            ] as &[_],
+            Wrapper::MathOps => &[
+                Wrapper::Neg,
+                Wrapper::Add,
+                Wrapper::Sub,
+                Wrapper::Mul,
+                Wrapper::Div,
+                Wrapper::Rem,
+            ] as &[_],
+            Wrapper::BoolOps => &[
+                Wrapper::Not,
+                Wrapper::BitAnd,
+                Wrapper::BitOr,
+                Wrapper::BitXor,
+            ] as &[_],
+            Wrapper::BitOps => &[
+                Wrapper::Not,
+                Wrapper::BitAnd,
+                Wrapper::BitOr,
+                Wrapper::BitXor,
+                Wrapper::Shl,
+                Wrapper::Shr,
+            ] as &[_],
+            x => {
+                list.push(x);
+                &[] as &[_]
+            }
+        };
+        list.extend(ext);
     }
 }
 
@@ -506,6 +576,7 @@ impl Wrapper {
                     }
                 }
             },
+            _ => unreachable!(),
         }
     }
 }
@@ -543,10 +614,52 @@ impl FromPath for WrapperMut {
                     "BitAndAssign" => Some(WrapperMut::BitAndAssign),
                     "BitOrAssign" => Some(WrapperMut::BitOrAssign),
                     "BitXorAssign" => Some(WrapperMut::BitXorAssign),
+
+                    "RangeMut" => Some(WrapperMut::RangeMut),
+                    "MathAssign" => Some(WrapperMut::MathAssign),
+                    "BoolAssign" => Some(WrapperMut::BoolAssign),
+                    "BitAssign" => Some(WrapperMut::BitAssign),
                     _ => None,
                 })
             },
         )
+    }
+
+    fn populate(self, list: &mut Vec<Self>) {
+        let exp = match self {
+            WrapperMut::RangeMut => &[
+                WrapperMut::IndexRangeMut,
+                WrapperMut::IndexFromMut,
+                WrapperMut::IndexToMut,
+                WrapperMut::IndexInclusiveMut,
+                WrapperMut::IndexToInclusiveMut,
+                WrapperMut::IndexFullMut,
+            ] as &[_],
+            WrapperMut::MathAssign => &[
+                WrapperMut::AddAssign,
+                WrapperMut::SubAssign,
+                WrapperMut::MulAssign,
+                WrapperMut::DivAssign,
+                WrapperMut::RemAssign,
+            ] as &[_],
+            WrapperMut::BoolAssign => &[
+                WrapperMut::BitAndAssign,
+                WrapperMut::BitOrAssign,
+                WrapperMut::BitXorAssign,
+            ] as &[_],
+            WrapperMut::BitAssign => &[
+                WrapperMut::BitAndAssign,
+                WrapperMut::BitOrAssign,
+                WrapperMut::BitXorAssign,
+                WrapperMut::ShlAssign,
+                WrapperMut::ShrAssign,
+            ],
+            x => {
+                list.push(x);
+                &[] as &[_]
+            }
+        };
+        list.extend(exp)
     }
 }
 
@@ -766,6 +879,7 @@ impl WrapperMut {
                     }
                 }
             },
+            _ => unreachable!(),
         }
     }
 }
@@ -968,9 +1082,9 @@ fn get_wrappers<T: FromPath>(input: &DeriveInput) -> Result<Vec<T>> {
                 for meta in nested {
                     match meta {
                         NestedMeta::Meta(Meta::Path(path)) => {
-                            wrappers.push(T::from_path(&path)?.ok_or_else(|| {
-                                attr_err!(path, "Unrecognized wrapper parameter")
-                            })?);
+                            T::from_path(&path)?
+                                .ok_or_else(|| attr_err!(path, "Unrecognized wrapper parameter"))?
+                                .populate(&mut wrappers);
                         }
                         _ => return Err(attr_err!(meta, WRAPPER_DERIVE_ERR)),
                     }
