@@ -34,7 +34,8 @@ pub struct FlagRef<'a> {
     bit: u8,
 }
 
-/// Structure holding a given set of features
+/// Bit flag vector. Can hold up to 2^16-1 flags and guaranteed to have length
+/// up to 255 bytes.
 #[derive(Clone)]
 pub struct FlagVec(TinyVec<u8>);
 
