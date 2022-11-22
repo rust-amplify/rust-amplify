@@ -4,7 +4,7 @@ version = 3
 
 [[package]]
 name = "amplify"
-version = "4.0.0-alpha.6"
+version = "4.0.0-beta.1"
 dependencies = [
  "amplify_apfloat",
  "amplify_derive",
@@ -36,7 +36,7 @@ dependencies = [
 
 [[package]]
 name = "amplify_derive"
-version = "4.0.0-alpha.1"
+version = "4.0.0-beta.1"
 dependencies = [
  "amplify",
  "amplify_syn",
