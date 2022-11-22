@@ -226,6 +226,48 @@ impl<T, const LEN: usize> IndexMut<usize> for Array<T, LEN> {
     }
 }
 
+impl<T, const LEN: usize> IndexMut<Range<usize>> for Array<T, LEN> {
+    #[inline]
+    fn index_mut(&mut self, index: Range<usize>) -> &mut Self::Output {
+        &mut self.0[index]
+    }
+}
+
+impl<T, const LEN: usize> IndexMut<RangeTo<usize>> for Array<T, LEN> {
+    #[inline]
+    fn index_mut(&mut self, index: RangeTo<usize>) -> &mut Self::Output {
+        &mut self.0[index]
+    }
+}
+
+impl<T, const LEN: usize> IndexMut<RangeFrom<usize>> for Array<T, LEN> {
+    #[inline]
+    fn index_mut(&mut self, index: RangeFrom<usize>) -> &mut Self::Output {
+        &mut self.0[index]
+    }
+}
+
+impl<T, const LEN: usize> IndexMut<RangeInclusive<usize>> for Array<T, LEN> {
+    #[inline]
+    fn index_mut(&mut self, index: RangeInclusive<usize>) -> &mut Self::Output {
+        &mut self.0[index]
+    }
+}
+
+impl<T, const LEN: usize> IndexMut<RangeToInclusive<usize>> for Array<T, LEN> {
+    #[inline]
+    fn index_mut(&mut self, index: RangeToInclusive<usize>) -> &mut Self::Output {
+        &mut self.0[index]
+    }
+}
+
+impl<T, const LEN: usize> IndexMut<RangeFull> for Array<T, LEN> {
+    #[inline]
+    fn index_mut(&mut self, index: RangeFull) -> &mut Self::Output {
+        &mut self.0[index]
+    }
+}
+
 impl<T, const LEN: usize> From<T> for Array<T, LEN>
 where
     T: Into<[T; LEN]>,
