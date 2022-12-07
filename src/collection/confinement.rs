@@ -362,6 +362,32 @@ where
     }
 }
 
+impl<'c, C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> IntoIterator
+    for &'c Confined<C, MIN_LEN, MAX_LEN>
+where
+    &'c C: IntoIterator,
+{
+    type Item = <&'c C as IntoIterator>::Item;
+    type IntoIter = <&'c C as IntoIterator>::IntoIter;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.0.into_iter()
+    }
+}
+
+impl<'c, C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> IntoIterator
+    for &'c mut Confined<C, MIN_LEN, MAX_LEN>
+where
+    &'c mut C: IntoIterator,
+{
+    type Item = <&'c mut C as IntoIterator>::Item;
+    type IntoIter = <&'c mut C as IntoIterator>::IntoIter;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.0.into_iter()
+    }
+}
+
 impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Index<usize>
     for Confined<C, MIN_LEN, MAX_LEN>
 where
