@@ -18,7 +18,6 @@
 use core::fmt::{self, Display, Formatter};
 use core::str::FromStr;
 use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet, VecDeque};
-use std::convert::TryFrom;
 use std::hash::Hash;
 use std::ops::{
     Deref, Index, IndexMut, Range, RangeFrom, RangeFull, RangeInclusive, RangeTo, RangeToInclusive,
@@ -567,6 +566,7 @@ where
 impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C, MIN_LEN, MAX_LEN> {
     /// Tries to construct a confinement over a collection. Fails if the number
     /// of items in the collection exceeds one of the confinement bounds.
+    // We can't use `impl TryFrom` due to the conflict with core library blanked implementation
     pub fn try_from(col: C) -> Result<Self, Error> {
         let len = col.len();
         if len < MIN_LEN {
@@ -768,6 +768,25 @@ impl<const MIN_LEN: usize, const MAX_LEN: usize> Confined<String, MIN_LEN, MAX_L
     /// doesn't shorten more than the confinement requirement. Errors
     /// otherwise.
     pub fn remove(&mut self, index: usize) -> Result<char, Error> {
+        let len = self.len();
+        if self.is_empty() || len - 1 <= MIN_LEN {
+            return Err(Error::Undersize {
+                len,
+                min_len: MIN_LEN,
+            });
+        }
+        if index >= len {
+            return Err(Error::OutOfBoundary { index, len });
+        }
+        Ok(self.0.remove(index))
+    }
+}
+
+impl<const MIN_LEN: usize, const MAX_LEN: usize> Confined<AsciiString, MIN_LEN, MAX_LEN> {
+    /// Removes a single character from the confined string, unless the string
+    /// doesn't shorten more than the confinement requirement. Errors
+    /// otherwise.
+    pub fn remove(&mut self, index: usize) -> Result<AsciiChar, Error> {
         let len = self.len();
         if self.is_empty() || len - 1 <= MIN_LEN {
             return Err(Error::Undersize {
