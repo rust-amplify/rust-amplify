@@ -597,6 +597,12 @@ where
 }
 
 impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C, MIN_LEN, MAX_LEN> {
+    /// Constructs a new confinement containing no elements, but with a
+    /// pre-allocated storage for the `capacity` of elements.
+    pub fn with_capacity(capacity: usize) -> Self {
+        Self(C::with_capacity(capacity))
+    }
+
     /// Tries to construct a confinement over a collection. Fails if the number
     /// of items in the collection exceeds one of the confinement bounds.
     // We can't use `impl TryFrom` due to the conflict with core library blanked implementation
@@ -683,12 +689,6 @@ where
     /// Constructs a new confinement containing no elements.
     pub fn new() -> Self {
         Self::default()
-    }
-
-    /// Constructs a new confinement containing no elements, but with a
-    /// pre-allocated storage for the `capacity` of elements.
-    pub fn with_capacity(capacity: usize) -> Self {
-        Self(C::with_capacity(capacity))
     }
 
     /// Removes all elements from the confined collection.
