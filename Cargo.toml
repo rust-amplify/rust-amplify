@@ -104,6 +104,7 @@ serde = [
     "serde_json",
     "toml",
     "amplify_num/serde",
+    "ascii/serde",
     "stringly_conversions",
     "stringly_conversions/alloc",
     "stringly_conversions/serde_str_helpers",
