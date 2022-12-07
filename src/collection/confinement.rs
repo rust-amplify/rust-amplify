@@ -16,6 +16,7 @@
 //! Confinement puts a constrain on the number of elements within a collection.
 
 use core::fmt::{self, Display, Formatter};
+use core::str::FromStr;
 use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet, VecDeque};
 use std::convert::TryFrom;
 use std::hash::Hash;
@@ -512,6 +513,28 @@ where
 {
     fn index_mut(&mut self, index: RangeFull) -> &mut Self::Output {
         self.0.index_mut(index)
+    }
+}
+
+impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Display
+    for Confined<C, MIN_LEN, MAX_LEN>
+where
+    C: Display,
+{
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        self.0.fmt(f)
+    }
+}
+
+impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> FromStr
+    for Confined<C, MIN_LEN, MAX_LEN>
+where
+    C: FromStr,
+{
+    type Err = C::Err;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        C::from_str(s).map(Self)
     }
 }
 
