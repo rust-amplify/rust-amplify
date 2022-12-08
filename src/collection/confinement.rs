@@ -1245,6 +1245,24 @@ pub type LargeOrdMap<K, V> = Confined<BTreeMap<K, V>, ZERO, U32>;
 /// [`BTreeMap`] which contains at least a single item.
 pub type NonEmptyOrdMap<K, V> = Confined<BTreeMap<K, V>, ONE, USIZE>;
 
+/// Helper macro to construct confined string of a [`TinyString`] type
+#[macro_export]
+macro_rules! tiny_s {
+    ($lit:literal) => {
+        $crate::confinement::TinyString::try_from(s!($lit))
+            .expect("static string for tiny_s literal cis too long")
+    };
+}
+
+/// Helper macro to construct confined string of a [`SmallString`] type
+#[macro_export]
+macro_rules! small_s {
+    ($lit:literal) => {
+        $crate::confinement::SmallString::try_from(s!($lit))
+            .expect("static string for small_s literal cis too long")
+    };
+}
+
 /// Helper macro to construct confined vector of a given type
 #[macro_export]
 macro_rules! confined_vec {
@@ -1275,6 +1293,72 @@ macro_rules! small_vec {
     );
     ($($x:expr),+ $(,)?) => (
         $crate::confinement::SmallVec::try_from(vec![$($x,)+]).expect("inline small_vec literal contains invalid number of items")
+    )
+}
+
+/// Helper macro to construct confined [`HashSet`] of a given type
+#[macro_export]
+macro_rules! confined_set {
+    ($ty:ty; $elem:expr; $n:expr) => (
+        <$ty>::try_from(set![$elem; $n]).expect("inline confined_set literal contains invalid number of items")
+    );
+    ($ty:ty; $($x:expr),+ $(,)?) => (
+        <$ty>::try_from(set![$($x,)+]).expect("inline confined_set literal contains invalid number of items")
+    )
+}
+
+/// Helper macro to construct confined [`HashSet`] of a [`TinyHashSet`] type
+#[macro_export]
+macro_rules! tiny_set {
+    ($elem:expr; $n:expr) => (
+        $crate::confinement::TinyHashSet::try_from(vec![$elem; $n]).expect("inline tiny_set literal contains invalid number of items")
+    );
+    ($($x:expr),+ $(,)?) => (
+        $crate::confinement::TinyHashSet::try_from(vec![$($x,)+]).expect("inline tiny_set literal contains invalid number of items")
+    )
+}
+
+/// Helper macro to construct confined [`HashSet`] of a [`SmallHashSet`] type
+#[macro_export]
+macro_rules! small_set {
+    ($elem:expr; $n:expr) => (
+        $crate::confinement::SmallHashSet::try_from(vec![$elem; $n]).expect("inline small_set literal contains invalid number of items")
+    );
+    ($($x:expr),+ $(,)?) => (
+        $crate::confinement::SmallHashSet::try_from(vec![$($x,)+]).expect("inline small_set literal contains invalid number of items")
+    )
+}
+
+/// Helper macro to construct confined [`BTreeSet`] of a given type
+#[macro_export]
+macro_rules! confined_bset {
+    ($ty:ty; $elem:expr; $n:expr) => (
+        <$ty>::try_from(bset![$elem; $n]).expect("inline confined_bset literal contains invalid number of items")
+    );
+    ($ty:ty; $($x:expr),+ $(,)?) => (
+        <$ty>::try_from(bset![$($x,)+]).expect("inline confined_bset literal contains invalid number of items")
+    )
+}
+
+/// Helper macro to construct confined [`BTreeSet`] of a [`TinyHashSet`] type
+#[macro_export]
+macro_rules! tiny_bset {
+    ($elem:expr; $n:expr) => (
+        $crate::confinement::TinyOrdSet::try_from(vec![$elem; $n]).expect("inline tiny_bset literal contains invalid number of items")
+    );
+    ($($x:expr),+ $(,)?) => (
+        $crate::confinement::TinyOrdSet::try_from(vec![$($x,)+]).expect("inline tiny_bset literal contains invalid number of items")
+    )
+}
+
+/// Helper macro to construct confined [`BTreeSet`] of a [`SmallHashSet`] type
+#[macro_export]
+macro_rules! small_bset {
+    ($elem:expr; $n:expr) => (
+        $crate::confinement::SmallOrdSet::try_from(vec![$elem; $n]).expect("inline small_bset literal contains invalid number of items")
+    );
+    ($($x:expr),+ $(,)?) => (
+        $crate::confinement::SmallOrdSet::try_from(vec![$($x,)+]).expect("inline small_bset literal contains invalid number of items")
     )
 }
 
