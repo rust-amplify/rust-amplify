@@ -963,7 +963,7 @@ pub(crate) fn inner_mut(input: DeriveInput) -> Result<TokenStream2> {
         impl #impl_generics ::core::convert::AsMut<<#ident_name #impl_generics as #amplify_crate::Wrapper>::Inner> for #ident_name #ty_generics #where_clause {
             #[inline]
             fn as_mut(&mut self) -> &mut <Self as #amplify_crate::Wrapper>::Inner {
-                use #amplify_crate::Wrapper;
+                use #amplify_crate::WrapperMut;
                 WrapperMut::as_inner_mut(self)
             }
         }
@@ -971,7 +971,7 @@ pub(crate) fn inner_mut(input: DeriveInput) -> Result<TokenStream2> {
         impl #impl_generics ::core::borrow::BorrowMut<<#ident_name #impl_generics as #amplify_crate::Wrapper>::Inner> for #ident_name #ty_generics #where_clause {
             #[inline]
             fn borrow_mut(&mut self) -> &mut <Self as #amplify_crate::Wrapper>::Inner {
-                use #amplify_crate::Wrapper;
+                use #amplify_crate::WrapperMut;
                 WrapperMut::as_inner_mut(self)
             }
         }
