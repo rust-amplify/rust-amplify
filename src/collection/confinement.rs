@@ -382,45 +382,6 @@ impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Deref
     }
 }
 
-impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> IntoIterator
-    for Confined<C, MIN_LEN, MAX_LEN>
-where
-    C: IntoIterator,
-{
-    type Item = <C as IntoIterator>::Item;
-    type IntoIter = <C as IntoIterator>::IntoIter;
-
-    fn into_iter(self) -> Self::IntoIter {
-        self.0.into_iter()
-    }
-}
-
-impl<'c, C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> IntoIterator
-    for &'c Confined<C, MIN_LEN, MAX_LEN>
-where
-    &'c C: IntoIterator,
-{
-    type Item = <&'c C as IntoIterator>::Item;
-    type IntoIter = <&'c C as IntoIterator>::IntoIter;
-
-    fn into_iter(self) -> Self::IntoIter {
-        self.0.into_iter()
-    }
-}
-
-impl<'c, C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> IntoIterator
-    for &'c mut Confined<C, MIN_LEN, MAX_LEN>
-where
-    &'c mut C: IntoIterator,
-{
-    type Item = <&'c mut C as IntoIterator>::Item;
-    type IntoIter = <&'c mut C as IntoIterator>::IntoIter;
-
-    fn into_iter(self) -> Self::IntoIter {
-        self.0.into_iter()
-    }
-}
-
 impl<C, const MIN_LEN: usize, const MAX_LEN: usize> AsRef<[C::Item]>
     for Confined<C, MIN_LEN, MAX_LEN>
 where
@@ -458,6 +419,45 @@ where
 {
     fn borrow_mut(&mut self) -> &mut [C::Item] {
         self.0.borrow_mut()
+    }
+}
+
+impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> IntoIterator
+    for Confined<C, MIN_LEN, MAX_LEN>
+where
+    C: IntoIterator,
+{
+    type Item = <C as IntoIterator>::Item;
+    type IntoIter = <C as IntoIterator>::IntoIter;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.0.into_iter()
+    }
+}
+
+impl<'c, C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> IntoIterator
+    for &'c Confined<C, MIN_LEN, MAX_LEN>
+where
+    &'c C: IntoIterator,
+{
+    type Item = <&'c C as IntoIterator>::Item;
+    type IntoIter = <&'c C as IntoIterator>::IntoIter;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.0.into_iter()
+    }
+}
+
+impl<'c, C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> IntoIterator
+    for &'c mut Confined<C, MIN_LEN, MAX_LEN>
+where
+    &'c mut C: IntoIterator,
+{
+    type Item = <&'c mut C as IntoIterator>::Item;
+    type IntoIter = <&'c mut C as IntoIterator>::IntoIter;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.0.into_iter()
     }
 }
 
@@ -937,6 +937,20 @@ impl<T, const MIN_LEN: usize, const MAX_LEN: usize> Confined<Vec<T>, MIN_LEN, MA
             return Err(Error::OutOfBoundary { index, len });
         }
         Ok(self.0.remove(index))
+    }
+
+    /// Returns an iterator over the slice.
+    ///
+    /// The iterator yields all items from start to end.
+    pub fn iter(&self) -> core::slice::Iter<T> {
+        self.0.iter()
+    }
+
+    /// Returns an iterator that allows modifying each value.
+    ///
+    /// The iterator yields all items from start to end.
+    pub fn iter_mut(&mut self) -> core::slice::IterMut<T> {
+        self.0.iter_mut()
     }
 }
 
