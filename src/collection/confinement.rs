@@ -817,6 +817,14 @@ impl<const MIN_LEN: usize, const MAX_LEN: usize> TryFrom<&str>
     }
 }
 
+impl<const MAX_LEN: usize> Confined<String, ZERO, MAX_LEN> {
+    /// Removes the last character from a string and returns it, or [`None`] if it
+    /// is empty.
+    pub fn pop(&mut self) -> Option<char> {
+        self.0.pop()
+    }
+}
+
 impl<const MIN_LEN: usize, const MAX_LEN: usize> Confined<String, MIN_LEN, MAX_LEN> {
     /// Removes a single character from the confined string, unless the string
     /// doesn't shorten more than the confinement requirement. Errors
@@ -833,6 +841,14 @@ impl<const MIN_LEN: usize, const MAX_LEN: usize> Confined<String, MIN_LEN, MAX_L
             return Err(Error::OutOfBoundary { index, len });
         }
         Ok(self.0.remove(index))
+    }
+}
+
+impl<const MAX_LEN: usize> Confined<AsciiString, ZERO, MAX_LEN> {
+    /// Removes the last character from a string and returns it, or [`None`] if it
+    /// is empty.
+    pub fn pop(&mut self) -> Option<AsciiChar> {
+        self.0.pop()
     }
 }
 
@@ -855,6 +871,14 @@ impl<const MIN_LEN: usize, const MAX_LEN: usize> Confined<AsciiString, MIN_LEN, 
     }
 }
 
+impl<T, const MAX_LEN: usize> Confined<Vec<T>, ZERO, MAX_LEN> {
+    /// Removes the last element from a vector and returns it, or [`None`] if it
+    /// is empty.
+    pub fn pop(&mut self) -> Option<T> {
+        self.0.pop()
+    }
+}
+
 impl<T, const MIN_LEN: usize, const MAX_LEN: usize> Confined<Vec<T>, MIN_LEN, MAX_LEN> {
     /// Removes an element from the vector at a given index. Errors if the index
     /// exceeds the number of elements in the vector, of if the new vector
@@ -872,6 +896,20 @@ impl<T, const MIN_LEN: usize, const MAX_LEN: usize> Confined<Vec<T>, MIN_LEN, MA
             return Err(Error::OutOfBoundary { index, len });
         }
         Ok(self.0.remove(index))
+    }
+}
+
+impl<T, const MIN_LEN: usize, const MAX_LEN: usize> Confined<VecDeque<T>, MIN_LEN, MAX_LEN> {
+    /// Removes the first element and returns it, or `None` if the deque is
+    /// empty.
+    pub fn pop_front(&mut self) -> Option<T> {
+        self.0.pop_front()
+    }
+
+    /// Removes the last element and returns it, or `None` if the deque is
+    /// empty.
+    pub fn pop_back(&mut self) -> Option<T> {
+        self.0.pop_back()
     }
 }
 
