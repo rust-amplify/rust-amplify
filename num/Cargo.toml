@@ -10,7 +10,7 @@ homepage = "https://github.com/rust-amplify"
 license = "MIT"
 readme = "../README.md"
 edition = "2021"
-rust-version = "1.59.0"
+rust-version = "1.60.0"
 
 [dependencies]
 # This strange naming is a workaround for not being able to define required features for a dependency

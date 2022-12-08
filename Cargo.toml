@@ -13,7 +13,7 @@ homepage = "https://github.com/rust-amplify"
 license = "MIT"
 readme = "README.md"
 edition = "2021"
-rust-version = "1.59.0"
+rust-version = "1.60.0"
 exclude = [
     ".github",
     "derive",
@@ -78,16 +78,6 @@ all = [
     "apfloat_std",
 ]
 default = ["std", "derive", "hex"]
-compat = [
-    "serde",
-    "std",
-    "parse_arg",
-    "stringly_conversions",
-    "c_raw",
-    "proc_attr",
-    "derive",
-    "rand",
-]
 std = ["amplify_num/std"]
 apfloat_std = ["amplify_apfloat/std"]
 alloc = ["amplify_num/alloc"]
@@ -125,17 +115,6 @@ all = [
     "apfloat_std",
 ]
 default = ["std", "derive", "hex"]
-compat = [
-    "serde",
-    "std",
-    "parse_arg",
-    "stringly_conversions",
-    "c_raw",
-    "proc_attr",
-    "derive",
-    "rand",
-    "getrandom",
-]
 std = ["amplify_num/std"]
 apfloat_std = ["amplify_apfloat/std"]
 alloc = ["amplify_num/alloc"]
