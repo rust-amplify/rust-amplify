@@ -1278,10 +1278,12 @@ macro_rules! confined_vec {
 #[macro_export]
 macro_rules! tiny_vec {
     ($elem:expr; $n:expr) => (
-        $crate::confinement::TinyVec::try_from(vec![$elem; $n]).expect("inline tiny_vec literal contains invalid number of items")
+        $crate::confinement::TinyVec::try_from(vec![$elem; $n])
+            .expect("inline tiny_vec literal contains invalid number of items")
     );
     ($($x:expr),+ $(,)?) => (
-        $crate::confinement::TinyVec::try_from(vec![$($x,)+]).expect("inline tiny_vec literal contains invalid number of items")
+        $crate::confinement::TinyVec::try_from(vec![$($x,)+])
+            .expect("inline tiny_vec literal contains invalid number of items")
     )
 }
 
@@ -1289,10 +1291,12 @@ macro_rules! tiny_vec {
 #[macro_export]
 macro_rules! small_vec {
     ($elem:expr; $n:expr) => (
-        $crate::confinement::SmallVec::try_from(vec![$elem; $n]).expect("inline small_vec literal contains invalid number of items")
+        $crate::confinement::SmallVec::try_from(vec![$elem; $n])
+            .expect("inline small_vec literal contains invalid number of items")
     );
     ($($x:expr),+ $(,)?) => (
-        $crate::confinement::SmallVec::try_from(vec![$($x,)+]).expect("inline small_vec literal contains invalid number of items")
+        $crate::confinement::SmallVec::try_from(vec![$($x,)+])
+            .expect("inline small_vec literal contains invalid number of items")
     )
 }
 
@@ -1300,7 +1304,8 @@ macro_rules! small_vec {
 #[macro_export]
 macro_rules! confined_set {
     ($ty:ty; $($x:expr),+ $(,)?) => (
-        <$ty>::try_from(set![$($x,)+]).expect("inline confined_set literal contains invalid number of items")
+        <$ty>::try_from(set![$($x,)+])
+            .expect("inline confined_set literal contains invalid number of items")
     )
 }
 
@@ -1308,7 +1313,8 @@ macro_rules! confined_set {
 #[macro_export]
 macro_rules! tiny_set {
     ($($x:expr),+ $(,)?) => (
-        $crate::confinement::TinyHashSet::try_from(set![$($x,)+]).expect("inline tiny_set literal contains invalid number of items")
+        $crate::confinement::TinyHashSet::try_from(set![$($x,)+])
+            .expect("inline tiny_set literal contains invalid number of items")
     )
 }
 
@@ -1316,7 +1322,8 @@ macro_rules! tiny_set {
 #[macro_export]
 macro_rules! small_set {
     ($($x:expr),+ $(,)?) => (
-        $crate::confinement::SmallHashSet::try_from(set![$($x,)+]).expect("inline small_set literal contains invalid number of items")
+        $crate::confinement::SmallHashSet::try_from(set![$($x,)+])
+            .expect("inline small_set literal contains invalid number of items")
     )
 }
 
@@ -1324,24 +1331,63 @@ macro_rules! small_set {
 #[macro_export]
 macro_rules! confined_bset {
     ($ty:ty; $($x:expr),+ $(,)?) => (
-        <$ty>::try_from(bset![$($x,)+]).expect("inline confined_bset literal contains invalid number of items")
+        <$ty>::try_from(bset![$($x,)+])
+            .expect("inline confined_bset literal contains invalid number of items")
     )
 }
 
-/// Helper macro to construct confined [`BTreeSet`] of a [`TinyHashSet`] type
+/// Helper macro to construct confined [`BTreeSet`] of a [`TinyOrdSet`] type
 #[macro_export]
 macro_rules! tiny_bset {
     ($($x:expr),+ $(,)?) => (
-        $crate::confinement::TinyOrdSet::try_from(bset![$($x,)+]).expect("inline tiny_bset literal contains invalid number of items")
+        $crate::confinement::TinyOrdSet::try_from(bset![$($x,)+])
+            .expect("inline tiny_bset literal contains invalid number of items")
     )
 }
 
-/// Helper macro to construct confined [`BTreeSet`] of a [`SmallHashSet`] type
+/// Helper macro to construct confined [`BTreeSet`] of a [`SmallOrdSet`] type
 #[macro_export]
 macro_rules! small_bset {
     ($($x:expr),+ $(,)?) => (
-        $crate::confinement::SmallOrdSet::try_from(bset![$($x,)+]).expect("inline small_bset literal contains invalid number of items")
+        $crate::confinement::SmallOrdSet::try_from(bset![$($x,)+])
+            .expect("inline small_bset literal contains invalid number of items")
     )
+}
+
+/// Helper macro to construct confined [`HashMap`] of a [`TinyHashMap`] type
+#[macro_export]
+macro_rules! tiny_map {
+    { $($key:expr => $value:expr),+ $(,)? } => {
+        $crate::confinement::TinyHashMap::try_from(map!{ $($key => $value,)+ })
+            .expect("inline tiny_map literal contains invalid number of items")
+    }
+}
+
+/// Helper macro to construct confined [`HashMap`] of a [`SmallHashMap`] type
+#[macro_export]
+macro_rules! small_map {
+    { $($key:expr => $value:expr),+ $(,)? } => {
+        $crate::confinement::SmallHashMap::try_from(map!{ $($key => $value,)+ })
+            .expect("inline small_map literal contains invalid number of items")
+    }
+}
+
+/// Helper macro to construct confined [`BTreeMap`] of a [`TinyOrdMap`] type
+#[macro_export]
+macro_rules! tiny_bmap {
+    { $($key:expr => $value:expr),+ $(,)? } => {
+        $crate::confinement::TinyOrdMap::try_from(bmap!{ $($key => $value,)+ })
+            .expect("inline tiny_bmap literal contains invalid number of items")
+    }
+}
+
+/// Helper macro to construct confined [`BTreeMap`] of a [`SmallOrdMap`] type
+#[macro_export]
+macro_rules! small_bmap {
+    { $($key:expr => $value:expr),+ $(,)? } => {
+        $crate::confinement::SmallOrdMap::try_from(bmap!{ $($key => $value,)+ })
+            .expect("inline small_bmap literal contains invalid number of items")
+    }
 }
 
 #[cfg(test)]
@@ -1404,5 +1450,21 @@ mod test {
     fn cant_go_below_min() {
         let mut s = NonEmptyString::with('a');
         s.remove(0).unwrap();
+    }
+
+    #[test]
+    fn macros() {
+        tiny_vec!("a", "b", "c");
+        small_vec!("a", "b", "c");
+
+        tiny_set!("a", "b", "c");
+        tiny_bset!("a", "b", "c");
+        tiny_map!("a" => 1, "b" => 2, "c" => 3);
+        tiny_bmap!("a" => 1, "b" => 2, "c" => 3);
+
+        small_set!("a", "b", "c");
+        small_bset!("a", "b", "c");
+        small_map!("a" => 1, "b" => 2, "c" => 3);
+        small_bmap!("a" => 1, "b" => 2, "c" => 3);
     }
 }

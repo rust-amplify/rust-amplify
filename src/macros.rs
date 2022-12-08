@@ -106,7 +106,7 @@ macro_rules! map {
         }
     };
 
-    { $($key:expr => $value:expr),+ } => {
+    { $($key:expr => $value:expr),+ $(,)? } => {
         {
             let mut m = ::std::collections::HashMap::new();
             $(
@@ -146,7 +146,7 @@ macro_rules! set {
         }
     };
 
-    { $($value:expr),+ } => {
+    { $($value:expr),+ $(,)? } => {
         {
             let mut m = ::std::collections::HashSet::new();
             $(
@@ -178,7 +178,7 @@ macro_rules! bmap {
         }
     };
 
-    { $($key:expr => $value:expr),+ } => {
+    { $($key:expr => $value:expr),+ $(,)? } => {
         {
             let mut m = ::std::collections::BTreeMap::new();
             $(
@@ -218,7 +218,7 @@ macro_rules! bset {
         }
     };
 
-    { $($value:expr),+ } => {
+    { $($value:expr),+ $(,)? } => {
         {
             let mut m = ::std::collections::BTreeSet::new();
             $(
