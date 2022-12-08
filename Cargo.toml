@@ -32,7 +32,7 @@ bench = false
 
 [dependencies]
 libc = { version = "0.2", optional = true }
-amplify_derive = { version = "4.0.0-alpha.1", path = "./derive", optional = true }
+amplify_derive = { version = "4.0.0-alpha.2", path = "./derive", optional = true }
 amplify_syn = { version = "1.1", path = "./syn", optional = true }
 amplify_num = { version = "0.4.0", path = "./num" }
 amplify_apfloat = { version = "0.1.1", path = "./apfloat", optional = true }

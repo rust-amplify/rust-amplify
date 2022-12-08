@@ -22,7 +22,7 @@ use core::ops::{Index, IndexMut, RangeFull};
 use alloc::vec::Vec;
 use core::borrow::{Borrow, BorrowMut};
 use core::ops::{Range, RangeFrom, RangeInclusive, RangeTo, RangeToInclusive};
-use std::array::TryFromSliceError;
+use core::array::TryFromSliceError;
 
 #[cfg(all(feature = "hex", any(feature = "std", feature = "alloc")))]
 use crate::hex::{FromHex, ToHex, self};
