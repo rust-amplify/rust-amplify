@@ -25,8 +25,7 @@
     unused_mut,
     unused_imports,
     missing_docs,
-    dead_code,
-    warnings
+    dead_code
 )]
 
 #[macro_use]

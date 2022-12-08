@@ -27,8 +27,7 @@
     unused_mut,
     unused_imports,
     dead_code,
-    missing_docs,
-    warnings
+    missing_docs
 )]
 #![cfg_attr(not(feature = "std"), no_std)]
 #[cfg(feature = "alloc")]
