@@ -1311,10 +1311,10 @@ macro_rules! confined_set {
 #[macro_export]
 macro_rules! tiny_set {
     ($elem:expr; $n:expr) => (
-        $crate::confinement::TinyHashSet::try_from(vec![$elem; $n]).expect("inline tiny_set literal contains invalid number of items")
+        $crate::confinement::TinyHashSet::try_from(set![$elem; $n]).expect("inline tiny_set literal contains invalid number of items")
     );
     ($($x:expr),+ $(,)?) => (
-        $crate::confinement::TinyHashSet::try_from(vec![$($x,)+]).expect("inline tiny_set literal contains invalid number of items")
+        $crate::confinement::TinyHashSet::try_from(set![$($x,)+]).expect("inline tiny_set literal contains invalid number of items")
     )
 }
 
@@ -1322,10 +1322,10 @@ macro_rules! tiny_set {
 #[macro_export]
 macro_rules! small_set {
     ($elem:expr; $n:expr) => (
-        $crate::confinement::SmallHashSet::try_from(vec![$elem; $n]).expect("inline small_set literal contains invalid number of items")
+        $crate::confinement::SmallHashSet::try_from(set![$elem; $n]).expect("inline small_set literal contains invalid number of items")
     );
     ($($x:expr),+ $(,)?) => (
-        $crate::confinement::SmallHashSet::try_from(vec![$($x,)+]).expect("inline small_set literal contains invalid number of items")
+        $crate::confinement::SmallHashSet::try_from(set![$($x,)+]).expect("inline small_set literal contains invalid number of items")
     )
 }
 
@@ -1344,10 +1344,10 @@ macro_rules! confined_bset {
 #[macro_export]
 macro_rules! tiny_bset {
     ($elem:expr; $n:expr) => (
-        $crate::confinement::TinyOrdSet::try_from(vec![$elem; $n]).expect("inline tiny_bset literal contains invalid number of items")
+        $crate::confinement::TinyOrdSet::try_from(bset![$elem; $n]).expect("inline tiny_bset literal contains invalid number of items")
     );
     ($($x:expr),+ $(,)?) => (
-        $crate::confinement::TinyOrdSet::try_from(vec![$($x,)+]).expect("inline tiny_bset literal contains invalid number of items")
+        $crate::confinement::TinyOrdSet::try_from(bset![$($x,)+]).expect("inline tiny_bset literal contains invalid number of items")
     )
 }
 
@@ -1355,10 +1355,10 @@ macro_rules! tiny_bset {
 #[macro_export]
 macro_rules! small_bset {
     ($elem:expr; $n:expr) => (
-        $crate::confinement::SmallOrdSet::try_from(vec![$elem; $n]).expect("inline small_bset literal contains invalid number of items")
+        $crate::confinement::SmallOrdSet::try_from(bset![$elem; $n]).expect("inline small_bset literal contains invalid number of items")
     );
     ($($x:expr),+ $(,)?) => (
-        $crate::confinement::SmallOrdSet::try_from(vec![$($x,)+]).expect("inline small_bset literal contains invalid number of items")
+        $crate::confinement::SmallOrdSet::try_from(bset![$($x,)+]).expect("inline small_bset literal contains invalid number of items")
     )
 }
 
