@@ -15,6 +15,7 @@
 
 //! Confinement puts a constrain on the number of elements within a collection.
 
+use core::borrow::{Borrow, BorrowMut};
 use core::fmt::{self, Display, Formatter};
 use core::str::FromStr;
 use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet, VecDeque};
@@ -417,6 +418,46 @@ where
 
     fn into_iter(self) -> Self::IntoIter {
         self.0.into_iter()
+    }
+}
+
+impl<C, const MIN_LEN: usize, const MAX_LEN: usize> AsRef<[C::Item]>
+    for Confined<C, MIN_LEN, MAX_LEN>
+where
+    C: Collection + AsRef<[C::Item]>,
+{
+    fn as_ref(&self) -> &[C::Item] {
+        self.0.as_ref()
+    }
+}
+
+impl<C, const MIN_LEN: usize, const MAX_LEN: usize> AsMut<[C::Item]>
+    for Confined<C, MIN_LEN, MAX_LEN>
+where
+    C: Collection + AsMut<[C::Item]>,
+{
+    fn as_mut(&mut self) -> &mut [C::Item] {
+        self.0.as_mut()
+    }
+}
+
+impl<C, const MIN_LEN: usize, const MAX_LEN: usize> Borrow<[C::Item]>
+    for Confined<C, MIN_LEN, MAX_LEN>
+where
+    C: Collection + Borrow<[C::Item]>,
+{
+    fn borrow(&self) -> &[C::Item] {
+        self.0.borrow()
+    }
+}
+
+impl<C, const MIN_LEN: usize, const MAX_LEN: usize> BorrowMut<[C::Item]>
+    for Confined<C, MIN_LEN, MAX_LEN>
+where
+    C: Collection + BorrowMut<[C::Item]>,
+{
+    fn borrow_mut(&mut self) -> &mut [C::Item] {
+        self.0.borrow_mut()
     }
 }
 
