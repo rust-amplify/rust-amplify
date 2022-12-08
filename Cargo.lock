@@ -4,7 +4,7 @@ version = 3
 
 [[package]]
 name = "amplify"
-version = "4.0.0-alpha.6"
+version = "4.0.0-beta.6"
 dependencies = [
  "amplify_apfloat",
  "amplify_derive",
@@ -36,7 +36,7 @@ dependencies = [
 
 [[package]]
 name = "amplify_derive"
-version = "4.0.0-alpha.1"
+version = "4.0.0-alpha.2"
 dependencies = [
  "amplify",
  "amplify_syn",
@@ -75,6 +75,9 @@ name = "ascii"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d92bec98840b8f03a5ff5413de5293bfcd8bf96467cf5452609f939ec6f5de16"
+dependencies = [
+ "serde",
+]
 
 [[package]]
 name = "atty"

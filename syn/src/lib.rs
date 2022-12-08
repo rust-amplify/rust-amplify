@@ -30,8 +30,7 @@
     unused_mut,
     unused_imports,
     missing_docs,
-    dead_code,
-    warnings
+    dead_code
 )]
 #![allow(clippy::large_enum_variant)]
 

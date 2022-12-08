@@ -22,9 +22,10 @@ use core::ops::{Index, IndexMut, RangeFull};
 use alloc::vec::Vec;
 use core::borrow::{Borrow, BorrowMut};
 use core::ops::{Range, RangeFrom, RangeInclusive, RangeTo, RangeToInclusive};
+use core::array::TryFromSliceError;
 
 #[cfg(all(feature = "hex", any(feature = "std", feature = "alloc")))]
-use crate::hex::{Error, FromHex, ToHex};
+use crate::hex::{FromHex, ToHex, self};
 use crate::{Wrapper, WrapperMut};
 
 /// Wrapper type for all slice-based 128-bit types implementing many important
@@ -133,6 +134,23 @@ where
     fn default() -> Self {
         let inner = [T::default(); LEN];
         Self(inner)
+    }
+}
+
+impl<T, const LEN: usize> From<[T; LEN]> for Array<T, LEN> {
+    fn from(array: [T; LEN]) -> Self {
+        Array(array)
+    }
+}
+
+impl<T, const LEN: usize> TryFrom<&[T]> for Array<T, LEN>
+where
+    T: Copy + Default,
+{
+    type Error = TryFromSliceError;
+
+    fn try_from(value: &[T]) -> Result<Self, Self::Error> {
+        <[T; LEN]>::try_from(value).map(Self)
     }
 }
 
@@ -319,7 +337,7 @@ impl<const LEN: usize> Debug for Array<u8, LEN> {
 
 #[cfg(all(feature = "hex", any(feature = "std", feature = "alloc")))]
 impl<const LEN: usize> FromStr for Array<u8, LEN> {
-    type Err = Error;
+    type Err = hex::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Self::from_hex(s)
@@ -328,13 +346,13 @@ impl<const LEN: usize> FromStr for Array<u8, LEN> {
 
 #[cfg(all(feature = "hex", any(feature = "std", feature = "alloc")))]
 impl<const LEN: usize> FromHex for Array<u8, LEN> {
-    fn from_byte_iter<I>(iter: I) -> Result<Self, Error>
+    fn from_byte_iter<I>(iter: I) -> Result<Self, hex::Error>
     where
-        I: Iterator<Item = Result<u8, Error>> + ExactSizeIterator + DoubleEndedIterator,
+        I: Iterator<Item = Result<u8, hex::Error>> + ExactSizeIterator + DoubleEndedIterator,
     {
         let vec = Vec::<u8>::from_byte_iter(iter)?;
         if vec.len() != 32 {
-            return Err(Error::InvalidLength(32, vec.len()));
+            return Err(hex::Error::InvalidLength(32, vec.len()));
         }
         let mut id = [0u8; LEN];
         id.copy_from_slice(&vec);
@@ -431,7 +449,7 @@ mod test {
         assert_eq!(Bytes32::from_hex(&s.to_uppercase()), Ok(slice32));
         assert_eq!(
             Bytes32::from_str(&s[..30]),
-            Err(Error::InvalidLength(32, 15))
+            Err(hex::Error::InvalidLength(32, 15))
         );
 
         assert_eq!(&slice32.to_string(), s);
