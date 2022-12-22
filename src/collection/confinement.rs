@@ -1294,11 +1294,14 @@ macro_rules! small_s {
 /// Helper macro to construct confined vector of a given type
 #[macro_export]
 macro_rules! confined_vec {
-    ($ty:ty; $elem:expr; $n:expr) => (
-        <$ty>::try_from(vec![$elem; $n]).expect("inline confined_vec literal contains invalid number of items")
+    ($elem:expr; $n:expr) => (
+        Confined::try_from(vec![$elem; $n])
+            .expect("inline confined_vec literal contains invalid number of items")
     );
-    ($ty:ty; $($x:expr),+ $(,)?) => (
-        <$ty>::try_from(vec![$($x,)+]).expect("inline confined_vec literal contains invalid number of items")
+    ($($x:expr),+ $(,)?) => (
+        Confined::try_from(vec![$($x,)+])
+            .expect("inline confined_vec literal contains invalid number of items")
+            .into()
     )
 }
 
@@ -1331,9 +1334,10 @@ macro_rules! small_vec {
 /// Helper macro to construct confined [`HashSet`] of a given type
 #[macro_export]
 macro_rules! confined_set {
-    ($ty:ty; $($x:expr),+ $(,)?) => (
-        <$ty>::try_from(set![$($x,)+])
+    ($($x:expr),+ $(,)?) => (
+        Confined::try_from(set![$($x,)+])
             .expect("inline confined_set literal contains invalid number of items")
+            .into()
     )
 }
 
@@ -1358,9 +1362,10 @@ macro_rules! small_set {
 /// Helper macro to construct confined [`BTreeSet`] of a given type
 #[macro_export]
 macro_rules! confined_bset {
-    ($ty:ty; $($x:expr),+ $(,)?) => (
-        <$ty>::try_from(bset![$($x,)+])
+    ($($x:expr),+ $(,)?) => (
+        Confined::try_from(bset![$($x,)+])
             .expect("inline confined_bset literal contains invalid number of items")
+            .into()
     )
 }
 
@@ -1382,6 +1387,16 @@ macro_rules! small_bset {
     )
 }
 
+/// Helper macro to construct confined [`HashMap`] of a given type
+#[macro_export]
+macro_rules! confined_map {
+    ($($key:expr => $value:expr),+ $(,)?) => (
+        Confined::try_from(map!{ $($key => $value),+ })
+            .expect("inline confined_map literal contains invalid number of items")
+            .into()
+    )
+}
+
 /// Helper macro to construct confined [`HashMap`] of a [`TinyHashMap`] type
 #[macro_export]
 macro_rules! tiny_map {
@@ -1398,6 +1413,16 @@ macro_rules! small_map {
         $crate::confinement::SmallHashMap::try_from(map!{ $($key => $value,)+ })
             .expect("inline small_map literal contains invalid number of items")
     }
+}
+
+/// Helper macro to construct confined [`BTreeMap`] of a given type
+#[macro_export]
+macro_rules! confined_bmap {
+    ($($key:expr => $value:expr),+ $(,)?) => (
+        Confined::try_from(bmap!{ $($key => $value),+ })
+            .expect("inline confined_bmap literal contains invalid number of items")
+            .into()
+    )
 }
 
 /// Helper macro to construct confined [`BTreeMap`] of a [`TinyOrdMap`] type
@@ -1494,5 +1519,7 @@ mod test {
         small_bset!("a", "b", "c");
         small_map!("a" => 1, "b" => 2, "c" => 3);
         small_bmap!("a" => 1, "b" => 2, "c" => 3);
+
+        let _: TinyHashMap<_, _> = confined_map!("a" => 1, "b" => 2, "c" => 3);
     }
 }
