@@ -18,7 +18,7 @@
 use core::borrow::{Borrow, BorrowMut};
 use core::fmt::{self, Display, Formatter};
 use core::str::FromStr;
-use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet, VecDeque};
+use std::collections::{btree_map, BTreeMap, BTreeSet, hash_map, HashMap, HashSet, VecDeque};
 use std::hash::Hash;
 use std::ops::{
     Deref, Index, IndexMut, Range, RangeFrom, RangeFull, RangeInclusive, RangeTo, RangeToInclusive,
@@ -1114,6 +1114,20 @@ impl<K: Hash + Eq, V, const MIN_LEN: usize, const MAX_LEN: usize>
         }
         Ok(self.0.remove(key))
     }
+
+    /// Creates a consuming iterator visiting all the keys in arbitrary order.
+    /// The map cannot be used after calling this.
+    /// The iterator element type is `K`.
+    pub fn into_keys(self) -> hash_map::IntoKeys<K, V> {
+        self.0.into_keys()
+    }
+
+    /// Creates a consuming iterator visiting all the values in arbitrary order.
+    /// The map cannot be used after calling this.
+    /// The iterator element type is `V`.
+    pub fn into_values(self) -> hash_map::IntoValues<K, V> {
+        self.0.into_values()
+    }
 }
 
 impl<K: Ord + Hash, V, const MIN_LEN: usize, const MAX_LEN: usize>
@@ -1135,6 +1149,20 @@ impl<K: Ord + Hash, V, const MIN_LEN: usize, const MAX_LEN: usize>
             });
         }
         Ok(self.0.remove(key))
+    }
+
+    /// Creates a consuming iterator visiting all the keys in arbitrary order.
+    /// The map cannot be used after calling this.
+    /// The iterator element type is `K`.
+    pub fn into_keys(self) -> btree_map::IntoKeys<K, V> {
+        self.0.into_keys()
+    }
+
+    /// Creates a consuming iterator visiting all the values in arbitrary order.
+    /// The map cannot be used after calling this.
+    /// The iterator element type is `V`.
+    pub fn into_values(self) -> btree_map::IntoValues<K, V> {
+        self.0.into_values()
     }
 }
 
