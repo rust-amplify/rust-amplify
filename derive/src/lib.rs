@@ -671,8 +671,9 @@ pub fn derive_getters(input: TokenStream) -> TokenStream {
 ///    * `FromStr` for implementing [`core::str::FromStr`]
 ///    * `Debug` for implementing [`core::fmt::Debug`]
 ///    * `Display` for implementing [`core::fmt::Display`]
-///    * `Deref` for implementing [`core::fmt::LowerHex`]
-///    * `LowerHex` for implementing [`core::fmt::UpperHex`]
+///    * `FromHex` for implementing [`amplify::hex::FromHex`]
+///    * `LowerHex` for implementing [`core::fmt::LowerHex`]
+///    * `UpperHex` for implementing [`core::fmt::UpperHex`]
 ///    * `LowerExp` for implementing [`core::fmt::LowerExp`]
 ///    * `UpperExp` for implementing [`core::fmt::UpperExp`]
 ///    * `Octal` for implementing [`core::fmt::Octal`]
@@ -706,7 +707,7 @@ pub fn derive_getters(input: TokenStream) -> TokenStream {
 ///    * `Shr` for implementing [`core::ops::Shr`]
 ///
 /// There are shortcuts for derivations:
-/// * `#[wrapper(Hex)]` will derive both `LowerHex` and `UpperHex`;
+/// * `#[wrapper(Hex)]` will derive both `LowerHex`, `UpperHex` and `FromHex`;
 /// * `#[wrapper(Exp)]` will derive both `LowerExp` and `UpperExp`;
 /// * `#[wrapper(NumberFmt)]` will derive all number formatting traits
 ///    (`LowerHex`, `UpperHex`, `LowerExp`, `UpperExp`, `Octal`);
