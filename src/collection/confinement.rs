@@ -353,13 +353,20 @@ impl std::error::Error for AsciiError {}
 
 // Confinement params
 
-const ZERO: usize = 0;
-const ONE: usize = 1;
-const U8: usize = u8::MAX as usize;
-const U16: usize = u16::MAX as usize;
-const U24: usize = 1usize << 24;
-const U32: usize = u32::MAX as usize;
-const USIZE: usize = usize::MAX;
+/// Constant for a minimal size of a confined collection.
+pub const ZERO: usize = 0;
+/// Constant for a minimal size of a confined collection.
+pub const ONE: usize = 1;
+/// Constant for a maximal size of a confined collection equal to [`u8::MAX`].
+pub const U8: usize = u8::MAX as usize;
+/// Constant for a maximal size of a confined collection equal to [`u16::MAX`].
+pub const U16: usize = u16::MAX as usize;
+/// Constant for a maximal size of a confined collection equal to `u24::MAX`.
+pub const U24: usize = 1usize << 24;
+/// Constant for a maximal size of a confined collection equal to [`u32::MAX`].
+pub const U32: usize = u32::MAX as usize;
+/// Constant for a maximal size of a confined collection equal to [`u64::MAX`].
+pub const U64: usize = u64::MAX as usize;
 
 // Confined collection
 
@@ -1194,7 +1201,7 @@ pub type MediumString = Confined<String, ZERO, U24>;
 /// [`String`] with maximum 2^32-1 characters.
 pub type LargeString = Confined<String, ZERO, U32>;
 /// [`String`] which contains at least a single character.
-pub type NonEmptyString = Confined<String, ONE, USIZE>;
+pub type NonEmptyString = Confined<String, ONE, U64>;
 
 /// [`AsciiString`] with maximum 255 characters.
 pub type TinyAscii = Confined<AsciiString, ZERO, U8>;
@@ -1205,7 +1212,7 @@ pub type MediumAscii = Confined<AsciiString, ZERO, U24>;
 /// [`AsciiString`] with maximum 2^32-1 characters.
 pub type LargeAscii = Confined<AsciiString, ZERO, U32>;
 /// [`AsciiString`] which contains at least a single character.
-pub type NonEmptyAscii = Confined<AsciiString, ONE, USIZE>;
+pub type NonEmptyAscii = Confined<AsciiString, ONE, U64>;
 
 /// [`Vec`] with maximum 255 items of type `T`.
 pub type TinyVec<T> = Confined<Vec<T>, ZERO, U8>;
@@ -1216,7 +1223,7 @@ pub type MediumVec<T> = Confined<Vec<T>, ZERO, U24>;
 /// [`Vec`] with maximum 2^32-1 items of type `T`.
 pub type LargeVec<T> = Confined<Vec<T>, ZERO, U32>;
 /// [`Vec`] which contains at least a single item.
-pub type NonEmptyVec<T> = Confined<Vec<T>, ONE, USIZE>;
+pub type NonEmptyVec<T> = Confined<Vec<T>, ONE, U64>;
 
 /// [`VecDeque`] with maximum 255 items of type `T`.
 pub type TinyDeque<T> = Confined<VecDeque<T>, ZERO, U8>;
@@ -1227,7 +1234,7 @@ pub type MediumDeque<T> = Confined<VecDeque<T>, ZERO, U24>;
 /// [`VecDeque`] with maximum 2^32-1 items of type `T`.
 pub type LargeDeque<T> = Confined<VecDeque<T>, ZERO, U32>;
 /// [`VecDeque`] which contains at least a single item.
-pub type NonEmptyDeque<T> = Confined<VecDeque<T>, ONE, USIZE>;
+pub type NonEmptyDeque<T> = Confined<VecDeque<T>, ONE, U64>;
 
 /// [`HashSet`] with maximum 255 items of type `T`.
 pub type TinyHashSet<T> = Confined<HashSet<T>, ZERO, U8>;
@@ -1238,7 +1245,7 @@ pub type MediumHashSet<T> = Confined<HashSet<T>, ZERO, U24>;
 /// [`HashSet`] with maximum 2^32-1 items of type `T`.
 pub type LargeHashSet<T> = Confined<HashSet<T>, ZERO, U32>;
 /// [`HashSet`] which contains at least a single item.
-pub type NonEmptyHashSet<T> = Confined<HashSet<T>, ONE, USIZE>;
+pub type NonEmptyHashSet<T> = Confined<HashSet<T>, ONE, U64>;
 
 /// [`BTreeSet`] with maximum 255 items of type `T`.
 pub type TinyOrdSet<T> = Confined<BTreeSet<T>, ZERO, U8>;
@@ -1249,7 +1256,7 @@ pub type MediumOrdSet<T> = Confined<BTreeSet<T>, ZERO, U24>;
 /// [`BTreeSet`] with maximum 2^32-1 items of type `T`.
 pub type LargeOrdSet<T> = Confined<BTreeSet<T>, ZERO, U32>;
 /// [`BTreeSet`] which contains at least a single item.
-pub type NonEmptyOrdSet<T> = Confined<BTreeSet<T>, ONE, USIZE>;
+pub type NonEmptyOrdSet<T> = Confined<BTreeSet<T>, ONE, U64>;
 
 /// [`HashMap`] with maximum 255 items.
 pub type TinyHashMap<K, V> = Confined<HashMap<K, V>, ZERO, U8>;
@@ -1260,7 +1267,7 @@ pub type MediumHashMap<K, V> = Confined<HashMap<K, V>, ZERO, U24>;
 /// [`HashMap`] with maximum 2^32-1 items.
 pub type LargeHashMap<K, V> = Confined<HashMap<K, V>, ZERO, U32>;
 /// [`HashMap`] which contains at least a single item.
-pub type NonEmptyHashMap<K, V> = Confined<HashMap<K, V>, ONE, USIZE>;
+pub type NonEmptyHashMap<K, V> = Confined<HashMap<K, V>, ONE, U64>;
 
 /// [`BTreeMap`] with maximum 255 items.
 pub type TinyOrdMap<K, V> = Confined<BTreeMap<K, V>, ZERO, U8>;
@@ -1271,7 +1278,7 @@ pub type MediumOrdMap<K, V> = Confined<BTreeMap<K, V>, ZERO, U24>;
 /// [`BTreeMap`] with maximum 2^32-1 items.
 pub type LargeOrdMap<K, V> = Confined<BTreeMap<K, V>, ZERO, U32>;
 /// [`BTreeMap`] which contains at least a single item.
-pub type NonEmptyOrdMap<K, V> = Confined<BTreeMap<K, V>, ONE, USIZE>;
+pub type NonEmptyOrdMap<K, V> = Confined<BTreeMap<K, V>, ONE, U64>;
 
 /// Helper macro to construct confined string of a [`TinyString`] type
 #[macro_export]
