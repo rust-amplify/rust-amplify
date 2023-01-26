@@ -685,7 +685,7 @@ impl WrapperMut {
                 impl #impl_generics ::core::borrow::BorrowMut<[u8]> for #ident_name #ty_generics #where_clause
                 {
                     #[inline]
-                    fn borrow_mut(&self) -> &mut [u8] {
+                    fn borrow_mut(&mut self) -> &mut [u8] {
                         use #amplify_crate::WrapperMut;
                         ::core::borrow::BorrowMut::<[u8]>::borrow_mut(WrapperMut::as_inner_mut(self))
                     }
