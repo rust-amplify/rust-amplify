@@ -31,6 +31,7 @@ enum Wrapper {
     Display,
     Debug,
     Octal,
+    FromHex,
     LowerHex,
     UpperHex,
     LowerExp,
@@ -168,7 +169,7 @@ impl FromPath for Wrapper {
 
     fn populate(self, list: &mut Vec<Self>) {
         let ext = match self {
-            Wrapper::Hex => &[Wrapper::LowerHex, Wrapper::UpperHex] as &[_],
+            Wrapper::Hex => &[Wrapper::LowerHex, Wrapper::UpperHex, Wrapper::FromHex] as &[_],
             Wrapper::Exp => &[Wrapper::LowerExp, Wrapper::UpperExp] as &[_],
             Wrapper::NumberFmt => &[
                 Wrapper::LowerHex,
@@ -266,6 +267,21 @@ impl Wrapper {
                     fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
                         use #amplify_crate::Wrapper;
                         ::core::fmt::Octal::fmt(Wrapper::as_inner(self), f)
+                    }
+                }
+            },
+            Wrapper::FromHex => quote! {
+                impl #impl_generics #amplify_crate::hex::FromHex for #ident_name #ty_generics #where_clause
+                {
+                    #[inline]
+                    fn from_byte_iter<I>(iter: I) -> Result<Self, #amplify_crate::hex::Error>
+                    where
+                        I: Iterator<Item = Result<u8, #amplify_crate::hex::Error>>
+                            + ExactSizeIterator
+                            + DoubleEndedIterator,
+                    {
+                        use #amplify_crate::Wrapper;
+                        <Self as Wrapper>::Inner::from_byte_iter(iter).map(Self::from_inner)
                     }
                 }
             },
