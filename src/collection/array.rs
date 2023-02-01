@@ -59,7 +59,8 @@ pub struct Array<T, const LEN: usize>([T; LEN]);
 
 impl<T, const LEN: usize> Array<T, LEN> {
     /// Constructs array filled with given value.
-    pub const fn with_fill(val: T) -> Self
+    /// TODO: Revert commit  and make method `const` once `const_fn_trait_bound` stabilize
+    pub fn with_fill(val: T) -> Self
     where
         T: Copy,
     {
