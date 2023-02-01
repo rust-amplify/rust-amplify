@@ -58,12 +58,17 @@ pub type Bytes64 = Array<u8, 64>;
 pub struct Array<T, const LEN: usize>([T; LEN]);
 
 impl<T, const LEN: usize> Array<T, LEN> {
-    /// Constructs array filled with given value
-    pub fn with(val: T) -> Self
+    /// Constructs array filled with given value.
+    pub const fn with_fill(val: T) -> Self
     where
         T: Copy,
     {
         Self([val; LEN])
+    }
+
+    /// Wraps inner representation into array type.
+    pub const fn from_array(inner: [T; LEN]) -> Self {
+        Self(inner)
     }
 
     /// Returns byte slice representation.
@@ -100,7 +105,7 @@ impl<const LEN: usize> Array<u8, LEN> {
     }
 
     /// Constructs array filled with zero bytes
-    pub fn zero() -> Self {
+    pub const fn zero() -> Self {
         Self([0u8; LEN])
     }
 }
@@ -109,11 +114,6 @@ impl<T, const LEN: usize> Array<T, LEN>
 where
     T: Default + Copy,
 {
-    /// Constructs array made of default entries
-    pub fn new() -> Self {
-        Default::default()
-    }
-
     /// Constructs 256-bit array from a provided slice. If the slice length
     /// is not equal to 32 bytes, returns `None`
     pub fn from_slice(slice: impl AsRef<[T]>) -> Option<Self> {
