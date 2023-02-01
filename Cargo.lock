@@ -4,11 +4,11 @@ version = 3
 
 [[package]]
 name = "amplify"
-version = "4.0.0-beta.8"
+version = "4.0.0-beta.9"
 dependencies = [
  "amplify_apfloat",
  "amplify_derive",
- "amplify_num",
+ "amplify_num 0.5.0",
  "amplify_syn",
  "ascii",
  "getrandom",
@@ -30,7 +30,7 @@ version = "0.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5e6641206decd3c43f5456a3506e77fc9ab8b4996c3e0c19573ae2bcc2e00bf0"
 dependencies = [
- "amplify_num",
+ "amplify_num 0.4.1",
  "bitflags",
 ]
 
@@ -51,6 +51,12 @@ name = "amplify_num"
 version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f27d3d00d3d115395a7a8a4dc045feb7aa82b641e485f7e15f4e67ac16f4f56d"
+
+[[package]]
+name = "amplify_num"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ddce3bc63e807ea02065e8d8b702695f3d302ae4158baddff8b0ce5c73947251"
 dependencies = [
  "serde",
 ]

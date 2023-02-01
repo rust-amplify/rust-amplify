@@ -1,6 +1,6 @@
 [package]
 name = "amplify"
-version = "4.0.0-beta.8"
+version = "4.0.0-beta.9"
 description = "Amplifying Rust language capabilities: multiple generic trait implementations, type wrappers, derive macros"
 authors = [
     "Dr. Maxim Orlovsky <orlovsky@pandoracore.com>",
@@ -27,7 +27,7 @@ exclude = [
 libc = { version = "0.2", optional = true }
 amplify_derive = { version = "4.0.0-alpha.3", optional = true }
 amplify_syn = { version = "1.1", optional = true }
-amplify_num = { version = "0.4.0" }
+amplify_num = { version = "0.5.0" }
 amplify_apfloat = { version = "0.1.1", optional = true }
 parse_arg = { version = "0.1.4", optional = true }
 ascii = "1.1.0"
