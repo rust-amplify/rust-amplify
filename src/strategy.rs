@@ -93,7 +93,7 @@ impl<'a, T, S> Holder<'a, T, S> {
 
     #[allow(missing_docs)]
     #[inline]
-    pub fn unbox(self) -> &'a T {
+    pub fn unbox(&self) -> &'a T {
         self.0
     }
 }
