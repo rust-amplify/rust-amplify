@@ -154,3 +154,106 @@ impl From<IoError> for io::Error {
         }
     }
 }
+
+/// Errors with [`io::ErrorKind::UnexpectedEof`] on [`Read`] and [`Write`]
+/// operations if the `LIM` is reached.
+#[derive(Clone, Debug)]
+pub struct ConfinedIo<Io, const LIM: usize> {
+    pos: usize,
+    io: Io,
+}
+
+impl<Io, const LIM: usize> From<Io> for ConfinedIo<Io, LIM> {
+    fn from(io: Io) -> Self {
+        Self { pos: 0, io }
+    }
+}
+
+impl<Io: Default, const LIM: usize> Default for ConfinedIo<Io, LIM> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl<Io, const LIM: usize> ConfinedIo<Io, LIM> {
+    /// Constructs new instance.
+    pub fn new() -> Self
+    where
+        Io: Default,
+    {
+        Self::default()
+    }
+
+    /// Returns current position (number of bytes read or written).
+    pub fn pos(&self) -> usize {
+        self.pos
+    }
+
+    /// Returns reference to the inner I/O type.
+    pub fn as_io(&self) -> &Io {
+        &self.io
+    }
+
+    /// Converts into the inner I/O type.
+    pub fn into_io(self) -> Io {
+        self.io
+    }
+
+    /// Returns clone of the inner I/O type.
+    pub fn to_io(&self) -> Io
+    where
+        Io: Clone,
+    {
+        self.io.clone()
+    }
+
+    /// Checks if the position has reached the limit `LIM`.
+    pub fn is_eof(&self) -> bool {
+        self.pos >= LIM
+    }
+}
+
+impl<Io: io::Write, const LIM: usize> io::Write for ConfinedIo<Io, LIM> {
+    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+        let len = buf.len();
+        if self.pos + len >= LIM {
+            return Err(io::ErrorKind::UnexpectedEof.into());
+        }
+        self.pos += len;
+        self.io.write(buf)
+    }
+
+    fn flush(&mut self) -> io::Result<()> {
+        self.io.flush()
+    }
+}
+
+impl<Io: io::Read, const LIM: usize> io::Read for ConfinedIo<Io, LIM> {
+    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+        let len = buf.len();
+        if self.pos + len < LIM {
+            self.pos += len;
+            self.io.read(buf)
+        } else if self.pos >= LIM {
+            return Err(io::ErrorKind::UnexpectedEof.into());
+        } else {
+            let pos = self.pos;
+            self.pos = LIM;
+            self.io.read(&mut buf[..(len - (LIM - pos))])
+        }
+    }
+
+    fn read_exact(&mut self, buf: &mut [u8]) -> io::Result<()> {
+        let len = buf.len();
+        if self.pos + len < LIM {
+            self.pos += len;
+            self.io.read_exact(buf)
+        } else if self.pos >= LIM {
+            return Err(io::ErrorKind::UnexpectedEof.into());
+        } else {
+            let pos = self.pos;
+            self.pos = LIM;
+            self.io.read_exact(&mut buf[..(len - (LIM - pos))])
+        }
+    }
+}

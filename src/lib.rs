@@ -91,5 +91,5 @@ pub mod num {
 }
 
 #[cfg(feature = "std")]
-pub use crate::io_util::{IoError, WriteCounter};
+pub use crate::io_util::{IoError, WriteCounter, ConfinedIo};
 pub use crate::strategy::Holder;
