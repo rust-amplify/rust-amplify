@@ -52,22 +52,23 @@
 //! // Do a single blanket implementation using Holder and Strategy marker trait
 //! impl<T> SampleTrait for T
 //! where
-//!     T: Strategy + Clone,
-//!     amplify::Holder<T, <T as Strategy>::Strategy>: SampleTrait,
+//!     T: Strategy,
+//!     for<'a> amplify::Holder<&'a T, T::Strategy>: SampleTrait,
 //! {
 //!     // Do this for each of sample trait methods:
 //!     fn sample_trait_method(&self) {
-//!         amplify::Holder::new(self.clone()).sample_trait_method()
+//!         amplify::Holder::new(self).sample_trait_method()
 //!     }
 //! }
 //!
 //! // Do this type of implementation for each of the strategies
-//! impl<T> SampleTrait for amplify::Holder<T, StrategyA>
+//! impl<'a, T> SampleTrait for amplify::Holder<&'a T, StrategyA>
 //! where
 //!     T: Strategy,
 //! {
 //!     fn sample_trait_method(&self) {
-//!         /* ... write your implementation-specific code here */
+//!         /* write your implementation-specific code here accessing type data,
+//!            when needed, via `self.as_inner()` */
 //!     }
 //! }
 //!
@@ -85,13 +86,13 @@ use ::core::marker::PhantomData;
 /// multiple times. In practice this type is never used
 pub struct Holder<T, S>(T, PhantomData<S>);
 impl<T, S> Holder<T, S> {
-    #[allow(missing_docs)]
+    /// Wraps type into a holder to apply necessary blanked implementations.
     #[inline]
     pub fn new(val: T) -> Self {
         Self(val, PhantomData::<S>::default())
     }
 
-    #[allow(missing_docs)]
+    /// Returns a reference to the wrapped type.
     #[inline]
     pub fn as_type(&self) -> &T {
         &self.0
