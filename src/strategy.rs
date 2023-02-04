@@ -50,19 +50,19 @@
 //! }
 //!
 //! // Do a single blanket implementation using Holder and Strategy marker trait
-//! impl<'a, T> SampleTrait for &'a T
+//! impl<T> SampleTrait for T
 //! where
-//!     T: Strategy,
-//!     amplify::Holder<'a, T, <T as Strategy>::Strategy>: SampleTrait,
+//!     T: Strategy + Clone,
+//!     amplify::Holder<T, <T as Strategy>::Strategy>: SampleTrait,
 //! {
 //!     // Do this for each of sample trait methods:
 //!     fn sample_trait_method(&self) {
-//!         amplify::Holder::new(*self).sample_trait_method()
+//!         amplify::Holder::new(self.clone()).sample_trait_method()
 //!     }
 //! }
 //!
 //! // Do this type of implementation for each of the strategies
-//! impl<'a, T> SampleTrait for amplify::Holder<'a, T, StrategyA>
+//! impl<T> SampleTrait for amplify::Holder<T, StrategyA>
 //! where
 //!     T: Strategy,
 //! {
@@ -83,17 +83,17 @@ use ::core::marker::PhantomData;
 
 /// Helper type allowing implementation of trait object for generic types
 /// multiple times. In practice this type is never used
-pub struct Holder<'a, T, S>(&'a T, PhantomData<S>);
-impl<'a, T, S> Holder<'a, T, S> {
+pub struct Holder<T, S>(T, PhantomData<S>);
+impl<T, S> Holder<T, S> {
     #[allow(missing_docs)]
     #[inline]
-    pub fn new(val: &'a T) -> Self {
+    pub fn new(val: T) -> Self {
         Self(val, PhantomData::<S>::default())
     }
 
     #[allow(missing_docs)]
     #[inline]
-    pub fn unbox(&self) -> &'a T {
-        self.0
+    pub fn as_type(&self) -> &T {
+        &self.0
     }
 }
