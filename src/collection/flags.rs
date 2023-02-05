@@ -262,16 +262,12 @@ impl TryFrom<&[u8]> for FlagVec {
 
 impl FlagVec {
     fn bits_to_bytes(bits: FlagNo) -> usize {
-        if bits == 0 {
-            0
-        } else {
-            ((bits - 1) / 8 + 1) as usize
-        }
+        (bits / 8 + 1) as usize
     }
 
     /// Constructs a features vector of zero feature flag set
     pub fn new() -> FlagVec {
-        FlagVec(empty!())
+        FlagVec(tiny_vec!(0u8; 1))
     }
 
     /// Constructs a features vector of `upto` feature flag in unset state
@@ -378,7 +374,7 @@ impl FlagVec {
     /// already had sufficient capacity
     #[inline]
     fn enlarge(&mut self, upto: FlagNo) -> bool {
-        if upto <= self.capacity() {
+        if upto < self.capacity() {
             // We have nothing to do
             return false;
         }
@@ -568,11 +564,11 @@ mod test {
         assert_eq!(f1, f2);
         assert_eq!(f1, f3);
         assert_eq!(f2, f3);
-        assert_eq!(f1.capacity(), 0);
+        assert_eq!(f1.capacity(), 8);
         assert_eq!(f1.iter().collect::<Vec<_>>(), empty_vec);
-        assert_eq!(f2.capacity(), 0);
+        assert_eq!(f2.capacity(), 8);
         assert_eq!(f2.iter().collect::<Vec<_>>(), empty_vec);
-        assert_eq!(f3.capacity(), 0);
+        assert_eq!(f3.capacity(), 8);
         assert_eq!(f3.iter().collect::<Vec<_>>(), empty_vec);
 
         let f4 = FlagVec::with_capacity(10);
@@ -589,7 +585,7 @@ mod test {
         assert_eq!(f2.capacity(), 16);
         f2 = f1.shrunk();
         f1.shrink();
-        assert_eq!(f1.capacity(), 0);
+        assert_eq!(f1.capacity(), 8);
         assert_eq!(f1, f2);
         f1.enlarge(20);
         assert_eq!(f1.capacity(), 24);
@@ -698,5 +694,13 @@ mod test {
             f1.clone() ^ f2.clone(),
             FlagVec::from_str("-++--++---+-+--+").unwrap()
         );
+    }
+
+    #[test]
+    fn test_zero_pos() {
+        let mut f: FlagVec = none!();
+        *f.mut_byte_at(0) = 0;
+        *f.mut_byte_at(8) = 1;
+        assert_eq!(f.into_inner(), tiny_vec![0x00, 0x01])
     }
 }
