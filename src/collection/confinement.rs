@@ -468,6 +468,20 @@ where
     }
 }
 
+impl<'c, C, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C, MIN_LEN, MAX_LEN>
+where
+    C: Collection + 'c,
+    &'c mut C: IntoIterator<Item = &'c mut <C as Collection>::Item>,
+{
+    /// Returns an iterator that allows modifying each value.
+    ///
+    /// The iterator yields all items from start to end.
+    pub fn iter_mut(&'c mut self) -> <&'c mut C as IntoIterator>::IntoIter {
+        let coll = &mut self.0;
+        coll.into_iter()
+    }
+}
+
 impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Index<usize>
     for Confined<C, MIN_LEN, MAX_LEN>
 where
@@ -951,13 +965,6 @@ impl<T, const MIN_LEN: usize, const MAX_LEN: usize> Confined<Vec<T>, MIN_LEN, MA
     /// The iterator yields all items from start to end.
     pub fn iter(&self) -> core::slice::Iter<T> {
         self.0.iter()
-    }
-
-    /// Returns an iterator that allows modifying each value.
-    ///
-    /// The iterator yields all items from start to end.
-    pub fn iter_mut(&mut self) -> core::slice::IterMut<T> {
-        self.0.iter_mut()
     }
 }
 
