@@ -433,6 +433,27 @@ pub(crate) mod serde_helpers {
     }
 }
 
+/// Trait which does a blanket implementation for all types wrapping [`Array`]s
+pub trait RawArray<const LEN: usize> {
+    /// Constructs a wrapper type around an array.
+    fn from_raw_array(val: impl Into<[u8; LEN]>) -> Self;
+    /// Returns a raw array representation stored in the wrapped type.
+    fn to_raw_array(&self) -> [u8; LEN];
+}
+
+impl<Id, const LEN: usize> RawArray<LEN> for Id
+where
+    Id: Wrapper<Inner = Array<u8, LEN>>,
+{
+    fn from_raw_array(val: impl Into<[u8; LEN]>) -> Self {
+        Self::from_inner(Array::from_inner(val.into()))
+    }
+
+    fn to_raw_array(&self) -> [u8; LEN] {
+        self.as_inner().into_inner()
+    }
+}
+
 #[cfg(test)]
 mod test {
     use core::str::FromStr;
