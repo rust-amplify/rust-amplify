@@ -501,6 +501,23 @@ where
     }
 }
 
+impl<'c, C, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C, MIN_LEN, MAX_LEN>
+where
+    C: KeyedCollection + 'c,
+    &'c mut C: IntoIterator<
+        Item = (
+            &'c <C as KeyedCollection>::Key,
+            &'c mut <C as KeyedCollection>::Value,
+        ),
+    >,
+{
+    /// Returns an iterator that allows modifying each value for each key.
+    pub fn keyed_values_mut(&'c mut self) -> <&'c mut C as IntoIterator>::IntoIter {
+        let coll = &mut self.0;
+        coll.into_iter()
+    }
+}
+
 impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Index<usize>
     for Confined<C, MIN_LEN, MAX_LEN>
 where
