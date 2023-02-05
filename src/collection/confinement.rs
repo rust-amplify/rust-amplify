@@ -1240,6 +1240,17 @@ pub type LargeAscii = Confined<AsciiString, ZERO, U32>;
 /// [`AsciiString`] which contains at least a single character.
 pub type NonEmptyAscii<const MAX: usize = U64> = Confined<AsciiString, ONE, MAX>;
 
+/// [`Vec<u8>`] with maximum 255 characters.
+pub type TinyBlob = Confined<Vec<u8>, ZERO, U8>;
+/// [`Vec<u8>`] with maximum 2^16-1 characters.
+pub type SmallBlob = Confined<Vec<u8>, ZERO, U16>;
+/// [`Vec<u8>`] with maximum 2^24-1 characters.
+pub type MediumBlob = Confined<Vec<u8>, ZERO, U24>;
+/// [`Vec<u8>`] with maximum 2^32-1 characters.
+pub type LargeBlob = Confined<Vec<u8>, ZERO, U32>;
+/// [`Vec<u8>`] which contains at least a single character.
+pub type NonEmptyBlob<const MAX: usize = U64> = Confined<Vec<u8>, ONE, MAX>;
+
 /// [`Vec`] with maximum 255 items of type `T`.
 pub type TinyVec<T> = Confined<Vec<T>, ZERO, U8>;
 /// [`Vec`] with maximum 2^16-1 items of type `T`.
