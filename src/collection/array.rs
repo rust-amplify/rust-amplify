@@ -21,7 +21,10 @@ use core::ops::{Index, IndexMut, RangeFull};
 #[cfg(feature = "alloc")]
 use alloc::vec::Vec;
 use core::borrow::{Borrow, BorrowMut};
-use core::ops::{Range, RangeFrom, RangeInclusive, RangeTo, RangeToInclusive};
+use core::ops::{
+    Range, RangeFrom, RangeInclusive, RangeTo, RangeToInclusive, BitAndAssign, BitOrAssign,
+    BitXorAssign, BitAnd, BitOr, BitXor, Not,
+};
 use core::array::TryFromSliceError;
 use core::{slice, array};
 
@@ -123,6 +126,69 @@ impl<const LEN: usize> Array<u8, LEN> {
     /// Constructs array filled with zero bytes
     pub const fn zero() -> Self {
         Self([0u8; LEN])
+    }
+}
+
+impl<const LEN: usize> BitAnd for Array<u8, LEN> {
+    type Output = Self;
+
+    fn bitand(mut self, rhs: Self) -> Self::Output {
+        self.bitand_assign(rhs);
+        self
+    }
+}
+
+impl<const LEN: usize> BitAndAssign for Array<u8, LEN> {
+    fn bitand_assign(&mut self, rhs: Self) {
+        self.0
+            .iter_mut()
+            .zip(rhs.into_iter())
+            .for_each(|(a, b)| a.bitand_assign(b));
+    }
+}
+
+impl<const LEN: usize> BitOr for Array<u8, LEN> {
+    type Output = Self;
+
+    fn bitor(mut self, rhs: Self) -> Self::Output {
+        self.bitor_assign(rhs);
+        self
+    }
+}
+
+impl<const LEN: usize> BitOrAssign for Array<u8, LEN> {
+    fn bitor_assign(&mut self, rhs: Self) {
+        self.0
+            .iter_mut()
+            .zip(rhs.into_iter())
+            .for_each(|(a, b)| a.bitor_assign(b));
+    }
+}
+
+impl<const LEN: usize> BitXor for Array<u8, LEN> {
+    type Output = Self;
+
+    fn bitxor(mut self, rhs: Self) -> Self::Output {
+        self.bitxor_assign(rhs);
+        self
+    }
+}
+
+impl<const LEN: usize> BitXorAssign for Array<u8, LEN> {
+    fn bitxor_assign(&mut self, rhs: Self) {
+        self.0
+            .iter_mut()
+            .zip(rhs.into_iter())
+            .for_each(|(a, b)| a.bitxor_assign(b));
+    }
+}
+
+impl<const LEN: usize> Not for Array<u8, LEN> {
+    type Output = Self;
+
+    fn not(mut self) -> Self::Output {
+        self.0.iter_mut().for_each(|e| *e = e.not());
+        self
     }
 }
 
