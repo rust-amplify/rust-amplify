@@ -23,6 +23,7 @@ use alloc::vec::Vec;
 use core::borrow::{Borrow, BorrowMut};
 use core::ops::{Range, RangeFrom, RangeInclusive, RangeTo, RangeToInclusive};
 use core::array::TryFromSliceError;
+use core::{slice, array};
 
 #[cfg(all(feature = "hex", any(feature = "std", feature = "alloc")))]
 use crate::hex::{FromHex, ToHex, self};
@@ -92,6 +93,20 @@ impl<T, const LEN: usize> Array<T, LEN> {
         T: Clone,
     {
         self.0.to_vec()
+    }
+
+    /// Returns an iterator over the array items.
+    ///
+    /// The iterator yields all items from start to end.
+    pub fn iter(&self) -> slice::Iter<T> {
+        self.0.iter()
+    }
+
+    /// Returns an iterator that allows modifying each value.
+    ///
+    /// The iterator yields all items from start to end.
+    pub fn iter_mut(&mut self) -> slice::IterMut<T> {
+        self.0.iter_mut()
     }
 }
 
@@ -284,6 +299,15 @@ impl<T, const LEN: usize> IndexMut<RangeFull> for Array<T, LEN> {
     #[inline]
     fn index_mut(&mut self, index: RangeFull) -> &mut Self::Output {
         &mut self.0[index]
+    }
+}
+
+impl<T, const LEN: usize> IntoIterator for Array<T, LEN> {
+    type Item = T;
+    type IntoIter = array::IntoIter<T, LEN>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.0.into_iter()
     }
 }
 
