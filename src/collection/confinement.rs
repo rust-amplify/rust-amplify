@@ -363,7 +363,7 @@ pub const U8: usize = u8::MAX as usize;
 /// Constant for a maximal size of a confined collection equal to [`u16::MAX`].
 pub const U16: usize = u16::MAX as usize;
 /// Constant for a maximal size of a confined collection equal to `u24::MAX`.
-pub const U24: usize = 1usize << 24;
+pub const U24: usize = 0xFFFFFF as usize;
 /// Constant for a maximal size of a confined collection equal to [`u32::MAX`].
 pub const U32: usize = u32::MAX as usize;
 /// Constant for a maximal size of a confined collection equal to [`u64::MAX`].
