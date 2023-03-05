@@ -62,6 +62,9 @@ pub trait KeyedCollection: Collection<Item = (Self::Key, Self::Value)> {
     /// Value type for the collection.
     type Value;
 
+    /// Gets mutable element of the collection
+    fn get_mut(&mut self, key: &Self::Key) -> Option<&mut Self::Value>;
+
     /// Inserts a new value under a key. Returns previous value if a value under
     /// the key was already present in the collection.
     fn insert(&mut self, key: Self::Key, value: Self::Value) -> Option<Self::Value>;
@@ -218,6 +221,10 @@ impl<K: Eq + Hash, V> KeyedCollection for HashMap<K, V> {
     type Key = K;
     type Value = V;
 
+    fn get_mut(&mut self, key: &Self::Key) -> Option<&mut Self::Value> {
+        HashMap::get_mut(self, key)
+    }
+
     fn insert(&mut self, key: Self::Key, value: Self::Value) -> Option<Self::Value> {
         HashMap::insert(self, key, value)
     }
@@ -251,6 +258,10 @@ impl<K: Ord + Hash, V> Collection for BTreeMap<K, V> {
 impl<K: Ord + Hash, V> KeyedCollection for BTreeMap<K, V> {
     type Key = K;
     type Value = V;
+
+    fn get_mut(&mut self, key: &Self::Key) -> Option<&mut Self::Value> {
+        BTreeMap::get_mut(self, key)
+    }
 
     fn insert(&mut self, key: Self::Key, value: Self::Value) -> Option<Self::Value> {
         BTreeMap::insert(self, key, value)
@@ -866,6 +877,11 @@ where
 }
 
 impl<C: KeyedCollection, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C, MIN_LEN, MAX_LEN> {
+    /// Gets mutable reference to an element of the collection.
+    pub fn get_mut(&mut self, key: &C::Key) -> Option<&mut C::Value> {
+        self.0.get_mut(key)
+    }
+
     /// Inserts a new value into the confined collection under a given key.
     /// Fails if the collection already contains maximum number of elements
     /// allowed by the confinement.
