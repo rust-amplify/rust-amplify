@@ -262,12 +262,16 @@ impl TryFrom<&[u8]> for FlagVec {
 
 impl FlagVec {
     fn bits_to_bytes(bits: FlagNo) -> usize {
-        (bits / 8 + 1) as usize
+        if bits == 0 {
+            0
+        } else {
+            (bits / 8 + 1) as usize
+        }
     }
 
     /// Constructs a features vector of zero feature flag set
     pub fn new() -> FlagVec {
-        FlagVec(tiny_vec!(0u8; 1))
+        FlagVec(tiny_vec!(0u8; 0))
     }
 
     /// Constructs a features vector of `upto` feature flag in unset state
@@ -380,7 +384,7 @@ impl FlagVec {
         }
 
         let old = self.0.clone();
-        self.0 = tiny_vec![0u8; Self::bits_to_bytes(upto)];
+        self.0 = tiny_vec![0u8; Self::bits_to_bytes(upto + 1)];
         self.0[..old.len()].copy_from_slice(&old);
         true
     }
@@ -395,7 +399,7 @@ impl FlagVec {
         if capacity == 0 {
             return false;
         }
-        let mut top = 1;
+        let mut top = 0;
         while top < capacity && !self.is_set(capacity - top) {
             top += 1;
         }
@@ -564,11 +568,11 @@ mod test {
         assert_eq!(f1, f2);
         assert_eq!(f1, f3);
         assert_eq!(f2, f3);
-        assert_eq!(f1.capacity(), 8);
+        assert_eq!(f1.capacity(), 0);
         assert_eq!(f1.iter().collect::<Vec<_>>(), empty_vec);
-        assert_eq!(f2.capacity(), 8);
+        assert_eq!(f2.capacity(), 0);
         assert_eq!(f2.iter().collect::<Vec<_>>(), empty_vec);
-        assert_eq!(f3.capacity(), 8);
+        assert_eq!(f3.capacity(), 0);
         assert_eq!(f3.iter().collect::<Vec<_>>(), empty_vec);
 
         let f4 = FlagVec::with_capacity(10);
@@ -585,7 +589,7 @@ mod test {
         assert_eq!(f2.capacity(), 16);
         f2 = f1.shrunk();
         f1.shrink();
-        assert_eq!(f1.capacity(), 8);
+        assert_eq!(f1.capacity(), 0);
         assert_eq!(f1, f2);
         f1.enlarge(20);
         assert_eq!(f1.capacity(), 24);
