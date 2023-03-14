@@ -1,6 +1,6 @@
 [package]
 name = "amplify"
-version = "3.14.1"
+version = "3.14.2"
 description = "Amplifying Rust language capabilities: multiple generic trait implementations, type wrappers, derive macros"
 authors = [
     "Dr. Maxim Orlovsky <orlovsky@pandoracore.com>",
