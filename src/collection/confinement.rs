@@ -945,7 +945,7 @@ impl<const MIN_LEN: usize, const MAX_LEN: usize> Confined<String, MIN_LEN, MAX_L
     /// otherwise.
     pub fn remove(&mut self, index: usize) -> Result<char, Error> {
         let len = self.len();
-        if self.is_empty() || len - 1 <= MIN_LEN {
+        if self.is_empty() || len - 1 < MIN_LEN {
             return Err(Error::Undersize {
                 len,
                 min_len: MIN_LEN,
