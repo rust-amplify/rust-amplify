@@ -1372,11 +1372,11 @@ macro_rules! small_s {
 #[macro_export]
 macro_rules! confined_vec {
     ($elem:expr; $n:expr) => (
-        Confined::try_from(vec![$elem; $n])
+        $crate::confinement::Confined::try_from(vec![$elem; $n])
             .expect("inline confined_vec literal contains invalid number of items")
     );
     ($($x:expr),+ $(,)?) => (
-        Confined::try_from(vec![$($x,)+])
+        $crate::confinement::Confined::try_from(vec![$($x,)+])
             .expect("inline confined_vec literal contains invalid number of items")
             .into()
     )
@@ -1412,7 +1412,7 @@ macro_rules! small_vec {
 #[macro_export]
 macro_rules! confined_set {
     ($($x:expr),+ $(,)?) => (
-        Confined::try_from(set![$($x,)+])
+        $crate::confinement::Confined::try_from(set![$($x,)+])
             .expect("inline confined_set literal contains invalid number of items")
             .into()
     )
@@ -1440,7 +1440,7 @@ macro_rules! small_set {
 #[macro_export]
 macro_rules! confined_bset {
     ($($x:expr),+ $(,)?) => (
-        Confined::try_from(bset![$($x,)+])
+        $crate::confinement::Confined::try_from(bset![$($x,)+])
             .expect("inline confined_bset literal contains invalid number of items")
             .into()
     )
@@ -1468,7 +1468,7 @@ macro_rules! small_bset {
 #[macro_export]
 macro_rules! confined_map {
     ($($key:expr => $value:expr),+ $(,)?) => (
-        Confined::try_from(map!{ $($key => $value),+ })
+        $crate::confinement::Confined::try_from(map!{ $($key => $value),+ })
             .expect("inline confined_map literal contains invalid number of items")
             .into()
     )
@@ -1496,7 +1496,7 @@ macro_rules! small_map {
 #[macro_export]
 macro_rules! confined_bmap {
     ($($key:expr => $value:expr),+ $(,)?) => (
-        Confined::try_from(bmap!{ $($key => $value),+ })
+        $crate::confinement::Confined::try_from(bmap!{ $($key => $value),+ })
             .expect("inline confined_bmap literal contains invalid number of items")
             .into()
     )
