@@ -945,7 +945,7 @@ impl<const MIN_LEN: usize, const MAX_LEN: usize> Confined<String, MIN_LEN, MAX_L
     /// otherwise.
     pub fn remove(&mut self, index: usize) -> Result<char, Error> {
         let len = self.len();
-        if self.is_empty() || len - 1 < MIN_LEN {
+        if self.is_empty() || len <= MIN_LEN {
             return Err(Error::Undersize {
                 len,
                 min_len: MIN_LEN,
@@ -972,7 +972,7 @@ impl<const MIN_LEN: usize, const MAX_LEN: usize> Confined<AsciiString, MIN_LEN, 
     /// otherwise.
     pub fn remove(&mut self, index: usize) -> Result<AsciiChar, Error> {
         let len = self.len();
-        if self.is_empty() || len - 1 <= MIN_LEN {
+        if self.is_empty() || len <= MIN_LEN {
             return Err(Error::Undersize {
                 len,
                 min_len: MIN_LEN,
@@ -1000,7 +1000,7 @@ impl<T, const MIN_LEN: usize, const MAX_LEN: usize> Confined<Vec<T>, MIN_LEN, MA
     /// removed element otherwise.
     pub fn remove(&mut self, index: usize) -> Result<T, Error> {
         let len = self.len();
-        if self.is_empty() || len - 1 <= MIN_LEN {
+        if self.is_empty() || len <= MIN_LEN {
             return Err(Error::Undersize {
                 len,
                 min_len: MIN_LEN,
@@ -1069,7 +1069,7 @@ impl<T, const MIN_LEN: usize, const MAX_LEN: usize> Confined<VecDeque<T>, MIN_LE
     /// removed element otherwise.
     pub fn remove(&mut self, index: usize) -> Result<T, Error> {
         let len = self.len();
-        if self.is_empty() || len - 1 <= MIN_LEN {
+        if self.is_empty() || len <= MIN_LEN {
             return Err(Error::Undersize {
                 len,
                 min_len: MIN_LEN,
@@ -1094,7 +1094,7 @@ impl<T: Hash + Eq, const MIN_LEN: usize, const MAX_LEN: usize>
             return Ok(false);
         }
         let len = self.len();
-        if self.is_empty() || len - 1 <= MIN_LEN {
+        if self.is_empty() || len <= MIN_LEN {
             return Err(Error::Undersize {
                 len,
                 min_len: MIN_LEN,
@@ -1112,7 +1112,7 @@ impl<T: Hash + Eq, const MIN_LEN: usize, const MAX_LEN: usize>
             return Ok(None);
         }
         let len = self.len();
-        if self.is_empty() || len - 1 <= MIN_LEN {
+        if self.is_empty() || len <= MIN_LEN {
             return Err(Error::Undersize {
                 len,
                 min_len: MIN_LEN,
@@ -1132,7 +1132,7 @@ impl<T: Ord, const MIN_LEN: usize, const MAX_LEN: usize> Confined<BTreeSet<T>, M
             return Ok(false);
         }
         let len = self.len();
-        if self.is_empty() || len - 1 <= MIN_LEN {
+        if self.is_empty() || len <= MIN_LEN {
             return Err(Error::Undersize {
                 len,
                 min_len: MIN_LEN,
@@ -1172,7 +1172,7 @@ impl<K: Hash + Eq, V, const MIN_LEN: usize, const MAX_LEN: usize>
             return Ok(None);
         }
         let len = self.len();
-        if self.is_empty() || len - 1 <= MIN_LEN {
+        if self.is_empty() || len <= MIN_LEN {
             return Err(Error::Undersize {
                 len,
                 min_len: MIN_LEN,
@@ -1208,7 +1208,7 @@ impl<K: Ord + Hash, V, const MIN_LEN: usize, const MAX_LEN: usize>
             return Ok(None);
         }
         let len = self.len();
-        if self.is_empty() || len - 1 <= MIN_LEN {
+        if self.is_empty() || len <= MIN_LEN {
             return Err(Error::Undersize {
                 len,
                 min_len: MIN_LEN,
