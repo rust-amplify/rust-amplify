@@ -63,7 +63,8 @@ pub struct Array<T, const LEN: usize>([T; LEN]);
 
 impl<T, const LEN: usize> Array<T, LEN> {
     /// Constructs array filled with given value.
-    /// TODO: Revert commit  and make method `const` once `const_fn_trait_bound` stabilize
+    /// TODO: Revert commit 7110cee0cf539d8ff4270450183f7060a585bc87 and make
+    ///       method `const` once `const_fn_trait_bound` stabilize
     pub fn with_fill(val: T) -> Self
     where
         T: Copy,
@@ -487,7 +488,10 @@ impl<const LEN: usize> UpperHex for Array<u8, LEN> {
 pub(crate) mod serde_helpers {
     //! Serde serialization helpers
 
+    use core::fmt;
     use serde::{Deserialize, Deserializer, Serializer, Serialize};
+    use serde_crate::de::{SeqAccess, Visitor};
+    use serde_crate::ser::SerializeTuple;
 
     use crate::Array;
     use crate::hex::{FromHex, ToHex};
@@ -497,7 +501,15 @@ pub(crate) mod serde_helpers {
         where
             S: Serializer,
         {
-            serializer.serialize_str(&self.as_ref().to_hex())
+            if serializer.is_human_readable() {
+                serializer.serialize_str(&self.as_ref().to_hex())
+            } else {
+                let mut ser = serializer.serialize_tuple(LEN)?;
+                for i in 0..LEN {
+                    ser.serialize_element(&self.0[i])?;
+                }
+                ser.end()
+            }
         }
     }
 
@@ -507,18 +519,45 @@ pub(crate) mod serde_helpers {
             D: Deserializer<'de>,
         {
             use serde::de::Error;
-            String::deserialize(deserializer)
-                .and_then(|string| {
-                    let vec = Vec::<u8>::from_hex(&string)
-                        .map_err(|_| D::Error::custom("wrong hex data"))?;
-                    if vec.len() != LEN {
-                        return Err(D::Error::custom("Wrong 32-byte slice data length"));
+            if deserializer.is_human_readable() {
+                String::deserialize(deserializer)
+                    .and_then(|string| {
+                        let vec = Vec::<u8>::from_hex(&string)
+                            .map_err(|_| D::Error::custom("wrong hex data"))?;
+                        if vec.len() != LEN {
+                            return Err(D::Error::custom("Wrong 32-byte slice data length"));
+                        }
+                        let mut slice32 = [0u8; LEN];
+                        slice32.copy_from_slice(&vec[..LEN]);
+                        Ok(slice32)
+                    })
+                    .map(Self)
+            } else {
+                struct ArrayVisitor<const LEN: usize>;
+
+                impl<'de, const LEN: usize> Visitor<'de> for ArrayVisitor<LEN> {
+                    type Value = [u8; LEN];
+
+                    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                        write!(formatter, "an array of length {LEN}")
                     }
-                    let mut slice32 = [0u8; LEN];
-                    slice32.copy_from_slice(&vec[..LEN]);
-                    Ok(slice32)
-                })
-                .map(Self)
+
+                    fn visit_seq<A>(self, mut seq: A) -> Result<[u8; LEN], A::Error>
+                    where
+                        A: SeqAccess<'de>,
+                    {
+                        let mut arr = [0; LEN];
+                        for i in 0..LEN {
+                            arr[i] = seq
+                                .next_element()?
+                                .ok_or_else(|| Error::invalid_length(i, &self))?;
+                        }
+                        Ok(arr)
+                    }
+                }
+
+                deserializer.deserialize_tuple(LEN, ArrayVisitor).map(Self)
+            }
         }
     }
 }

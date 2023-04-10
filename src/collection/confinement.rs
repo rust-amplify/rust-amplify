@@ -62,6 +62,9 @@ pub trait KeyedCollection: Collection<Item = (Self::Key, Self::Value)> {
     /// Value type for the collection.
     type Value;
 
+    /// Gets mutable element of the collection
+    fn get_mut(&mut self, key: &Self::Key) -> Option<&mut Self::Value>;
+
     /// Inserts a new value under a key. Returns previous value if a value under
     /// the key was already present in the collection.
     fn insert(&mut self, key: Self::Key, value: Self::Value) -> Option<Self::Value>;
@@ -218,6 +221,10 @@ impl<K: Eq + Hash, V> KeyedCollection for HashMap<K, V> {
     type Key = K;
     type Value = V;
 
+    fn get_mut(&mut self, key: &Self::Key) -> Option<&mut Self::Value> {
+        HashMap::get_mut(self, key)
+    }
+
     fn insert(&mut self, key: Self::Key, value: Self::Value) -> Option<Self::Value> {
         HashMap::insert(self, key, value)
     }
@@ -251,6 +258,10 @@ impl<K: Ord + Hash, V> Collection for BTreeMap<K, V> {
 impl<K: Ord + Hash, V> KeyedCollection for BTreeMap<K, V> {
     type Key = K;
     type Value = V;
+
+    fn get_mut(&mut self, key: &Self::Key) -> Option<&mut Self::Value> {
+        BTreeMap::get_mut(self, key)
+    }
 
     fn insert(&mut self, key: Self::Key, value: Self::Value) -> Option<Self::Value> {
         BTreeMap::insert(self, key, value)
@@ -363,7 +374,7 @@ pub const U8: usize = u8::MAX as usize;
 /// Constant for a maximal size of a confined collection equal to [`u16::MAX`].
 pub const U16: usize = u16::MAX as usize;
 /// Constant for a maximal size of a confined collection equal to `u24::MAX`.
-pub const U24: usize = 1usize << 24;
+pub const U24: usize = 0xFFFFFF as usize;
 /// Constant for a maximal size of a confined collection equal to [`u32::MAX`].
 pub const U32: usize = u32::MAX as usize;
 /// Constant for a maximal size of a confined collection equal to [`u64::MAX`].
@@ -866,6 +877,11 @@ where
 }
 
 impl<C: KeyedCollection, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C, MIN_LEN, MAX_LEN> {
+    /// Gets mutable reference to an element of the collection.
+    pub fn get_mut(&mut self, key: &C::Key) -> Option<&mut C::Value> {
+        self.0.get_mut(key)
+    }
+
     /// Inserts a new value into the confined collection under a given key.
     /// Fails if the collection already contains maximum number of elements
     /// allowed by the confinement.
@@ -929,7 +945,7 @@ impl<const MIN_LEN: usize, const MAX_LEN: usize> Confined<String, MIN_LEN, MAX_L
     /// otherwise.
     pub fn remove(&mut self, index: usize) -> Result<char, Error> {
         let len = self.len();
-        if self.is_empty() || len - 1 <= MIN_LEN {
+        if self.is_empty() || len <= MIN_LEN {
             return Err(Error::Undersize {
                 len,
                 min_len: MIN_LEN,
@@ -956,7 +972,7 @@ impl<const MIN_LEN: usize, const MAX_LEN: usize> Confined<AsciiString, MIN_LEN, 
     /// otherwise.
     pub fn remove(&mut self, index: usize) -> Result<AsciiChar, Error> {
         let len = self.len();
-        if self.is_empty() || len - 1 <= MIN_LEN {
+        if self.is_empty() || len <= MIN_LEN {
             return Err(Error::Undersize {
                 len,
                 min_len: MIN_LEN,
@@ -984,7 +1000,7 @@ impl<T, const MIN_LEN: usize, const MAX_LEN: usize> Confined<Vec<T>, MIN_LEN, MA
     /// removed element otherwise.
     pub fn remove(&mut self, index: usize) -> Result<T, Error> {
         let len = self.len();
-        if self.is_empty() || len - 1 <= MIN_LEN {
+        if self.is_empty() || len <= MIN_LEN {
             return Err(Error::Undersize {
                 len,
                 min_len: MIN_LEN,
@@ -1053,7 +1069,7 @@ impl<T, const MIN_LEN: usize, const MAX_LEN: usize> Confined<VecDeque<T>, MIN_LE
     /// removed element otherwise.
     pub fn remove(&mut self, index: usize) -> Result<T, Error> {
         let len = self.len();
-        if self.is_empty() || len - 1 <= MIN_LEN {
+        if self.is_empty() || len <= MIN_LEN {
             return Err(Error::Undersize {
                 len,
                 min_len: MIN_LEN,
@@ -1078,7 +1094,7 @@ impl<T: Hash + Eq, const MIN_LEN: usize, const MAX_LEN: usize>
             return Ok(false);
         }
         let len = self.len();
-        if self.is_empty() || len - 1 <= MIN_LEN {
+        if self.is_empty() || len <= MIN_LEN {
             return Err(Error::Undersize {
                 len,
                 min_len: MIN_LEN,
@@ -1096,7 +1112,7 @@ impl<T: Hash + Eq, const MIN_LEN: usize, const MAX_LEN: usize>
             return Ok(None);
         }
         let len = self.len();
-        if self.is_empty() || len - 1 <= MIN_LEN {
+        if self.is_empty() || len <= MIN_LEN {
             return Err(Error::Undersize {
                 len,
                 min_len: MIN_LEN,
@@ -1116,7 +1132,7 @@ impl<T: Ord, const MIN_LEN: usize, const MAX_LEN: usize> Confined<BTreeSet<T>, M
             return Ok(false);
         }
         let len = self.len();
-        if self.is_empty() || len - 1 <= MIN_LEN {
+        if self.is_empty() || len <= MIN_LEN {
             return Err(Error::Undersize {
                 len,
                 min_len: MIN_LEN,
@@ -1156,7 +1172,7 @@ impl<K: Hash + Eq, V, const MIN_LEN: usize, const MAX_LEN: usize>
             return Ok(None);
         }
         let len = self.len();
-        if self.is_empty() || len - 1 <= MIN_LEN {
+        if self.is_empty() || len <= MIN_LEN {
             return Err(Error::Undersize {
                 len,
                 min_len: MIN_LEN,
@@ -1192,7 +1208,7 @@ impl<K: Ord + Hash, V, const MIN_LEN: usize, const MAX_LEN: usize>
             return Ok(None);
         }
         let len = self.len();
-        if self.is_empty() || len - 1 <= MIN_LEN {
+        if self.is_empty() || len <= MIN_LEN {
             return Err(Error::Undersize {
                 len,
                 min_len: MIN_LEN,
@@ -1356,11 +1372,11 @@ macro_rules! small_s {
 #[macro_export]
 macro_rules! confined_vec {
     ($elem:expr; $n:expr) => (
-        Confined::try_from(vec![$elem; $n])
+        $crate::confinement::Confined::try_from(vec![$elem; $n])
             .expect("inline confined_vec literal contains invalid number of items")
     );
     ($($x:expr),+ $(,)?) => (
-        Confined::try_from(vec![$($x,)+])
+        $crate::confinement::Confined::try_from(vec![$($x,)+])
             .expect("inline confined_vec literal contains invalid number of items")
             .into()
     )
@@ -1396,7 +1412,7 @@ macro_rules! small_vec {
 #[macro_export]
 macro_rules! confined_set {
     ($($x:expr),+ $(,)?) => (
-        Confined::try_from(set![$($x,)+])
+        $crate::confinement::Confined::try_from(set![$($x,)+])
             .expect("inline confined_set literal contains invalid number of items")
             .into()
     )
@@ -1424,7 +1440,7 @@ macro_rules! small_set {
 #[macro_export]
 macro_rules! confined_bset {
     ($($x:expr),+ $(,)?) => (
-        Confined::try_from(bset![$($x,)+])
+        $crate::confinement::Confined::try_from(bset![$($x,)+])
             .expect("inline confined_bset literal contains invalid number of items")
             .into()
     )
@@ -1452,7 +1468,7 @@ macro_rules! small_bset {
 #[macro_export]
 macro_rules! confined_map {
     ($($key:expr => $value:expr),+ $(,)?) => (
-        Confined::try_from(map!{ $($key => $value),+ })
+        $crate::confinement::Confined::try_from(map!{ $($key => $value),+ })
             .expect("inline confined_map literal contains invalid number of items")
             .into()
     )
@@ -1480,7 +1496,7 @@ macro_rules! small_map {
 #[macro_export]
 macro_rules! confined_bmap {
     ($($key:expr => $value:expr),+ $(,)?) => (
-        Confined::try_from(bmap!{ $($key => $value),+ })
+        $crate::confinement::Confined::try_from(bmap!{ $($key => $value),+ })
             .expect("inline confined_bmap literal contains invalid number of items")
             .into()
     )
