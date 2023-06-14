@@ -68,7 +68,7 @@
 //! {
 //!     fn sample_trait_method(&self) {
 //!         /* write your implementation-specific code here accessing type data,
-//!            when needed, via `self.as_inner()` */
+//!         when needed, via `self.as_inner()` */
 //!     }
 //! }
 //!
