@@ -47,7 +47,7 @@ impl BitOr for FlagVec {
         let size = max(lhs.capacity(), rhs.capacity());
         lhs.enlarge(size);
         rhs.enlarge(size);
-        for i in 0..rhs.0.len() {
+        for i in 0..rhs.0.len_u32() {
             rhs.0[i] |= lhs.0[i];
         }
         rhs
@@ -62,7 +62,7 @@ impl BitAnd for FlagVec {
         let size = max(lhs.capacity(), rhs.capacity());
         lhs.enlarge(size);
         rhs.enlarge(size);
-        for i in 0..rhs.0.len() {
+        for i in 0..rhs.0.len_u32() {
             rhs.0[i] &= lhs.0[i];
         }
         rhs
@@ -77,7 +77,7 @@ impl BitXor for FlagVec {
         let size = max(lhs.capacity(), rhs.capacity());
         lhs.enlarge(size);
         rhs.enlarge(size);
-        for i in 0..rhs.0.len() {
+        for i in 0..rhs.0.len_u32() {
             rhs.0[i] ^= lhs.0[i];
         }
         rhs
@@ -360,7 +360,7 @@ impl FlagVec {
     pub fn unknown_iter(&self, mut known: FlagVec) -> FilteredIter {
         known.enlarge(self.capacity());
         for byte in 0..self.0.len() {
-            known.0[byte as usize] = !known.0[byte as usize];
+            known.0[byte] = !known.0[byte];
         }
         FilteredIter::new(self, known)
     }

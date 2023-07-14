@@ -23,7 +23,7 @@ use std::hash::Hash;
 use std::ops::{
     Deref, Index, IndexMut, Range, RangeFrom, RangeFull, RangeInclusive, RangeTo, RangeToInclusive,
 };
-use std::{io, usize};
+use std::{io, u32};
 use ascii::{AsAsciiStrError, AsciiChar, AsciiString};
 
 use crate::num::u24;
@@ -36,10 +36,10 @@ pub trait Collection: Extend<Self::Item> {
     type Item;
 
     /// Creates new collection with certain capacity.
-    fn with_capacity(capacity: usize) -> Self;
+    fn with_capacity(capacity: u32) -> Self;
 
     /// Returns the length of a collection.
-    fn len(&self) -> usize;
+    fn len(&self) -> u32;
 
     /// Detects whether collection is empty.
     #[inline]
@@ -79,12 +79,12 @@ pub trait KeyedCollection: Collection<Item = (Self::Key, Self::Value)> {
 impl Collection for String {
     type Item = char;
 
-    fn with_capacity(capacity: usize) -> Self {
-        Self::with_capacity(capacity)
+    fn with_capacity(capacity: u32) -> Self {
+        Self::with_capacity(capacity as usize)
     }
 
-    fn len(&self) -> usize {
-        self.len()
+    fn len(&self) -> u32 {
+        self.len() as u32
     }
 
     fn push(&mut self, elem: Self::Item) {
@@ -99,12 +99,14 @@ impl Collection for String {
 impl Collection for AsciiString {
     type Item = AsciiChar;
 
-    fn with_capacity(capacity: usize) -> Self {
-        Self::with_capacity(capacity)
+    fn with_capacity(capacity: u32) -> Self {
+        Self::with_capacity(capacity as usize)
     }
 
-    fn len(&self) -> usize {
+    fn len(&self) -> u32 {
         self.len()
+            .try_into()
+            .expect("confined collection length must be < u32::MAX")
     }
 
     fn push(&mut self, elem: Self::Item) {
@@ -119,12 +121,14 @@ impl Collection for AsciiString {
 impl<T> Collection for Vec<T> {
     type Item = T;
 
-    fn with_capacity(capacity: usize) -> Self {
-        Self::with_capacity(capacity)
+    fn with_capacity(capacity: u32) -> Self {
+        Self::with_capacity(capacity as usize)
     }
 
-    fn len(&self) -> usize {
+    fn len(&self) -> u32 {
         self.len()
+            .try_into()
+            .expect("confined collection length must be < u32::MAX")
     }
 
     fn push(&mut self, elem: Self::Item) {
@@ -139,12 +143,14 @@ impl<T> Collection for Vec<T> {
 impl<T> Collection for VecDeque<T> {
     type Item = T;
 
-    fn with_capacity(capacity: usize) -> Self {
-        Self::with_capacity(capacity)
+    fn with_capacity(capacity: u32) -> Self {
+        Self::with_capacity(capacity as usize)
     }
 
-    fn len(&self) -> usize {
+    fn len(&self) -> u32 {
         self.len()
+            .try_into()
+            .expect("confined collection length must be < u32::MAX")
     }
 
     fn push(&mut self, elem: Self::Item) {
@@ -159,12 +165,14 @@ impl<T> Collection for VecDeque<T> {
 impl<T: Eq + Hash> Collection for HashSet<T> {
     type Item = T;
 
-    fn with_capacity(capacity: usize) -> Self {
-        Self::with_capacity(capacity)
+    fn with_capacity(capacity: u32) -> Self {
+        Self::with_capacity(capacity as usize)
     }
 
-    fn len(&self) -> usize {
+    fn len(&self) -> u32 {
         self.len()
+            .try_into()
+            .expect("confined collection length must be < u32::MAX")
     }
 
     fn push(&mut self, elem: Self::Item) {
@@ -180,12 +188,14 @@ impl<T: Ord> Collection for BTreeSet<T> {
     type Item = T;
 
     #[doc(hidden)]
-    fn with_capacity(_capacity: usize) -> Self {
+    fn with_capacity(_capacity: u32) -> Self {
         BTreeSet::new()
     }
 
-    fn len(&self) -> usize {
+    fn len(&self) -> u32 {
         self.len()
+            .try_into()
+            .expect("confined collection length must be < u32::MAX")
     }
 
     fn push(&mut self, elem: Self::Item) {
@@ -200,12 +210,14 @@ impl<T: Ord> Collection for BTreeSet<T> {
 impl<K: Eq + Hash, V> Collection for HashMap<K, V> {
     type Item = (K, V);
 
-    fn with_capacity(capacity: usize) -> Self {
-        Self::with_capacity(capacity)
+    fn with_capacity(capacity: u32) -> Self {
+        Self::with_capacity(capacity as usize)
     }
 
-    fn len(&self) -> usize {
+    fn len(&self) -> u32 {
         self.len()
+            .try_into()
+            .expect("confined collection length must be < u32::MAX")
     }
 
     fn push(&mut self, elem: Self::Item) {
@@ -238,12 +250,14 @@ impl<K: Ord + Hash, V> Collection for BTreeMap<K, V> {
     type Item = (K, V);
 
     #[doc(hidden)]
-    fn with_capacity(_capacity: usize) -> Self {
+    fn with_capacity(_capacity: u32) -> Self {
         BTreeMap::new()
     }
 
-    fn len(&self) -> usize {
+    fn len(&self) -> u32 {
         self.len()
+            .try_into()
+            .expect("confined collection length must be < u32::MAX")
     }
 
     fn push(&mut self, elem: Self::Item) {
@@ -281,28 +295,28 @@ pub enum Error {
     /// number of elements.
     Undersize {
         /** Current collection length */
-        len: usize,
+        len: u32,
         /** Minimum number of elements which must be present in the
          * collection */
-        min_len: usize,
+        min_len: u32,
     },
 
     /// Operation results in collection growth above the required maximum number
     /// of elements.
     Oversize {
         /** Current collection length */
-        len: usize,
+        len: u32,
         /** Maximum number of elements which must be present in the
          * collection */
-        max_len: usize,
+        max_len: u32,
     },
 
     /// Attempt to address an index outside of the collection bounds.
     OutOfBoundary {
         /** Index which was outside of the bounds */
-        index: usize,
+        index: u32,
         /** The actual number of elements in the collection */
-        len: usize,
+        len: u32,
     },
 }
 
@@ -366,19 +380,17 @@ impl std::error::Error for AsciiError {}
 // Confinement params
 
 /// Constant for a minimal size of a confined collection.
-pub const ZERO: usize = 0;
+pub const ZERO: u32 = 0;
 /// Constant for a minimal size of a confined collection.
-pub const ONE: usize = 1;
+pub const ONE: u32 = 1;
 /// Constant for a maximal size of a confined collection equal to [`u8::MAX`].
-pub const U8: usize = u8::MAX as usize;
+pub const U8: u32 = u8::MAX as u32;
 /// Constant for a maximal size of a confined collection equal to [`u16::MAX`].
-pub const U16: usize = u16::MAX as usize;
+pub const U16: u32 = u16::MAX as u32;
 /// Constant for a maximal size of a confined collection equal to `u24::MAX`.
-pub const U24: usize = 0xFFFFFF as usize;
+pub const U24: u32 = 0xFFFFFFu32;
 /// Constant for a maximal size of a confined collection equal to [`u32::MAX`].
-pub const U32: usize = u32::MAX as usize;
-/// Constant for a maximal size of a confined collection equal to [`u64::MAX`].
-pub const U64: usize = u64::MAX as usize;
+pub const U32: u32 = u32::MAX;
 
 // Confined collection
 
@@ -389,9 +401,9 @@ pub const U64: usize = u64::MAX as usize;
     derive(Serialize, Deserialize),
     serde(crate = "serde_crate")
 )]
-pub struct Confined<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize>(C);
+pub struct Confined<C: Collection, const MIN_LEN: u32, const MAX_LEN: u32>(C);
 
-impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Wrapper
+impl<C: Collection, const MIN_LEN: u32, const MAX_LEN: u32> Wrapper
     for Confined<C, MIN_LEN, MAX_LEN>
 {
     type Inner = C;
@@ -409,7 +421,7 @@ impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Wrapper
     }
 }
 
-impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Deref
+impl<C: Collection, const MIN_LEN: u32, const MAX_LEN: u32> Deref
     for Confined<C, MIN_LEN, MAX_LEN>
 {
     type Target = C;
@@ -419,8 +431,7 @@ impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Deref
     }
 }
 
-impl<C, const MIN_LEN: usize, const MAX_LEN: usize> AsRef<[C::Item]>
-    for Confined<C, MIN_LEN, MAX_LEN>
+impl<C, const MIN_LEN: u32, const MAX_LEN: u32> AsRef<[C::Item]> for Confined<C, MIN_LEN, MAX_LEN>
 where
     C: Collection + AsRef<[C::Item]>,
 {
@@ -429,8 +440,7 @@ where
     }
 }
 
-impl<C, const MIN_LEN: usize, const MAX_LEN: usize> AsMut<[C::Item]>
-    for Confined<C, MIN_LEN, MAX_LEN>
+impl<C, const MIN_LEN: u32, const MAX_LEN: u32> AsMut<[C::Item]> for Confined<C, MIN_LEN, MAX_LEN>
 where
     C: Collection + AsMut<[C::Item]>,
 {
@@ -439,8 +449,7 @@ where
     }
 }
 
-impl<C, const MIN_LEN: usize, const MAX_LEN: usize> Borrow<[C::Item]>
-    for Confined<C, MIN_LEN, MAX_LEN>
+impl<C, const MIN_LEN: u32, const MAX_LEN: u32> Borrow<[C::Item]> for Confined<C, MIN_LEN, MAX_LEN>
 where
     C: Collection + Borrow<[C::Item]>,
 {
@@ -449,7 +458,7 @@ where
     }
 }
 
-impl<C, const MIN_LEN: usize, const MAX_LEN: usize> BorrowMut<[C::Item]>
+impl<C, const MIN_LEN: u32, const MAX_LEN: u32> BorrowMut<[C::Item]>
     for Confined<C, MIN_LEN, MAX_LEN>
 where
     C: Collection + BorrowMut<[C::Item]>,
@@ -459,7 +468,7 @@ where
     }
 }
 
-impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> IntoIterator
+impl<C: Collection, const MIN_LEN: u32, const MAX_LEN: u32> IntoIterator
     for Confined<C, MIN_LEN, MAX_LEN>
 where
     C: IntoIterator,
@@ -472,7 +481,7 @@ where
     }
 }
 
-impl<'c, C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> IntoIterator
+impl<'c, C: Collection, const MIN_LEN: u32, const MAX_LEN: u32> IntoIterator
     for &'c Confined<C, MIN_LEN, MAX_LEN>
 where
     &'c C: IntoIterator,
@@ -485,7 +494,7 @@ where
     }
 }
 
-impl<'c, C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> IntoIterator
+impl<'c, C: Collection, const MIN_LEN: u32, const MAX_LEN: u32> IntoIterator
     for &'c mut Confined<C, MIN_LEN, MAX_LEN>
 where
     &'c mut C: IntoIterator,
@@ -498,7 +507,7 @@ where
     }
 }
 
-impl<'c, C, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C, MIN_LEN, MAX_LEN>
+impl<'c, C, const MIN_LEN: u32, const MAX_LEN: u32> Confined<C, MIN_LEN, MAX_LEN>
 where
     C: Collection + 'c,
     &'c mut C: IntoIterator<Item = &'c mut <C as Collection>::Item>,
@@ -512,7 +521,7 @@ where
     }
 }
 
-impl<'c, C, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C, MIN_LEN, MAX_LEN>
+impl<'c, C, const MIN_LEN: u32, const MAX_LEN: u32> Confined<C, MIN_LEN, MAX_LEN>
 where
     C: KeyedCollection + 'c,
     &'c mut C: IntoIterator<
@@ -529,139 +538,139 @@ where
     }
 }
 
-impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Index<usize>
+impl<C: Collection, const MIN_LEN: u32, const MAX_LEN: u32> Index<u32>
     for Confined<C, MIN_LEN, MAX_LEN>
 where
     C: Index<usize, Output = C::Item>,
 {
     type Output = C::Item;
 
-    fn index(&self, index: usize) -> &Self::Output {
+    fn index(&self, index: u32) -> &Self::Output {
         self.0.index(index)
     }
 }
 
-impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> IndexMut<usize>
+impl<C: Collection, const MIN_LEN: u32, const MAX_LEN: u32> IndexMut<u32>
     for Confined<C, MIN_LEN, MAX_LEN>
 where
     C: IndexMut<usize, Output = C::Item>,
 {
-    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+    fn index_mut(&mut self, index: u32) -> &mut Self::Output {
         self.0.index_mut(index)
     }
 }
 
-impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Index<Range<usize>>
+impl<C: Collection, const MIN_LEN: u32, const MAX_LEN: u32> Index<Range<u32>>
     for Confined<C, MIN_LEN, MAX_LEN>
 where
     C: Index<Range<usize>, Output = [C::Item]>,
 {
     type Output = [C::Item];
 
-    fn index(&self, index: Range<usize>) -> &Self::Output {
+    fn index(&self, index: Range<u32>) -> &Self::Output {
         self.0.index(index)
     }
 }
 
-impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> IndexMut<Range<usize>>
+impl<C: Collection, const MIN_LEN: u32, const MAX_LEN: u32> IndexMut<Range<u32>>
     for Confined<C, MIN_LEN, MAX_LEN>
 where
     C: IndexMut<Range<usize>, Output = [C::Item]>,
 {
-    fn index_mut(&mut self, index: Range<usize>) -> &mut Self::Output {
+    fn index_mut(&mut self, index: Range<u32>) -> &mut Self::Output {
         self.0.index_mut(index)
     }
 }
 
-impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Index<RangeTo<usize>>
+impl<C: Collection, const MIN_LEN: u32, const MAX_LEN: u32> Index<RangeTo<u32>>
     for Confined<C, MIN_LEN, MAX_LEN>
 where
     C: Index<RangeTo<usize>, Output = [C::Item]>,
 {
     type Output = [C::Item];
 
-    fn index(&self, index: RangeTo<usize>) -> &Self::Output {
+    fn index(&self, index: RangeTo<u32>) -> &Self::Output {
         self.0.index(index)
     }
 }
 
-impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> IndexMut<RangeTo<usize>>
+impl<C: Collection, const MIN_LEN: u32, const MAX_LEN: u32> IndexMut<RangeTo<u32>>
     for Confined<C, MIN_LEN, MAX_LEN>
 where
     C: IndexMut<RangeTo<usize>, Output = [C::Item]>,
 {
-    fn index_mut(&mut self, index: RangeTo<usize>) -> &mut Self::Output {
+    fn index_mut(&mut self, index: RangeTo<u32>) -> &mut Self::Output {
         self.0.index_mut(index)
     }
 }
 
-impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Index<RangeFrom<usize>>
+impl<C: Collection, const MIN_LEN: u32, const MAX_LEN: u32> Index<RangeFrom<u32>>
     for Confined<C, MIN_LEN, MAX_LEN>
 where
     C: Index<RangeFrom<usize>, Output = [C::Item]>,
 {
     type Output = [C::Item];
 
-    fn index(&self, index: RangeFrom<usize>) -> &Self::Output {
+    fn index(&self, index: RangeFrom<u32>) -> &Self::Output {
         self.0.index(index)
     }
 }
 
-impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> IndexMut<RangeFrom<usize>>
+impl<C: Collection, const MIN_LEN: u32, const MAX_LEN: u32> IndexMut<RangeFrom<u32>>
     for Confined<C, MIN_LEN, MAX_LEN>
 where
     C: IndexMut<RangeFrom<usize>, Output = [C::Item]>,
 {
-    fn index_mut(&mut self, index: RangeFrom<usize>) -> &mut Self::Output {
+    fn index_mut(&mut self, index: RangeFrom<u32>) -> &mut Self::Output {
         self.0.index_mut(index)
     }
 }
 
-impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Index<RangeInclusive<usize>>
+impl<C: Collection, const MIN_LEN: u32, const MAX_LEN: u32> Index<RangeInclusive<u32>>
     for Confined<C, MIN_LEN, MAX_LEN>
 where
     C: Index<RangeInclusive<usize>, Output = [C::Item]>,
 {
     type Output = [C::Item];
 
-    fn index(&self, index: RangeInclusive<usize>) -> &Self::Output {
+    fn index(&self, index: RangeInclusive<u32>) -> &Self::Output {
         self.0.index(index)
     }
 }
 
-impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> IndexMut<RangeInclusive<usize>>
+impl<C: Collection, const MIN_LEN: u32, const MAX_LEN: u32> IndexMut<RangeInclusive<u32>>
     for Confined<C, MIN_LEN, MAX_LEN>
 where
     C: IndexMut<RangeInclusive<usize>, Output = [C::Item]>,
 {
-    fn index_mut(&mut self, index: RangeInclusive<usize>) -> &mut Self::Output {
+    fn index_mut(&mut self, index: RangeInclusive<u32>) -> &mut Self::Output {
         self.0.index_mut(index)
     }
 }
 
-impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Index<RangeToInclusive<usize>>
+impl<C: Collection, const MIN_LEN: u32, const MAX_LEN: u32> Index<RangeToInclusive<u32>>
     for Confined<C, MIN_LEN, MAX_LEN>
 where
     C: Index<RangeToInclusive<usize>, Output = [C::Item]>,
 {
     type Output = [C::Item];
 
-    fn index(&self, index: RangeToInclusive<usize>) -> &Self::Output {
+    fn index(&self, index: RangeToInclusive<u32>) -> &Self::Output {
         self.0.index(index)
     }
 }
 
-impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> IndexMut<RangeToInclusive<usize>>
+impl<C: Collection, const MIN_LEN: u32, const MAX_LEN: u32> IndexMut<RangeToInclusive<u32>>
     for Confined<C, MIN_LEN, MAX_LEN>
 where
     C: IndexMut<RangeToInclusive<usize>, Output = [C::Item]>,
 {
-    fn index_mut(&mut self, index: RangeToInclusive<usize>) -> &mut Self::Output {
+    fn index_mut(&mut self, index: RangeToInclusive<u32>) -> &mut Self::Output {
         self.0.index_mut(index)
     }
 }
 
-impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Index<RangeFull>
+impl<C: Collection, const MIN_LEN: u32, const MAX_LEN: u32> Index<RangeFull>
     for Confined<C, MIN_LEN, MAX_LEN>
 where
     C: Index<RangeFull, Output = [C::Item]>,
@@ -673,7 +682,7 @@ where
     }
 }
 
-impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> IndexMut<RangeFull>
+impl<C: Collection, const MIN_LEN: u32, const MAX_LEN: u32> IndexMut<RangeFull>
     for Confined<C, MIN_LEN, MAX_LEN>
 where
     C: IndexMut<RangeFull, Output = [C::Item]>,
@@ -683,7 +692,7 @@ where
     }
 }
 
-impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Display
+impl<C: Collection, const MIN_LEN: u32, const MAX_LEN: u32> Display
     for Confined<C, MIN_LEN, MAX_LEN>
 where
     C: Display,
@@ -693,7 +702,7 @@ where
     }
 }
 
-impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> FromStr
+impl<C: Collection, const MIN_LEN: u32, const MAX_LEN: u32> FromStr
     for Confined<C, MIN_LEN, MAX_LEN>
 where
     C: FromStr,
@@ -705,7 +714,7 @@ where
     }
 }
 
-impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C, MIN_LEN, MAX_LEN> {
+impl<C: Collection, const MIN_LEN: u32, const MAX_LEN: u32> Confined<C, MIN_LEN, MAX_LEN> {
     /// Tries to construct a confinement over a collection. Fails if the number
     /// of items in the collection exceeds one of the confinement bounds.
     // We can't use `impl TryFrom` due to the conflict with core library blanked implementation
@@ -785,7 +794,7 @@ impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C, MIN_
     }
 }
 
-impl<C: Collection, const MAX_LEN: usize> Confined<C, ZERO, MAX_LEN>
+impl<C: Collection, const MAX_LEN: u32> Confined<C, ZERO, MAX_LEN>
 where
     C: Default,
 {
@@ -796,7 +805,7 @@ where
 
     /// Constructs a new confinement containing no elements, but with a
     /// pre-allocated storage for the `capacity` of elements.
-    pub fn with_capacity(capacity: usize) -> Self {
+    pub fn with_capacity(capacity: u32) -> Self {
         Self(C::with_capacity(capacity))
     }
 
@@ -806,7 +815,7 @@ where
     }
 }
 
-impl<C: Collection, const MAX_LEN: usize> Default for Confined<C, ZERO, MAX_LEN>
+impl<C: Collection, const MAX_LEN: u32> Default for Confined<C, ZERO, MAX_LEN>
 where
     C: Default,
 {
@@ -815,7 +824,7 @@ where
     }
 }
 
-impl<C: Collection, const MAX_LEN: usize> Confined<C, ONE, MAX_LEN>
+impl<C: Collection, const MAX_LEN: u32> Confined<C, ONE, MAX_LEN>
 where
     C: Default,
 {
@@ -828,7 +837,7 @@ where
     }
 }
 
-impl<C: Collection, const MIN_LEN: usize> Confined<C, MIN_LEN, U8>
+impl<C: Collection, const MIN_LEN: u32> Confined<C, MIN_LEN, U8>
 where
     C: Default,
 {
@@ -840,7 +849,7 @@ where
     }
 }
 
-impl<C: Collection, const MIN_LEN: usize> Confined<C, MIN_LEN, U16>
+impl<C: Collection, const MIN_LEN: u32> Confined<C, MIN_LEN, U16>
 where
     C: Default,
 {
@@ -852,7 +861,7 @@ where
     }
 }
 
-impl<C: Collection, const MIN_LEN: usize> Confined<C, MIN_LEN, U24>
+impl<C: Collection, const MIN_LEN: u32> Confined<C, MIN_LEN, U24>
 where
     C: Default,
 {
@@ -864,7 +873,7 @@ where
     }
 }
 
-impl<C: Collection, const MIN_LEN: usize> Confined<C, MIN_LEN, U32>
+impl<C: Collection, const MIN_LEN: u32, const MAX_LEN: u32> Confined<C, MIN_LEN, MAX_LEN>
 where
     C: Default,
 {
@@ -876,7 +885,7 @@ where
     }
 }
 
-impl<C: KeyedCollection, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C, MIN_LEN, MAX_LEN> {
+impl<C: KeyedCollection, const MIN_LEN: u32, const MAX_LEN: u32> Confined<C, MIN_LEN, MAX_LEN> {
     /// Gets mutable reference to an element of the collection.
     pub fn get_mut(&mut self, key: &C::Key) -> Option<&mut C::Value> {
         self.0.get_mut(key)
@@ -897,7 +906,7 @@ impl<C: KeyedCollection, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C,
     }
 }
 
-impl<C: KeyedCollection, const MAX_LEN: usize> Confined<C, ONE, MAX_LEN>
+impl<C: KeyedCollection, const MAX_LEN: u32> Confined<C, ONE, MAX_LEN>
 where
     C: Default,
 {
@@ -910,9 +919,7 @@ where
     }
 }
 
-impl<const MIN_LEN: usize, const MAX_LEN: usize> TryFrom<&str>
-    for Confined<String, MIN_LEN, MAX_LEN>
-{
+impl<const MIN_LEN: u32, const MAX_LEN: u32> TryFrom<&str> for Confined<String, MIN_LEN, MAX_LEN> {
     type Error = Error;
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
@@ -920,7 +927,7 @@ impl<const MIN_LEN: usize, const MAX_LEN: usize> TryFrom<&str>
     }
 }
 
-impl<const MIN_LEN: usize, const MAX_LEN: usize> TryFrom<&str>
+impl<const MIN_LEN: u32, const MAX_LEN: u32> TryFrom<&str>
     for Confined<AsciiString, MIN_LEN, MAX_LEN>
 {
     type Error = AsciiError;
@@ -931,7 +938,7 @@ impl<const MIN_LEN: usize, const MAX_LEN: usize> TryFrom<&str>
     }
 }
 
-impl<const MAX_LEN: usize> Confined<String, ZERO, MAX_LEN> {
+impl<const MAX_LEN: u32> Confined<String, ZERO, MAX_LEN> {
     /// Removes the last character from a string and returns it, or [`None`] if it
     /// is empty.
     pub fn pop(&mut self) -> Option<char> {
@@ -939,12 +946,12 @@ impl<const MAX_LEN: usize> Confined<String, ZERO, MAX_LEN> {
     }
 }
 
-impl<const MIN_LEN: usize, const MAX_LEN: usize> Confined<String, MIN_LEN, MAX_LEN> {
+impl<const MIN_LEN: u32, const MAX_LEN: u32> Confined<String, MIN_LEN, MAX_LEN> {
     /// Removes a single character from the confined string, unless the string
     /// doesn't shorten more than the confinement requirement. Errors
     /// otherwise.
-    pub fn remove(&mut self, index: usize) -> Result<char, Error> {
-        let len = self.len();
+    pub fn remove(&mut self, index: u32) -> Result<char, Error> {
+        let len = Collection::len(&self.0);
         if self.is_empty() || len <= MIN_LEN {
             return Err(Error::Undersize {
                 len,
@@ -954,11 +961,11 @@ impl<const MIN_LEN: usize, const MAX_LEN: usize> Confined<String, MIN_LEN, MAX_L
         if index >= len {
             return Err(Error::OutOfBoundary { index, len });
         }
-        Ok(self.0.remove(index))
+        Ok(self.0.remove(index as usize))
     }
 }
 
-impl<const MAX_LEN: usize> Confined<AsciiString, ZERO, MAX_LEN> {
+impl<const MAX_LEN: u32> Confined<AsciiString, ZERO, MAX_LEN> {
     /// Removes the last character from a string and returns it, or [`None`] if it
     /// is empty.
     pub fn pop(&mut self) -> Option<AsciiChar> {
@@ -966,12 +973,12 @@ impl<const MAX_LEN: usize> Confined<AsciiString, ZERO, MAX_LEN> {
     }
 }
 
-impl<const MIN_LEN: usize, const MAX_LEN: usize> Confined<AsciiString, MIN_LEN, MAX_LEN> {
+impl<const MIN_LEN: u32, const MAX_LEN: u32> Confined<AsciiString, MIN_LEN, MAX_LEN> {
     /// Removes a single character from the confined string, unless the string
     /// doesn't shorten more than the confinement requirement. Errors
     /// otherwise.
-    pub fn remove(&mut self, index: usize) -> Result<AsciiChar, Error> {
-        let len = self.len();
+    pub fn remove(&mut self, index: u32) -> Result<AsciiChar, Error> {
+        let len = Collection::len(&self.0);
         if self.is_empty() || len <= MIN_LEN {
             return Err(Error::Undersize {
                 len,
@@ -981,11 +988,11 @@ impl<const MIN_LEN: usize, const MAX_LEN: usize> Confined<AsciiString, MIN_LEN, 
         if index >= len {
             return Err(Error::OutOfBoundary { index, len });
         }
-        Ok(self.0.remove(index))
+        Ok(self.0.remove(index as usize))
     }
 }
 
-impl<T, const MAX_LEN: usize> Confined<Vec<T>, ZERO, MAX_LEN> {
+impl<T, const MAX_LEN: u32> Confined<Vec<T>, ZERO, MAX_LEN> {
     /// Removes the last element from a vector and returns it, or [`None`] if it
     /// is empty.
     pub fn pop(&mut self) -> Option<T> {
@@ -993,13 +1000,13 @@ impl<T, const MAX_LEN: usize> Confined<Vec<T>, ZERO, MAX_LEN> {
     }
 }
 
-impl<T, const MIN_LEN: usize, const MAX_LEN: usize> Confined<Vec<T>, MIN_LEN, MAX_LEN> {
+impl<T, const MIN_LEN: u32, const MAX_LEN: u32> Confined<Vec<T>, MIN_LEN, MAX_LEN> {
     /// Removes an element from the vector at a given index. Errors if the index
     /// exceeds the number of elements in the vector, of if the new vector
     /// length will be less than the confinement requirement. Returns the
     /// removed element otherwise.
-    pub fn remove(&mut self, index: usize) -> Result<T, Error> {
-        let len = self.len();
+    pub fn remove(&mut self, index: u32) -> Result<T, Error> {
+        let len = Collection::len(&self.0);
         if self.is_empty() || len <= MIN_LEN {
             return Err(Error::Undersize {
                 len,
@@ -1009,7 +1016,7 @@ impl<T, const MIN_LEN: usize, const MAX_LEN: usize> Confined<Vec<T>, MIN_LEN, MA
         if index >= len {
             return Err(Error::OutOfBoundary { index, len });
         }
-        Ok(self.0.remove(index))
+        Ok(self.0.remove(index as usize))
     }
 
     /// Returns an iterator over the slice.
@@ -1020,7 +1027,7 @@ impl<T, const MIN_LEN: usize, const MAX_LEN: usize> Confined<Vec<T>, MIN_LEN, MA
     }
 }
 
-impl<T, const MIN_LEN: usize, const MAX_LEN: usize> Confined<VecDeque<T>, MIN_LEN, MAX_LEN> {
+impl<T, const MIN_LEN: u32, const MAX_LEN: u32> Confined<VecDeque<T>, MIN_LEN, MAX_LEN> {
     /// Removes the first element and returns it, or `None` if the deque is
     /// empty.
     pub fn pop_front(&mut self) -> Option<T> {
@@ -1034,11 +1041,11 @@ impl<T, const MIN_LEN: usize, const MAX_LEN: usize> Confined<VecDeque<T>, MIN_LE
     }
 }
 
-impl<T, const MIN_LEN: usize, const MAX_LEN: usize> Confined<VecDeque<T>, MIN_LEN, MAX_LEN> {
+impl<T, const MIN_LEN: u32, const MAX_LEN: u32> Confined<VecDeque<T>, MIN_LEN, MAX_LEN> {
     /// Prepends an element to the deque. Errors if the new collection length
     /// will not fit the confinement requirements.
     pub fn push_from(&mut self, elem: T) -> Result<(), Error> {
-        let len = self.len();
+        let len = Collection::len(&self.0);
         if len == MAX_LEN || len + 1 > MAX_LEN {
             return Err(Error::Oversize {
                 len: len + 1,
@@ -1052,7 +1059,7 @@ impl<T, const MIN_LEN: usize, const MAX_LEN: usize> Confined<VecDeque<T>, MIN_LE
     /// Appends an element to the deque. Errors if the new collection length
     /// will not fit the confinement requirements.
     pub fn push_back(&mut self, elem: T) -> Result<(), Error> {
-        let len = self.len();
+        let len = Collection::len(&self.0);
         if len == MAX_LEN || len + 1 > MAX_LEN {
             return Err(Error::Oversize {
                 len: len + 1,
@@ -1067,8 +1074,8 @@ impl<T, const MIN_LEN: usize, const MAX_LEN: usize> Confined<VecDeque<T>, MIN_LE
     /// exceeds the number of elements in the deque, of if the new deque
     /// length will be less than the confinement requirement. Returns the
     /// removed element otherwise.
-    pub fn remove(&mut self, index: usize) -> Result<T, Error> {
-        let len = self.len();
+    pub fn remove(&mut self, index: u32) -> Result<T, Error> {
+        let len = Collection::len(&self.0);
         if self.is_empty() || len <= MIN_LEN {
             return Err(Error::Undersize {
                 len,
@@ -1078,13 +1085,14 @@ impl<T, const MIN_LEN: usize, const MAX_LEN: usize> Confined<VecDeque<T>, MIN_LE
         if index >= len {
             return Err(Error::OutOfBoundary { index, len });
         }
-        Ok(self.0.remove(index).expect("element within the length"))
+        Ok(self
+            .0
+            .remove(index as usize)
+            .expect("element within the length"))
     }
 }
 
-impl<T: Hash + Eq, const MIN_LEN: usize, const MAX_LEN: usize>
-    Confined<HashSet<T>, MIN_LEN, MAX_LEN>
-{
+impl<T: Hash + Eq, const MIN_LEN: u32, const MAX_LEN: u32> Confined<HashSet<T>, MIN_LEN, MAX_LEN> {
     /// Removes an element from the set. Errors if the index exceeds the number
     /// of elements in the set, of if the new collection length will be less
     /// than the confinement requirement. Returns if the element was present
@@ -1093,7 +1101,7 @@ impl<T: Hash + Eq, const MIN_LEN: usize, const MAX_LEN: usize>
         if !self.0.contains(elem) {
             return Ok(false);
         }
-        let len = self.len();
+        let len = Collection::len(&self.0);
         if self.is_empty() || len <= MIN_LEN {
             return Err(Error::Undersize {
                 len,
@@ -1111,7 +1119,7 @@ impl<T: Hash + Eq, const MIN_LEN: usize, const MAX_LEN: usize>
         if !self.0.contains(elem) {
             return Ok(None);
         }
-        let len = self.len();
+        let len = Collection::len(&self.0);
         if self.is_empty() || len <= MIN_LEN {
             return Err(Error::Undersize {
                 len,
@@ -1122,7 +1130,7 @@ impl<T: Hash + Eq, const MIN_LEN: usize, const MAX_LEN: usize>
     }
 }
 
-impl<T: Ord, const MIN_LEN: usize, const MAX_LEN: usize> Confined<BTreeSet<T>, MIN_LEN, MAX_LEN> {
+impl<T: Ord, const MIN_LEN: u32, const MAX_LEN: u32> Confined<BTreeSet<T>, MIN_LEN, MAX_LEN> {
     /// Removes an element from the set. Errors if the index exceeds the number
     /// of elements in the set, of if the new collection length will be less
     /// than the confinement requirement. Returns if the element was present
@@ -1131,7 +1139,7 @@ impl<T: Ord, const MIN_LEN: usize, const MAX_LEN: usize> Confined<BTreeSet<T>, M
         if !self.0.contains(elem) {
             return Ok(false);
         }
-        let len = self.len();
+        let len = Collection::len(&self.0);
         if self.is_empty() || len <= MIN_LEN {
             return Err(Error::Undersize {
                 len,
@@ -1149,7 +1157,7 @@ impl<T: Ord, const MIN_LEN: usize, const MAX_LEN: usize> Confined<BTreeSet<T>, M
         if !self.0.contains(elem) {
             return Ok(None);
         }
-        let len = self.len();
+        let len = Collection::len(&self.0);
         if self.is_empty() || len - 1 <= MIN_LEN {
             return Err(Error::Undersize {
                 len,
@@ -1160,7 +1168,7 @@ impl<T: Ord, const MIN_LEN: usize, const MAX_LEN: usize> Confined<BTreeSet<T>, M
     }
 }
 
-impl<K: Hash + Eq, V, const MIN_LEN: usize, const MAX_LEN: usize>
+impl<K: Hash + Eq, V, const MIN_LEN: u32, const MAX_LEN: u32>
     Confined<HashMap<K, V>, MIN_LEN, MAX_LEN>
 {
     /// Removes an element from the map. Errors if the index exceeds the number
@@ -1171,7 +1179,7 @@ impl<K: Hash + Eq, V, const MIN_LEN: usize, const MAX_LEN: usize>
         if !self.0.contains_key(key) {
             return Ok(None);
         }
-        let len = self.len();
+        let len = Collection::len(&self.0);
         if self.is_empty() || len <= MIN_LEN {
             return Err(Error::Undersize {
                 len,
@@ -1196,7 +1204,7 @@ impl<K: Hash + Eq, V, const MIN_LEN: usize, const MAX_LEN: usize>
     }
 }
 
-impl<K: Ord + Hash, V, const MIN_LEN: usize, const MAX_LEN: usize>
+impl<K: Ord + Hash, V, const MIN_LEN: u32, const MAX_LEN: u32>
     Confined<BTreeMap<K, V>, MIN_LEN, MAX_LEN>
 {
     /// Removes an element from the map. Errors if the index exceeds the number
@@ -1207,7 +1215,7 @@ impl<K: Ord + Hash, V, const MIN_LEN: usize, const MAX_LEN: usize>
         if !self.0.contains_key(key) {
             return Ok(None);
         }
-        let len = self.len();
+        let len = Collection::len(&self.0);
         if self.is_empty() || len <= MIN_LEN {
             return Err(Error::Undersize {
                 len,
@@ -1234,9 +1242,9 @@ impl<K: Ord + Hash, V, const MIN_LEN: usize, const MAX_LEN: usize>
 
 // io::Writer
 
-impl<const MAX_LEN: usize> io::Write for Confined<Vec<u8>, ZERO, MAX_LEN> {
+impl<const MAX_LEN: u32> io::Write for Confined<Vec<u8>, ZERO, MAX_LEN> {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        if buf.len() + self.len() >= MAX_LEN {
+        if buf.len() + self.len() >= MAX_LEN as usize {
             return Err(io::Error::from(io::ErrorKind::OutOfMemory));
         }
         self.0.extend(buf);
@@ -1260,7 +1268,7 @@ pub type MediumString = Confined<String, ZERO, U24>;
 /// [`String`] with maximum 2^32-1 characters.
 pub type LargeString = Confined<String, ZERO, U32>;
 /// [`String`] which contains at least a single character.
-pub type NonEmptyString<const MAX: usize = U64> = Confined<String, ONE, MAX>;
+pub type NonEmptyString<const MAX: u32 = U32> = Confined<String, ONE, MAX>;
 
 /// [`AsciiString`] with maximum 255 characters.
 pub type TinyAscii = Confined<AsciiString, ZERO, U8>;
@@ -1271,7 +1279,7 @@ pub type MediumAscii = Confined<AsciiString, ZERO, U24>;
 /// [`AsciiString`] with maximum 2^32-1 characters.
 pub type LargeAscii = Confined<AsciiString, ZERO, U32>;
 /// [`AsciiString`] which contains at least a single character.
-pub type NonEmptyAscii<const MAX: usize = U64> = Confined<AsciiString, ONE, MAX>;
+pub type NonEmptyAscii<const MAX: u32 = U32> = Confined<AsciiString, ONE, MAX>;
 
 /// [`Vec<u8>`] with maximum 255 characters.
 pub type TinyBlob = Confined<Vec<u8>, ZERO, U8>;
@@ -1282,7 +1290,7 @@ pub type MediumBlob = Confined<Vec<u8>, ZERO, U24>;
 /// [`Vec<u8>`] with maximum 2^32-1 characters.
 pub type LargeBlob = Confined<Vec<u8>, ZERO, U32>;
 /// [`Vec<u8>`] which contains at least a single character.
-pub type NonEmptyBlob<const MAX: usize = U64> = Confined<Vec<u8>, ONE, MAX>;
+pub type NonEmptyBlob<const MAX: u32 = U32> = Confined<Vec<u8>, ONE, MAX>;
 
 /// [`Vec`] with maximum 255 items of type `T`.
 pub type TinyVec<T> = Confined<Vec<T>, ZERO, U8>;
@@ -1293,7 +1301,7 @@ pub type MediumVec<T> = Confined<Vec<T>, ZERO, U24>;
 /// [`Vec`] with maximum 2^32-1 items of type `T`.
 pub type LargeVec<T> = Confined<Vec<T>, ZERO, U32>;
 /// [`Vec`] which contains at least a single item.
-pub type NonEmptyVec<T, const MAX: usize = U64> = Confined<Vec<T>, ONE, MAX>;
+pub type NonEmptyVec<T, const MAX: u32 = U32> = Confined<Vec<T>, ONE, MAX>;
 
 /// [`VecDeque`] with maximum 255 items of type `T`.
 pub type TinyDeque<T> = Confined<VecDeque<T>, ZERO, U8>;
@@ -1304,7 +1312,7 @@ pub type MediumDeque<T> = Confined<VecDeque<T>, ZERO, U24>;
 /// [`VecDeque`] with maximum 2^32-1 items of type `T`.
 pub type LargeDeque<T> = Confined<VecDeque<T>, ZERO, U32>;
 /// [`VecDeque`] which contains at least a single item.
-pub type NonEmptyDeque<T, const MAX: usize = U64> = Confined<VecDeque<T>, ONE, MAX>;
+pub type NonEmptyDeque<T, const MAX: u32 = U32> = Confined<VecDeque<T>, ONE, MAX>;
 
 /// [`HashSet`] with maximum 255 items of type `T`.
 pub type TinyHashSet<T> = Confined<HashSet<T>, ZERO, U8>;
@@ -1315,7 +1323,7 @@ pub type MediumHashSet<T> = Confined<HashSet<T>, ZERO, U24>;
 /// [`HashSet`] with maximum 2^32-1 items of type `T`.
 pub type LargeHashSet<T> = Confined<HashSet<T>, ZERO, U32>;
 /// [`HashSet`] which contains at least a single item.
-pub type NonEmptyHashSet<T, const MAX: usize = U64> = Confined<HashSet<T>, ONE, MAX>;
+pub type NonEmptyHashSet<T, const MAX: u32 = U32> = Confined<HashSet<T>, ONE, MAX>;
 
 /// [`BTreeSet`] with maximum 255 items of type `T`.
 pub type TinyOrdSet<T> = Confined<BTreeSet<T>, ZERO, U8>;
@@ -1326,7 +1334,7 @@ pub type MediumOrdSet<T> = Confined<BTreeSet<T>, ZERO, U24>;
 /// [`BTreeSet`] with maximum 2^32-1 items of type `T`.
 pub type LargeOrdSet<T> = Confined<BTreeSet<T>, ZERO, U32>;
 /// [`BTreeSet`] which contains at least a single item.
-pub type NonEmptyOrdSet<T, const MAX: usize = U64> = Confined<BTreeSet<T>, ONE, MAX>;
+pub type NonEmptyOrdSet<T, const MAX: u32 = U32> = Confined<BTreeSet<T>, ONE, MAX>;
 
 /// [`HashMap`] with maximum 255 items.
 pub type TinyHashMap<K, V> = Confined<HashMap<K, V>, ZERO, U8>;
@@ -1337,7 +1345,7 @@ pub type MediumHashMap<K, V> = Confined<HashMap<K, V>, ZERO, U24>;
 /// [`HashMap`] with maximum 2^32-1 items.
 pub type LargeHashMap<K, V> = Confined<HashMap<K, V>, ZERO, U32>;
 /// [`HashMap`] which contains at least a single item.
-pub type NonEmptyHashMap<K, V, const MAX: usize = U64> = Confined<HashMap<K, V>, ONE, MAX>;
+pub type NonEmptyHashMap<K, V, const MAX: u32 = U32> = Confined<HashMap<K, V>, ONE, MAX>;
 
 /// [`BTreeMap`] with maximum 255 items.
 pub type TinyOrdMap<K, V> = Confined<BTreeMap<K, V>, ZERO, U8>;
@@ -1348,7 +1356,7 @@ pub type MediumOrdMap<K, V> = Confined<BTreeMap<K, V>, ZERO, U24>;
 /// [`BTreeMap`] with maximum 2^32-1 items.
 pub type LargeOrdMap<K, V> = Confined<BTreeMap<K, V>, ZERO, U32>;
 /// [`BTreeMap`] which contains at least a single item.
-pub type NonEmptyOrdMap<K, V, const MAX: usize = U64> = Confined<BTreeMap<K, V>, ONE, MAX>;
+pub type NonEmptyOrdMap<K, V, const MAX: u32 = U32> = Confined<BTreeMap<K, V>, ONE, MAX>;
 
 /// Helper macro to construct confined string of a [`TinyString`] type
 #[macro_export]
