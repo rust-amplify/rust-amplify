@@ -443,8 +443,8 @@ impl<const LEN: usize> FromHex for Array<u8, LEN> {
         I: Iterator<Item = Result<u8, hex::Error>> + ExactSizeIterator + DoubleEndedIterator,
     {
         let vec = Vec::<u8>::from_byte_iter(iter)?;
-        if vec.len() != 32 {
-            return Err(hex::Error::InvalidLength(32, vec.len()));
+        if vec.len() != LEN {
+            return Err(hex::Error::InvalidLength(LEN, vec.len()));
         }
         let mut id = [0u8; LEN];
         id.copy_from_slice(&vec);
