@@ -1,6 +1,19 @@
 Change Log
 ==========
 
+4.0.2
+-----
+
+- fix for Array serde encoding to support non-standard hex implementations 
+  on top
+- update dependencies
+- pin dependencies to maintain MSRV
+
+4.0.1
+-----
+
+- fix FromHex Array implementation bug
+
 3.14.0
 ------
 - New collection confinement module
