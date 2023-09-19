@@ -39,12 +39,26 @@ use crate::{Wrapper, WrapperMut};
 /// order (like bitcoin SHA256 single hash type).
 pub type Bytes<const LEN: usize> = Array<u8, LEN>;
 
+/// Wrapper type for all array-based 32-bit types implementing many important
+/// traits, so types based on it can simply derive their implementations.
+///
+/// Type keeps data in little-endian byte order and displays them in the same
+/// order (like bitcoin SHA256 single hash type).
+pub type Bytes4 = Array<u8, 4>;
+
 /// Wrapper type for all array-based 128-bit types implementing many important
 /// traits, so types based on it can simply derive their implementations.
 ///
 /// Type keeps data in little-endian byte order and displays them in the same
 /// order (like bitcoin SHA256 single hash type).
 pub type Bytes16 = Array<u8, 16>;
+
+/// Wrapper type for all array-based 160-bit types implementing many important
+/// traits, so types based on it can simply derive their implementations.
+///
+/// Type keeps data in little-endian byte order and displays them in the same
+/// order (like bitcoin SHA256 single hash type).
+pub type Bytes20 = Array<u8, 20>;
 
 /// Wrapper type for all array-based 256-bit types implementing many important
 /// traits, so types based on it can simply derive their implementations.
@@ -650,6 +664,35 @@ mod test {
             slice32
         );
     }
+
+    /*
+    #[test]
+    fn test_slice32_rev_str() {
+        let s = "a3401bcceb26201b55978ff705fecf7d8a0a03598ebeccf2a947030b91a0ff53";
+        let slice32 = Bytes::<32, true>::from_hex(s).unwrap();
+        assert_eq!(Bytes32::from_str(s), Ok(slice32));
+
+        assert_eq!(Bytes32::from_hex(&s.to_uppercase()), Ok(slice32));
+        assert_eq!(
+            Array::<u8, 32, true>::from_str(&s[..30]),
+            Err(hex::Error::InvalidLength(32, 15))
+        );
+
+        assert_eq!(&slice32.to_string(), s);
+        assert_eq!(format!("{:x}", slice32), s);
+        assert_eq!(format!("{:X}", slice32), s.to_uppercase());
+        assert_eq!(format!("{:?}", slice32), format!("Array<32, true>({})", s));
+
+        assert_eq!(
+            serde_json::to_string(&slice32).unwrap(),
+            format!(r#""{s}""#)
+        );
+        assert_eq!(
+            serde_json::from_str::<Bytes32>(&format!(r#""{s}""#)).unwrap(),
+            slice32
+        );
+    }
+     */
 
     #[test]
     fn test_encoding() {
