@@ -62,7 +62,7 @@ all = [
     "apfloat_std",
 ]
 default = ["std", "derive", "hex"]
-std = ["amplify_num/std"]
+std = ["amplify_num/std", "alloc"]
 apfloat_std = ["amplify_apfloat/std"]
 alloc = ["amplify_num/alloc"]
 apfloat_alloc = ["amplify_apfloat/alloc"]

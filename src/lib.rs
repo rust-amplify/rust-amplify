@@ -48,16 +48,16 @@ extern crate amplify_num;
 pub use num::hex;
 
 #[cfg(feature = "stringly_conversions")]
-pub extern crate stringly_conversions;
+pub use stringly_conversions;
 #[cfg(feature = "stringly_conversions")]
 pub use stringly_conversions::*;
 
 #[cfg(feature = "proc_attr")]
-pub extern crate amplify_syn as proc_attr;
+pub use amplify_syn as proc_attr;
 #[cfg(feature = "proc_attr")]
 pub use proc_attr::ident;
 
-pub extern crate ascii;
+pub use ascii;
 
 #[macro_use]
 mod macros;

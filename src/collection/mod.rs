@@ -13,7 +13,7 @@
 // along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
-#[cfg(feature = "std")]
+#[cfg(feature = "alloc")]
 #[macro_use]
 pub mod confinement;
 mod array;
