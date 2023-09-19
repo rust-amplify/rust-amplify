@@ -502,7 +502,7 @@ pub(crate) mod serde_helpers {
             S: Serializer,
         {
             if serializer.is_human_readable() {
-                serializer.serialize_str(&self.as_ref().to_hex())
+                serializer.serialize_str(&self.to_hex())
             } else {
                 let mut ser = serializer.serialize_tuple(LEN)?;
                 for i in 0..LEN {
@@ -520,18 +520,9 @@ pub(crate) mod serde_helpers {
         {
             use serde::de::Error;
             if deserializer.is_human_readable() {
-                String::deserialize(deserializer)
-                    .and_then(|string| {
-                        let vec = Vec::<u8>::from_hex(&string)
-                            .map_err(|_| D::Error::custom("wrong hex data"))?;
-                        if vec.len() != LEN {
-                            return Err(D::Error::custom("Wrong 32-byte slice data length"));
-                        }
-                        let mut slice32 = [0u8; LEN];
-                        slice32.copy_from_slice(&vec[..LEN]);
-                        Ok(slice32)
-                    })
-                    .map(Self)
+                String::deserialize(deserializer).and_then(|string| {
+                    Self::from_hex(&string).map_err(|_| D::Error::custom("wrong hex data"))
+                })
             } else {
                 struct ArrayVisitor<const LEN: usize>;
 
