@@ -68,7 +68,7 @@
 //! {
 //!     fn sample_trait_method(&self) {
 //!         /* write your implementation-specific code here accessing type data,
-//!            when needed, via `self.as_inner()` */
+//!         when needed, via `self.as_inner()` */
 //!     }
 //! }
 //!
@@ -89,7 +89,7 @@ impl<T, S> Holder<T, S> {
     /// Wraps type into a holder to apply necessary blanked implementations.
     #[inline]
     pub fn new(val: T) -> Self {
-        Self(val, PhantomData::<S>::default())
+        Self(val, PhantomData)
     }
 
     /// Returns a reference to the wrapped type.

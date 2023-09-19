@@ -360,7 +360,7 @@ impl FlagVec {
     pub fn unknown_iter(&self, mut known: FlagVec) -> FilteredIter {
         known.enlarge(self.capacity());
         for byte in 0..self.0.len() {
-            known.0[byte as usize] = !known.0[byte as usize];
+            known.0[byte] = !known.0[byte];
         }
         FilteredIter::new(self, known)
     }
@@ -407,7 +407,7 @@ impl FlagVec {
         let used = Self::bits_to_bytes(top);
         if used < self.0.len() {
             let old = self.0.clone();
-            self.0 = tiny_vec![0u8; used as usize];
+            self.0 = tiny_vec![0u8; used];
             for pos in 0..used {
                 self.0[pos] = old[pos];
             }

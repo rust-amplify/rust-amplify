@@ -31,7 +31,7 @@
 )]
 #![cfg_attr(not(feature = "std"), no_std)]
 #[cfg(feature = "alloc")]
-extern crate alloc;
+pub extern crate alloc;
 extern crate core;
 
 #[cfg(feature = "derive")]
