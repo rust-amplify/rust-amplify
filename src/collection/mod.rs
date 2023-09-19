@@ -20,4 +20,4 @@ mod array;
 #[cfg(feature = "std")]
 pub mod flags;
 
-pub use array::{Array, Bytes16, Bytes32, Bytes64, RawArray};
+pub use array::{Array, Bytes, Bytes4, Bytes16, Bytes20, Bytes32, Bytes32StrRev, Bytes64, RawArray};
