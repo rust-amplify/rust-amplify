@@ -32,21 +32,28 @@ use core::{slice, array};
 use crate::hex::{FromHex, ToHex, self};
 use crate::{Wrapper, WrapperMut};
 
-/// Wrapper type for all slice-based 128-bit types implementing many important
+/// Wrapper type for all array-based bytes implementing many important
+/// traits, so types based on it can simply derive their implementations.
+///
+/// Type keeps data in little-endian byte order and displays them in the same
+/// order (like bitcoin SHA256 single hash type).
+pub type Bytes<const LEN: usize> = Array<u8, LEN>;
+
+/// Wrapper type for all array-based 128-bit types implementing many important
 /// traits, so types based on it can simply derive their implementations.
 ///
 /// Type keeps data in little-endian byte order and displays them in the same
 /// order (like bitcoin SHA256 single hash type).
 pub type Bytes16 = Array<u8, 16>;
 
-/// Wrapper type for all slice-based 256-bit types implementing many important
+/// Wrapper type for all array-based 256-bit types implementing many important
 /// traits, so types based on it can simply derive their implementations.
 ///
 /// Type keeps data in little-endian byte order and displays them in the same
 /// order (like bitcoin SHA256 single hash type).
 pub type Bytes32 = Array<u8, 32>;
 
-/// Wrapper type for all slice-based 512-bit types implementing many important
+/// Wrapper type for all array-based 512-bit types implementing many important
 /// traits, so types based on it can simply derive their implementations.
 ///
 /// Type keeps data in little-endian byte order and displays them in the same
