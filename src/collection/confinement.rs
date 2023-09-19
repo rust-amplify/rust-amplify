@@ -374,7 +374,7 @@ pub const U8: usize = u8::MAX as usize;
 /// Constant for a maximal size of a confined collection equal to [`u16::MAX`].
 pub const U16: usize = u16::MAX as usize;
 /// Constant for a maximal size of a confined collection equal to `u24::MAX`.
-pub const U24: usize = 0xFFFFFF as usize;
+pub const U24: usize = 0xFFFFFFusize;
 /// Constant for a maximal size of a confined collection equal to [`u32::MAX`].
 pub const U32: usize = u32::MAX as usize;
 /// Constant for a maximal size of a confined collection equal to [`u64::MAX`].
@@ -708,7 +708,8 @@ where
 impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C, MIN_LEN, MAX_LEN> {
     /// Tries to construct a confinement over a collection. Fails if the number
     /// of items in the collection exceeds one of the confinement bounds.
-    // We can't use `impl TryFrom` due to the conflict with core library blanked implementation
+    // We can't use `impl TryFrom` due to the conflict with core library blanked
+    // implementation
     pub fn try_from(col: C) -> Result<Self, Error> {
         let len = col.len();
         if len < MIN_LEN {
@@ -932,8 +933,8 @@ impl<const MIN_LEN: usize, const MAX_LEN: usize> TryFrom<&str>
 }
 
 impl<const MAX_LEN: usize> Confined<String, ZERO, MAX_LEN> {
-    /// Removes the last character from a string and returns it, or [`None`] if it
-    /// is empty.
+    /// Removes the last character from a string and returns it, or [`None`] if
+    /// it is empty.
     pub fn pop(&mut self) -> Option<char> {
         self.0.pop()
     }
@@ -959,8 +960,8 @@ impl<const MIN_LEN: usize, const MAX_LEN: usize> Confined<String, MIN_LEN, MAX_L
 }
 
 impl<const MAX_LEN: usize> Confined<AsciiString, ZERO, MAX_LEN> {
-    /// Removes the last character from a string and returns it, or [`None`] if it
-    /// is empty.
+    /// Removes the last character from a string and returns it, or [`None`] if
+    /// it is empty.
     pub fn pop(&mut self) -> Option<AsciiChar> {
         self.0.pop()
     }

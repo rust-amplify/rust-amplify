@@ -155,8 +155,8 @@ impl From<IoError> for io::Error {
     }
 }
 
-/// Errors with [`io::ErrorKind::UnexpectedEof`] on [`Read`] and [`Write`]
-/// operations if the `LIM` is reached.
+/// Errors with [`io::ErrorKind::UnexpectedEof`] on [`io::Read`] and
+/// [`io::Write`] operations if the `LIM` is reached.
 #[derive(Clone, Debug)]
 pub struct ConfinedIo<Io, const LIM: usize> {
     pos: usize,

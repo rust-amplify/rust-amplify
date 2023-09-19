@@ -143,7 +143,7 @@ impl<const LEN: usize> BitAndAssign for Array<u8, LEN> {
     fn bitand_assign(&mut self, rhs: Self) {
         self.0
             .iter_mut()
-            .zip(rhs.into_iter())
+            .zip(rhs)
             .for_each(|(a, b)| a.bitand_assign(b));
     }
 }
@@ -161,7 +161,7 @@ impl<const LEN: usize> BitOrAssign for Array<u8, LEN> {
     fn bitor_assign(&mut self, rhs: Self) {
         self.0
             .iter_mut()
-            .zip(rhs.into_iter())
+            .zip(rhs)
             .for_each(|(a, b)| a.bitor_assign(b));
     }
 }
@@ -179,7 +179,7 @@ impl<const LEN: usize> BitXorAssign for Array<u8, LEN> {
     fn bitxor_assign(&mut self, rhs: Self) {
         self.0
             .iter_mut()
-            .zip(rhs.into_iter())
+            .zip(rhs)
             .for_each(|(a, b)| a.bitxor_assign(b));
     }
 }
@@ -547,8 +547,8 @@ pub(crate) mod serde_helpers {
                         A: SeqAccess<'de>,
                     {
                         let mut arr = [0; LEN];
-                        for i in 0..LEN {
-                            arr[i] = seq
+                        for (i, el) in arr.iter_mut().enumerate() {
+                            *el = seq
                                 .next_element()?
                                 .ok_or_else(|| Error::invalid_length(i, &self))?;
                         }
