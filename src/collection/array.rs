@@ -633,6 +633,15 @@ mod test {
         assert_eq!(format!("{:x}", slice32), s);
         assert_eq!(format!("{:X}", slice32), s.to_uppercase());
         assert_eq!(format!("{:?}", slice32), format!("Array<32>({})", s));
+
+        assert_eq!(
+            serde_json::to_string(&slice32).unwrap(),
+            format!(r#""{s}""#)
+        );
+        assert_eq!(
+            serde_json::from_str::<Bytes32>(&format!(r#""{s}""#)).unwrap(),
+            slice32
+        );
     }
 
     #[test]
