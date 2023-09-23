@@ -1,6 +1,10 @@
 Change Log
 ==========
 
+4.1.1
+-----
+- fix RawArray blanket implementation for Array types
+
 4.1.0
 -----
 - add generic parameter to Array to support reverse string representation
