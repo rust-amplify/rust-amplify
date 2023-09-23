@@ -624,9 +624,9 @@ pub trait RawArray<const LEN: usize> {
     fn to_raw_array(&self) -> [u8; LEN];
 }
 
-impl<Id, const LEN: usize> RawArray<LEN> for Id
+impl<Id, const LEN: usize, const REVERSE_STR: bool> RawArray<LEN> for Id
 where
-    Id: Wrapper<Inner = Array<u8, LEN>>,
+    Id: Wrapper<Inner = Array<u8, LEN, REVERSE_STR>>,
 {
     fn from_raw_array(val: impl Into<[u8; LEN]>) -> Self {
         Self::from_inner(Array::from_inner(val.into()))
