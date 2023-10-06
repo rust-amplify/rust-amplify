@@ -25,12 +25,33 @@ use core::ops::{
     Range, RangeFrom, RangeInclusive, RangeTo, RangeToInclusive, BitAndAssign, BitOrAssign,
     BitXorAssign, BitAnd, BitOr, BitXor, Not,
 };
-use core::array::TryFromSliceError;
 use core::{slice, array};
 
 #[cfg(all(feature = "hex", any(feature = "std", feature = "alloc")))]
 use crate::hex::{FromHex, ToHex, self};
-use crate::{confinement, Wrapper, WrapperMut};
+use crate::{Wrapper, WrapperMut};
+
+/// Error when slice size mismatches array length.
+#[derive(Copy, Clone, Eq, PartialEq, Debug)]
+pub struct FromSliceError {
+    /// Expected slice length.
+    pub expected: usize,
+    /// Actual slice length.
+    pub actual: usize,
+}
+
+impl Display for FromSliceError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "the provided slice length {} doesn't match array size {}",
+            self.actual, self.expected
+        )
+    }
+}
+
+#[cfg(feature = "std")]
+impl std::error::Error for FromSliceError {}
 
 /// Wrapper type for all array-based bytes implementing many important
 /// traits, so types based on it can simply derive their implementations.
@@ -161,7 +182,7 @@ impl<const LEN: usize, const REVERSE_STR: bool> Array<u8, LEN, REVERSE_STR> {
     /// Constructs a byte array from the slice. Errors if the slice length
     /// doesn't match `LEN` constant generic.
     #[inline]
-    pub fn from_slice(slice: impl AsRef<[u8]>) -> Result<Self, TryFromSliceError> {
+    pub fn from_slice(slice: impl AsRef<[u8]>) -> Result<Self, FromSliceError> {
         Self::try_from(slice)
     }
      */
@@ -272,13 +293,14 @@ where
 
     /// Constructs 256-bit array by copying from a provided slice. Errors if the
     /// slice length is not equal to `LEN` bytes.
-    pub fn copy_from_slice(slice: impl AsRef<[T]>) -> Result<Self, confinement::Error> {
+    pub fn copy_from_slice(slice: impl AsRef<[T]>) -> Result<Self, FromSliceError> {
         let slice = slice.as_ref();
         let len = slice.len();
-        match len {
-            len if len < LEN => return Err(confinement::Error::Undersize { len, min_len: LEN }),
-            len if len > LEN => return Err(confinement::Error::Oversize { len, max_len: LEN }),
-            _ => {}
+        if len != LEN {
+            return Err(FromSliceError {
+                actual: len,
+                expected: LEN,
+            });
         }
         let mut inner = [T::default(); LEN];
         inner.copy_from_slice(slice);
@@ -306,10 +328,15 @@ impl<T, const LEN: usize, const REVERSE_STR: bool> TryFrom<&[T]> for Array<T, LE
 where
     T: Copy + Default,
 {
-    type Error = TryFromSliceError;
+    type Error = FromSliceError;
 
     fn try_from(value: &[T]) -> Result<Self, Self::Error> {
-        <[T; LEN]>::try_from(value).map(Self)
+        <[T; LEN]>::try_from(value)
+            .map_err(|_| FromSliceError {
+                actual: value.len(),
+                expected: LEN,
+            })
+            .map(Self)
     }
 }
 
@@ -695,7 +722,7 @@ pub trait ByteArray<const LEN: usize>: Sized {
 
     /// Constructs a byte array from the slice. Errors if the slice length
     /// doesn't match `LEN` constant generic.
-    fn from_slice(slice: impl AsRef<[u8]>) -> Result<Self, TryFromSliceError>;
+    fn from_slice(slice: impl AsRef<[u8]>) -> Result<Self, FromSliceError>;
 
     /// Constructs a byte array from the slice. Expects the slice length
     /// doesn't match `LEN` constant generic.
@@ -717,7 +744,7 @@ where
         Self::from_inner(Array::from_inner(val.into()))
     }
 
-    fn from_slice(slice: impl AsRef<[u8]>) -> Result<Self, TryFromSliceError> {
+    fn from_slice(slice: impl AsRef<[u8]>) -> Result<Self, FromSliceError> {
         Array::try_from(slice.as_ref()).map(Self::from_inner)
     }
 
@@ -818,9 +845,9 @@ mod test {
         assert_eq!(Bytes32::copy_from_slice(&data), Ok(slice32));
         assert_eq!(
             Bytes32::copy_from_slice(&data[..30]),
-            Err(confinement::Error::Undersize {
-                len: 30,
-                min_len: 32
+            Err(FromSliceError {
+                actual: 30,
+                expected: 32
             })
         );
         assert_eq!(&slice32.to_vec(), &data);
