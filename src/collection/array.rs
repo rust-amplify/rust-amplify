@@ -617,9 +617,33 @@ pub(crate) mod serde_helpers {
 }
 
 /// Trait which does a blanket implementation for all types wrapping [`Array`]s
+#[deprecated(since = "4.1.2", note = "use ByteArray instead")]
 pub trait RawArray<const LEN: usize>: Sized {
     /// Constructs a wrapper type around an array.
     fn from_raw_array(val: impl Into<[u8; LEN]>) -> Self;
+
+    /// Returns a raw array representation stored in the wrapped type.
+    fn to_raw_array(&self) -> [u8; LEN];
+}
+
+#[allow(deprecated)]
+impl<Id, const LEN: usize, const REVERSE_STR: bool> RawArray<LEN> for Id
+where
+    Id: Wrapper<Inner = Array<u8, LEN, REVERSE_STR>>,
+{
+    fn from_raw_array(val: impl Into<[u8; LEN]>) -> Self {
+        Self::from_inner(Array::from_inner(val.into()))
+    }
+
+    fn to_raw_array(&self) -> [u8; LEN] {
+        self.as_inner().into_inner()
+    }
+}
+
+/// Trait which does a blanket implementation for all types wrapping [`Array`]s
+pub trait ByteArray<const LEN: usize>: Sized {
+    /// Constructs a wrapper type around an array.
+    fn from_byte_array(val: impl Into<[u8; LEN]>) -> Self;
 
     /// Constructs a raw array from the slice. Errors if the slice length
     /// doesn't match `LEN` constant generic.
@@ -634,14 +658,14 @@ pub trait RawArray<const LEN: usize>: Sized {
     fn from_slice_unsafe(slice: impl AsRef<[u8]>) -> Self;
 
     /// Returns a raw array representation stored in the wrapped type.
-    fn to_raw_array(&self) -> [u8; LEN];
+    fn to_byte_array(&self) -> [u8; LEN];
 }
 
-impl<Id, const LEN: usize, const REVERSE_STR: bool> RawArray<LEN> for Id
+impl<Id, const LEN: usize, const REVERSE_STR: bool> ByteArray<LEN> for Id
 where
     Id: Wrapper<Inner = Array<u8, LEN, REVERSE_STR>>,
 {
-    fn from_raw_array(val: impl Into<[u8; LEN]>) -> Self {
+    fn from_byte_array(val: impl Into<[u8; LEN]>) -> Self {
         Self::from_inner(Array::from_inner(val.into()))
     }
 
@@ -653,7 +677,7 @@ where
         Self::from_slice(slice).expect("slice length not matching type requirements")
     }
 
-    fn to_raw_array(&self) -> [u8; LEN] {
+    fn to_byte_array(&self) -> [u8; LEN] {
         self.as_inner().into_inner()
     }
 }
