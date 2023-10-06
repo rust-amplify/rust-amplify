@@ -283,7 +283,7 @@ where
 {
     /// Constructs 256-bit array from a provided slice. If the slice length
     /// is not equal to `LEN` bytes, returns `None`
-    #[deprecated(since = "4.1.2", note = "use copy_from_slice")]
+    #[deprecated(since = "4.2.0", note = "use copy_from_slice")]
     pub fn from_slice(slice: impl AsRef<[T]>) -> Option<Self> {
         let slice = slice.as_ref();
         if slice.len() != LEN {
@@ -695,7 +695,7 @@ pub(crate) mod serde_helpers {
 }
 
 /// Trait which does a blanket implementation for all types wrapping [`Array`]s
-#[deprecated(since = "4.1.2", note = "use ByteArray instead")]
+#[deprecated(since = "4.2.0", note = "use ByteArray instead")]
 pub trait RawArray<const LEN: usize>: Sized {
     /// Constructs a wrapper type around an array.
     fn from_raw_array(val: impl Into<[u8; LEN]>) -> Self;
