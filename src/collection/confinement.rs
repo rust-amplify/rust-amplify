@@ -1018,9 +1018,48 @@ impl<const MIN_LEN: usize, const MAX_LEN: usize> Confined<AsciiString, MIN_LEN, 
     }
 }
 
+impl<T, const MIN_LEN: usize, const MAX_LEN: usize> Confined<Vec<T>, MIN_LEN, MAX_LEN> {
+    /// Constructs confinement out of slice of items. Does allocation.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the size of the slice doesn't match the confinement type
+    /// bounds.
+    #[inline]
+    pub fn from_slice_unsafe(slice: &[T]) -> Self
+    where
+        T: Clone,
+    {
+        assert!(slice.len() > MIN_LEN && slice.len() <= MAX_LEN);
+        Self(slice.to_vec())
+    }
+
+    /// Constructs confinement out of slice of items. Does allocation.
+    #[inline]
+    pub fn try_from_slice(slice: &[T]) -> Result<Self, Error>
+    where
+        T: Clone,
+    {
+        Self::try_from(slice.to_vec())
+    }
+
+    /// Returns slice representation of the vec.
+    #[inline]
+    pub fn as_slice(&self) -> &[T] {
+        &self.0
+    }
+
+    /// Converts into the inner unconfined vector.
+    #[inline]
+    pub fn into_vec(self) -> Vec<T> {
+        self.0
+    }
+}
+
 impl<T, const MAX_LEN: usize> Confined<Vec<T>, ZERO, MAX_LEN> {
     /// Removes the last element from a vector and returns it, or [`None`] if it
     /// is empty.
+    #[inline]
     pub fn pop(&mut self) -> Option<T> {
         self.0.pop()
     }
