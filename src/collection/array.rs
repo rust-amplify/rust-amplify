@@ -658,14 +658,14 @@ where
 
 /// Trait which does a blanket implementation for all types wrapping [`Array`]s
 pub trait ByteArray<const LEN: usize>: Sized {
-    /// Constructs a wrapper type around an array.
+    /// Constructs a wrapper type around a byte array.
     fn from_byte_array(val: impl Into<[u8; LEN]>) -> Self;
 
-    /// Constructs a raw array from the slice. Errors if the slice length
+    /// Constructs a byte array from the slice. Errors if the slice length
     /// doesn't match `LEN` constant generic.
     fn from_slice(slice: impl AsRef<[u8]>) -> Result<Self, TryFromSliceError>;
 
-    /// Constructs a raw array from the slice. Expects the slice length
+    /// Constructs a byte array from the slice. Expects the slice length
     /// doesn't match `LEN` constant generic.
     ///
     /// # Safety
@@ -673,7 +673,7 @@ pub trait ByteArray<const LEN: usize>: Sized {
     /// Panics if the slice length doesn't match `LEN` constant generic.
     fn from_slice_unsafe(slice: impl AsRef<[u8]>) -> Self;
 
-    /// Returns a raw array representation stored in the wrapped type.
+    /// Returns a byte array representation stored in the wrapped type.
     fn to_byte_array(&self) -> [u8; LEN];
 }
 
