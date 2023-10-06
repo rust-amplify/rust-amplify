@@ -156,6 +156,38 @@ impl<const LEN: usize, const REVERSE_STR: bool> Array<u8, LEN, REVERSE_STR> {
     pub const fn zero() -> Self {
         Self([0u8; LEN])
     }
+
+    /* TODO: Uncomment once Array::from_slice -> Option will be removed
+    /// Constructs a byte array from the slice. Errors if the slice length
+    /// doesn't match `LEN` constant generic.
+    #[inline]
+    pub fn from_slice(slice: impl AsRef<[u8]>) -> Result<Self, TryFromSliceError> {
+        Self::try_from(slice)
+    }
+     */
+
+    /// Constructs a byte array from the slice. Expects the slice length
+    /// doesn't match `LEN` constant generic.
+    ///
+    /// # Safety
+    ///
+    /// Panics if the slice length doesn't match `LEN` constant generic.
+    #[inline]
+    pub fn from_slice_unsafe(slice: impl AsRef<[u8]>) -> Self {
+        Self::copy_from_slice(slice).expect("slice length not matching type requirements")
+    }
+
+    /// Returns a byte array representation stored in the wrapped type.
+    #[inline]
+    pub fn to_byte_array(&self) -> [u8; LEN] {
+        self.0
+    }
+
+    /// Constructs [`Array`] type from another type containing raw array.
+    #[inline]
+    pub fn from_byte_array(val: impl Into<[u8; LEN]>) -> Self {
+        Array::from_inner(val.into())
+    }
 }
 
 impl<const LEN: usize, const REVERSE_STR: bool> BitAnd for Array<u8, LEN, REVERSE_STR> {
