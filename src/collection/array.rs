@@ -14,7 +14,9 @@
 // If not, see <https://opensource.org/licenses/MIT>.
 
 #[cfg(all(feature = "hex", any(feature = "std", feature = "alloc")))]
-use core::fmt::{self, Display, Debug, Formatter, LowerHex, UpperHex};
+use core::fmt::{LowerHex, UpperHex};
+#[cfg(any(feature = "std", feature = "alloc"))]
+use core::fmt::{self, Display, Debug, Formatter};
 #[cfg(all(feature = "hex", any(feature = "std", feature = "alloc")))]
 use core::str::FromStr;
 use core::ops::{Index, IndexMut, RangeFull};
@@ -40,6 +42,7 @@ pub struct FromSliceError {
     pub actual: usize,
 }
 
+#[cfg(any(feature = "std", feature = "alloc"))]
 impl Display for FromSliceError {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         write!(
