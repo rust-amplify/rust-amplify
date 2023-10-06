@@ -617,9 +617,22 @@ pub(crate) mod serde_helpers {
 }
 
 /// Trait which does a blanket implementation for all types wrapping [`Array`]s
-pub trait RawArray<const LEN: usize> {
+pub trait RawArray<const LEN: usize>: Sized {
     /// Constructs a wrapper type around an array.
     fn from_raw_array(val: impl Into<[u8; LEN]>) -> Self;
+
+    /// Constructs a raw array from the slice. Errors if the slice length
+    /// doesn't match `LEN` constant generic.
+    fn from_slice(slice: impl AsRef<[u8]>) -> Result<Self, TryFromSliceError>;
+
+    /// Constructs a raw array from the slice. Expects the slice length
+    /// doesn't match `LEN` constant generic.
+    ///
+    /// # Safety
+    ///
+    /// Panics if the slice length doesn't match `LEN` constant generic.
+    fn from_slice_unsafe(slice: impl AsRef<[u8]>) -> Self;
+
     /// Returns a raw array representation stored in the wrapped type.
     fn to_raw_array(&self) -> [u8; LEN];
 }
@@ -630,6 +643,14 @@ where
 {
     fn from_raw_array(val: impl Into<[u8; LEN]>) -> Self {
         Self::from_inner(Array::from_inner(val.into()))
+    }
+
+    fn from_slice(slice: impl AsRef<[u8]>) -> Result<Self, TryFromSliceError> {
+        Array::try_from(slice.as_ref()).map(Self::from_inner)
+    }
+
+    fn from_slice_unsafe(slice: impl AsRef<[u8]>) -> Self {
+        Self::from_slice(slice).expect("slice length not matching type requirements")
     }
 
     fn to_raw_array(&self) -> [u8; LEN] {
