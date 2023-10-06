@@ -759,6 +759,17 @@ impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C, MIN_
         Self::try_from(col)
     }
 
+    /// Construct a confinement with a collection of elements taken from an
+    /// iterator. Panics if the number of items in the collection exceeds one
+    /// of the confinement bounds.
+    pub fn from_iter_unsafe<I: IntoIterator<Item = C::Item>>(iter: I) -> Self {
+        let mut col = C::with_capacity(MIN_LEN);
+        for item in iter {
+            col.push(item);
+        }
+        Self::from_collection_unsafe(col)
+    }
+
     /// Returns inner collection type
     pub fn as_inner(&self) -> &C {
         &self.0
