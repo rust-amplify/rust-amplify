@@ -14,7 +14,9 @@
 // If not, see <https://opensource.org/licenses/MIT>.
 
 #[cfg(all(feature = "hex", any(feature = "std", feature = "alloc")))]
-use core::fmt::{self, Display, Debug, Formatter, LowerHex, UpperHex};
+use core::fmt::{LowerHex, UpperHex};
+#[cfg(any(feature = "std", feature = "alloc"))]
+use core::fmt::{self, Display, Debug, Formatter};
 #[cfg(all(feature = "hex", any(feature = "std", feature = "alloc")))]
 use core::str::FromStr;
 use core::ops::{Index, IndexMut, RangeFull};
@@ -25,12 +27,34 @@ use core::ops::{
     Range, RangeFrom, RangeInclusive, RangeTo, RangeToInclusive, BitAndAssign, BitOrAssign,
     BitXorAssign, BitAnd, BitOr, BitXor, Not,
 };
-use core::array::TryFromSliceError;
 use core::{slice, array};
 
 #[cfg(all(feature = "hex", any(feature = "std", feature = "alloc")))]
 use crate::hex::{FromHex, ToHex, self};
 use crate::{Wrapper, WrapperMut};
+
+/// Error when slice size mismatches array length.
+#[derive(Copy, Clone, Eq, PartialEq, Debug)]
+pub struct FromSliceError {
+    /// Expected slice length.
+    pub expected: usize,
+    /// Actual slice length.
+    pub actual: usize,
+}
+
+#[cfg(any(feature = "std", feature = "alloc"))]
+impl Display for FromSliceError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "the provided slice length {} doesn't match array size {}",
+            self.actual, self.expected
+        )
+    }
+}
+
+#[cfg(feature = "std")]
+impl std::error::Error for FromSliceError {}
 
 /// Wrapper type for all array-based bytes implementing many important
 /// traits, so types based on it can simply derive their implementations.
@@ -156,6 +180,38 @@ impl<const LEN: usize, const REVERSE_STR: bool> Array<u8, LEN, REVERSE_STR> {
     pub const fn zero() -> Self {
         Self([0u8; LEN])
     }
+
+    /* TODO: Uncomment once Array::from_slice -> Option will be removed
+    /// Constructs a byte array from the slice. Errors if the slice length
+    /// doesn't match `LEN` constant generic.
+    #[inline]
+    pub fn from_slice(slice: impl AsRef<[u8]>) -> Result<Self, FromSliceError> {
+        Self::try_from(slice)
+    }
+     */
+
+    /// Constructs a byte array from the slice. Expects the slice length
+    /// doesn't match `LEN` constant generic.
+    ///
+    /// # Safety
+    ///
+    /// Panics if the slice length doesn't match `LEN` constant generic.
+    #[inline]
+    pub fn from_slice_unsafe(slice: impl AsRef<[u8]>) -> Self {
+        Self::copy_from_slice(slice).expect("slice length not matching type requirements")
+    }
+
+    /// Returns a byte array representation stored in the wrapped type.
+    #[inline]
+    pub fn to_byte_array(&self) -> [u8; LEN] {
+        self.0
+    }
+
+    /// Constructs [`Array`] type from another type containing raw array.
+    #[inline]
+    pub fn from_byte_array(val: impl Into<[u8; LEN]>) -> Self {
+        Array::from_inner(val.into())
+    }
 }
 
 impl<const LEN: usize, const REVERSE_STR: bool> BitAnd for Array<u8, LEN, REVERSE_STR> {
@@ -226,7 +282,8 @@ where
     T: Default + Copy,
 {
     /// Constructs 256-bit array from a provided slice. If the slice length
-    /// is not equal to 32 bytes, returns `None`
+    /// is not equal to `LEN` bytes, returns `None`
+    #[deprecated(since = "4.2.0", note = "use copy_from_slice")]
     pub fn from_slice(slice: impl AsRef<[T]>) -> Option<Self> {
         let slice = slice.as_ref();
         if slice.len() != LEN {
@@ -235,6 +292,22 @@ where
         let mut inner = [T::default(); LEN];
         inner.copy_from_slice(slice);
         Some(Self(inner))
+    }
+
+    /// Constructs 256-bit array by copying from a provided slice. Errors if the
+    /// slice length is not equal to `LEN` bytes.
+    pub fn copy_from_slice(slice: impl AsRef<[T]>) -> Result<Self, FromSliceError> {
+        let slice = slice.as_ref();
+        let len = slice.len();
+        if len != LEN {
+            return Err(FromSliceError {
+                actual: len,
+                expected: LEN,
+            });
+        }
+        let mut inner = [T::default(); LEN];
+        inner.copy_from_slice(slice);
+        Ok(Self(inner))
     }
 }
 
@@ -258,10 +331,15 @@ impl<T, const LEN: usize, const REVERSE_STR: bool> TryFrom<&[T]> for Array<T, LE
 where
     T: Copy + Default,
 {
-    type Error = TryFromSliceError;
+    type Error = FromSliceError;
 
     fn try_from(value: &[T]) -> Result<Self, Self::Error> {
-        <[T; LEN]>::try_from(value).map(Self)
+        <[T; LEN]>::try_from(value)
+            .map_err(|_| FromSliceError {
+                actual: value.len(),
+                expected: LEN,
+            })
+            .map(Self)
     }
 }
 
@@ -617,13 +695,16 @@ pub(crate) mod serde_helpers {
 }
 
 /// Trait which does a blanket implementation for all types wrapping [`Array`]s
-pub trait RawArray<const LEN: usize> {
+#[deprecated(since = "4.2.0", note = "use ByteArray instead")]
+pub trait RawArray<const LEN: usize>: Sized {
     /// Constructs a wrapper type around an array.
     fn from_raw_array(val: impl Into<[u8; LEN]>) -> Self;
+
     /// Returns a raw array representation stored in the wrapped type.
     fn to_raw_array(&self) -> [u8; LEN];
 }
 
+#[allow(deprecated)]
 impl<Id, const LEN: usize, const REVERSE_STR: bool> RawArray<LEN> for Id
 where
     Id: Wrapper<Inner = Array<u8, LEN, REVERSE_STR>>,
@@ -633,6 +714,48 @@ where
     }
 
     fn to_raw_array(&self) -> [u8; LEN] {
+        self.as_inner().into_inner()
+    }
+}
+
+/// Trait which does a blanket implementation for all types wrapping [`Array`]s
+pub trait ByteArray<const LEN: usize>: Sized {
+    /// Constructs a wrapper type around a byte array.
+    fn from_byte_array(val: impl Into<[u8; LEN]>) -> Self;
+
+    /// Constructs a byte array from the slice. Errors if the slice length
+    /// doesn't match `LEN` constant generic.
+    fn from_slice(slice: impl AsRef<[u8]>) -> Result<Self, FromSliceError>;
+
+    /// Constructs a byte array from the slice. Expects the slice length
+    /// doesn't match `LEN` constant generic.
+    ///
+    /// # Safety
+    ///
+    /// Panics if the slice length doesn't match `LEN` constant generic.
+    fn from_slice_unsafe(slice: impl AsRef<[u8]>) -> Self;
+
+    /// Returns a byte array representation stored in the wrapped type.
+    fn to_byte_array(&self) -> [u8; LEN];
+}
+
+impl<Id, const LEN: usize, const REVERSE_STR: bool> ByteArray<LEN> for Id
+where
+    Id: Wrapper<Inner = Array<u8, LEN, REVERSE_STR>>,
+{
+    fn from_byte_array(val: impl Into<[u8; LEN]>) -> Self {
+        Self::from_inner(Array::from_inner(val.into()))
+    }
+
+    fn from_slice(slice: impl AsRef<[u8]>) -> Result<Self, FromSliceError> {
+        Array::try_from(slice.as_ref()).map(Self::from_inner)
+    }
+
+    fn from_slice_unsafe(slice: impl AsRef<[u8]>) -> Self {
+        Self::from_slice(slice).expect("slice length not matching type requirements")
+    }
+
+    fn to_byte_array(&self) -> [u8; LEN] {
         self.as_inner().into_inner()
     }
 }
@@ -722,8 +845,14 @@ mod test {
             0x91, 0xa0, 0xff, 0x53,
         ];
 
-        assert_eq!(Bytes32::from_slice(&data), Some(slice32));
-        assert_eq!(Bytes32::from_slice(&data[..30]), None);
+        assert_eq!(Bytes32::copy_from_slice(&data), Ok(slice32));
+        assert_eq!(
+            Bytes32::copy_from_slice(&data[..30]),
+            Err(FromSliceError {
+                actual: 30,
+                expected: 32
+            })
+        );
         assert_eq!(&slice32.to_vec(), &data);
         assert_eq!(&slice32.as_inner()[..], &data);
         assert_eq!(slice32.to_inner(), data);

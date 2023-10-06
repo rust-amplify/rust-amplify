@@ -718,6 +718,15 @@ where
 }
 
 impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C, MIN_LEN, MAX_LEN> {
+    /// Constructs confinement over collection which was already size-checked.
+    ///
+    /// # Safety
+    ///
+    /// Panics if the collection size doesn't fit confinement type requirements.
+    pub fn from_collection_unsafe(col: C) -> Self {
+        Self::try_from(col).expect("collection size mismatch, use try_from instead")
+    }
+
     /// Tries to construct a confinement over a collection. Fails if the number
     /// of items in the collection exceeds one of the confinement bounds.
     // We can't use `impl TryFrom` due to the conflict with core library blanked
