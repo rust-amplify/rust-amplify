@@ -30,7 +30,7 @@ use core::{slice, array};
 
 #[cfg(all(feature = "hex", any(feature = "std", feature = "alloc")))]
 use crate::hex::{FromHex, ToHex, self};
-use crate::{Wrapper, WrapperMut};
+use crate::{confinement, Wrapper, WrapperMut};
 
 /// Wrapper type for all array-based bytes implementing many important
 /// traits, so types based on it can simply derive their implementations.
@@ -226,7 +226,8 @@ where
     T: Default + Copy,
 {
     /// Constructs 256-bit array from a provided slice. If the slice length
-    /// is not equal to 32 bytes, returns `None`
+    /// is not equal to `LEN` bytes, returns `None`
+    #[deprecated(since = "4.1.2", note = "use copy_from_slice")]
     pub fn from_slice(slice: impl AsRef<[T]>) -> Option<Self> {
         let slice = slice.as_ref();
         if slice.len() != LEN {
@@ -235,6 +236,21 @@ where
         let mut inner = [T::default(); LEN];
         inner.copy_from_slice(slice);
         Some(Self(inner))
+    }
+
+    /// Constructs 256-bit array by copying from a provided slice. Errors if the
+    /// slice length is not equal to `LEN` bytes.
+    pub fn copy_from_slice(slice: impl AsRef<[T]>) -> Result<Self, confinement::Error> {
+        let slice = slice.as_ref();
+        let len = slice.len();
+        match len {
+            len if len < LEN => return Err(confinement::Error::Undersize { len, min_len: LEN }),
+            len if len > LEN => return Err(confinement::Error::Oversize { len, max_len: LEN }),
+            _ => {}
+        }
+        let mut inner = [T::default(); LEN];
+        inner.copy_from_slice(slice);
+        Ok(Self(inner))
     }
 }
 
@@ -767,8 +783,14 @@ mod test {
             0x91, 0xa0, 0xff, 0x53,
         ];
 
-        assert_eq!(Bytes32::from_slice(&data), Some(slice32));
-        assert_eq!(Bytes32::from_slice(&data[..30]), None);
+        assert_eq!(Bytes32::copy_from_slice(&data), Ok(slice32));
+        assert_eq!(
+            Bytes32::copy_from_slice(&data[..30]),
+            Err(confinement::Error::Undersize {
+                len: 30,
+                min_len: 32
+            })
+        );
         assert_eq!(&slice32.to_vec(), &data);
         assert_eq!(&slice32.as_inner()[..], &data);
         assert_eq!(slice32.to_inner(), data);
