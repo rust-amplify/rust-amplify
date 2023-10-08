@@ -31,7 +31,7 @@ use core::{slice, array};
 
 #[cfg(all(feature = "hex", any(feature = "std", feature = "alloc")))]
 use crate::hex::{FromHex, ToHex, self};
-use crate::{FromInner, Inner};
+use crate::{FromInner, Inner, InnerMut};
 
 /// Error when slice size mismatches array length.
 #[derive(Copy, Clone, Eq, PartialEq, Debug)]
@@ -211,6 +211,34 @@ impl<const LEN: usize, const REVERSE_STR: bool> Array<u8, LEN, REVERSE_STR> {
     #[inline]
     pub fn from_byte_array(val: impl Into<[u8; LEN]>) -> Self {
         Array(val.into())
+    }
+}
+
+impl<T, const LEN: usize, const REVERSE_STR: bool> Inner for Array<T, LEN, REVERSE_STR> {
+    type Inner = [T; LEN];
+
+    #[inline]
+    fn as_inner(&self) -> &Self::Inner {
+        &self.0
+    }
+
+    #[inline]
+    fn into_inner(self) -> Self::Inner {
+        self.0
+    }
+}
+
+impl<T, const LEN: usize, const REVERSE_STR: bool> FromInner for Array<T, LEN, REVERSE_STR> {
+    #[inline]
+    fn from_inner(inner: Self::Inner) -> Self {
+        Array(inner)
+    }
+}
+
+impl<T, const LEN: usize, const REVERSE_STR: bool> InnerMut for Array<T, LEN, REVERSE_STR> {
+    #[inline]
+    fn as_inner_mut(&mut self) -> &mut Self::Inner {
+        &mut self.0
     }
 }
 
