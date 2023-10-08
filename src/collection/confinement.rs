@@ -16,7 +16,7 @@
 //! Confinement puts a constrain on the number of elements within a collection.
 
 use core::borrow::{Borrow, BorrowMut};
-use core::fmt::{self, Display, Formatter};
+use core::fmt::{self, Display, Formatter, LowerHex, UpperHex};
 use core::str::FromStr;
 use core::hash::Hash;
 use core::ops::{
@@ -31,6 +31,8 @@ use std::{
     io, usize,
     collections::{hash_map, HashMap, HashSet},
 };
+use amplify_num::hex;
+use amplify_num::hex::{FromHex, ToHex};
 use ascii::{AsAsciiStrError, AsciiChar, AsciiString};
 
 use crate::num::u24;
@@ -1320,6 +1322,29 @@ impl<const MAX_LEN: usize> io::Write for Confined<Vec<u8>, ZERO, MAX_LEN> {
     fn flush(&mut self) -> io::Result<()> {
         // Do nothing
         Ok(())
+    }
+}
+
+// Vec<u8>-specific things
+
+impl<const MIN_LEN: usize, const MAX_LEN: usize> LowerHex for Confined<Vec<u8>, MIN_LEN, MAX_LEN> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        f.write_str(&self.0.to_hex())
+    }
+}
+
+impl<const MIN_LEN: usize, const MAX_LEN: usize> UpperHex for Confined<Vec<u8>, MIN_LEN, MAX_LEN> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        f.write_str(&self.0.to_hex().to_uppercase())
+    }
+}
+
+impl<const MIN_LEN: usize, const MAX_LEN: usize> FromHex for Confined<Vec<u8>, MIN_LEN, MAX_LEN> {
+    fn from_byte_iter<I>(iter: I) -> Result<Self, hex::Error>
+    where
+        I: Iterator<Item = Result<u8, hex::Error>> + ExactSizeIterator + DoubleEndedIterator,
+    {
+        Vec::<u8>::from_byte_iter(iter).map(Self)
     }
 }
 
