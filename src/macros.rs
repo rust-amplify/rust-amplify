@@ -106,6 +106,16 @@ macro_rules! map {
         }
     };
 
+    { owned: $($key:expr => $value:expr),+ $(,)? } => {
+        {
+            let mut m = ::std::collections::HashMap::new();
+            $(
+                m.insert($key.to_owned(), $value.to_owned());
+            )+
+            m
+        }
+    };
+
     { $($key:expr => $value:expr),+ $(,)? } => {
         {
             let mut m = ::std::collections::HashMap::new();
@@ -146,6 +156,16 @@ macro_rules! set {
         }
     };
 
+    { owned: $($value:expr),+ $(,)? } => {
+        {
+            let mut m = ::std::collections::HashSet::new();
+            $(
+                m.insert($value.to_owned());
+            )+
+            m
+        }
+    };
+
     { $($value:expr),+ $(,)? } => {
         {
             let mut m = ::std::collections::HashSet::new();
@@ -175,6 +195,16 @@ macro_rules! bmap {
     { } =>  {
         {
             ::std::collections::BTreeMap::new()
+        }
+    };
+
+    { owned: $($key:expr => $value:expr),+ $(,)? } => {
+        {
+            let mut m = ::std::collections::BTreeMap::new();
+            $(
+                m.insert($key.to_owned(), $value.to_owned());
+            )+
+            m
         }
     };
 
@@ -218,6 +248,16 @@ macro_rules! bset {
         }
     };
 
+    { owned: $($value:expr),+ $(,)? } => {
+        {
+            let mut m = ::std::collections::BTreeSet::new();
+            $(
+                m.insert($value.to_owned());
+            )+
+            m
+        }
+    };
+
     { $($value:expr),+ $(,)? } => {
         {
             let mut m = ::std::collections::BTreeSet::new();
@@ -248,6 +288,16 @@ macro_rules! list {
     { } =>  {
         {
             ::std::collections::LinkedList::new()
+        }
+    };
+
+    { owned: $($value:expr)=>+ } => {
+        {
+            let mut m = ::std::collections::LinkedList::new();
+            $(
+                m.push_back($value.to_owned());
+            )+
+            m
         }
     };
 
