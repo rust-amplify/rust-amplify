@@ -34,9 +34,9 @@ use std::{
 use amplify_num::hex;
 use amplify_num::hex::{FromHex, ToHex};
 use ascii::{AsAsciiStrError, AsciiChar, AsciiString};
+use crate::Inner;
 
 use crate::num::u24;
-use crate::Wrapper;
 
 /// Trait implemented by a collection types which need to support collection
 /// confinement.
@@ -405,14 +405,10 @@ pub const U64: usize = u64::MAX as usize;
 )]
 pub struct Confined<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize>(C);
 
-impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Wrapper
+impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Inner
     for Confined<C, MIN_LEN, MAX_LEN>
 {
     type Inner = C;
-
-    fn from_inner(inner: Self::Inner) -> Self {
-        Self(inner)
-    }
 
     fn as_inner(&self) -> &Self::Inner {
         &self.0
