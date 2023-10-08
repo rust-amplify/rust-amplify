@@ -64,20 +64,12 @@ pub trait FromInner: Inner {
     }
 }
 
-#[deprecated(since = "4.5.0", note = "use FromInner instead")]
-#[doc(hidden)]
-pub use FromInner as Wrapper;
-
 /// Trait allowing mutable reference borrowing for the wrapped inner type.
 pub trait InnerMut: Inner {
     /// Returns a mutable reference to the inner representation for the wrapper
     /// type
     fn as_inner_mut(&mut self) -> &mut Self::Inner;
 }
-
-#[deprecated(since = "4.5.0", note = "use InnerMut instead")]
-#[doc(hidden)]
-pub use InnerMut as WrapperMut;
 
 #[cfg(test)]
 mod test {

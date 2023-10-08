@@ -25,8 +25,6 @@ mod to_serde_string;
 
 pub use as_any::AsAny;
 pub use join_split::JoinSplit;
-#[allow(deprecated)]
-pub use wrapper::{Wrapper, WrapperMut};
 pub use wrapper::{InnerMut, Inner, FromInner};
 pub use dumb::Dumb;
 #[cfg(feature = "serde")]
