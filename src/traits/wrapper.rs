@@ -66,9 +66,7 @@ pub trait FromInner: Inner {
 
 #[deprecated(since = "4.5.0", note = "use FromInner instead")]
 #[doc(hidden)]
-pub trait Wrapper: FromInner {}
-#[allow(deprecated)]
-impl<T: FromInner> Wrapper for T {}
+pub use FromInner as Wrapper;
 
 /// Trait allowing mutable reference borrowing for the wrapped inner type.
 pub trait InnerMut: Inner {
@@ -79,9 +77,7 @@ pub trait InnerMut: Inner {
 
 #[deprecated(since = "4.5.0", note = "use InnerMut instead")]
 #[doc(hidden)]
-pub trait WrapperMut: InnerMut {}
-#[allow(deprecated)]
-impl<T: InnerMut> WrapperMut for T {}
+pub use InnerMut as WrapperMut;
 
 #[cfg(test)]
 mod test {
