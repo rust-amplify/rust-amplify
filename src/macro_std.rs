@@ -14,77 +14,6 @@
 // along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
-/// Macro for quick & simple `&str` -> `String` conversion:
-/// ```
-/// #[macro_use]
-/// extern crate amplify;
-///
-/// # fn main() {
-/// enum Error {
-///     Io(String),
-/// }
-///
-/// impl From<std::io::Error> for Error {
-///     fn from(err: std::io::Error) -> Error {
-///         Self::Io(s!("I/O error"))
-///     }
-/// }
-/// # }
-/// ```
-#[macro_export]
-macro_rules! s {
-    ( $str:literal ) => {
-        String::from($str)
-    };
-}
-
-/// This macro allows more semantically-clear code (which can be used especially
-/// with structure initialization), indicating that instead of type value we are
-/// generating no value at all (empty collection or data structure filled with
-/// information indicating absence of data)
-#[macro_export]
-macro_rules! none {
-    () => {
-        Default::default()
-    };
-}
-
-/// This macro allows more semantically-clear code (which can be used especially
-/// with structure initialization), indicating that instead of type value we are
-/// generating zero values (int types or byte slices filled with zeros)
-#[macro_export]
-macro_rules! zero {
-    () => {
-        Default::default()
-    };
-}
-
-/// This macro allows more semantically-clear code (which can be used especially
-/// with structure initialization), indicating that instead of type value we are
-/// generating empty collection types
-#[macro_export]
-macro_rules! empty {
-    () => {
-        Default::default()
-    };
-}
-
-/// Shorthand for `Default::default()`
-#[macro_export]
-macro_rules! default {
-    () => {
-        Default::default()
-    };
-}
-
-/// Shorthand for `Dumb::dumb()`
-#[macro_export]
-macro_rules! dumb {
-    () => {
-        $crate::Dumb::dumb()
-    };
-}
-
 /// Macro for creating [`std::collections::HashMap`] in the same manner as
 /// `vec!` is used for [`Vec`]:
 /// ```
@@ -103,6 +32,16 @@ macro_rules! map {
     { } =>  {
         {
             ::std::collections::HashMap::new()
+        }
+    };
+
+    { owned: $($key:expr => $value:expr),+ $(,)? } => {
+        {
+            let mut m = ::std::collections::HashMap::new();
+            $(
+                m.insert($key.to_owned(), $value.to_owned());
+            )+
+            m
         }
     };
 
@@ -146,6 +85,16 @@ macro_rules! set {
         }
     };
 
+    { owned: $($value:expr),+ $(,)? } => {
+        {
+            let mut m = ::std::collections::HashSet::new();
+            $(
+                m.insert($value.to_owned());
+            )+
+            m
+        }
+    };
+
     { $($value:expr),+ $(,)? } => {
         {
             let mut m = ::std::collections::HashSet::new();
@@ -175,6 +124,16 @@ macro_rules! bmap {
     { } =>  {
         {
             ::std::collections::BTreeMap::new()
+        }
+    };
+
+    { owned: $($key:expr => $value:expr),+ $(,)? } => {
+        {
+            let mut m = ::std::collections::BTreeMap::new();
+            $(
+                m.insert($key.to_owned(), $value.to_owned());
+            )+
+            m
         }
     };
 
@@ -218,6 +177,16 @@ macro_rules! bset {
         }
     };
 
+    { owned: $($value:expr),+ $(,)? } => {
+        {
+            let mut m = ::std::collections::BTreeSet::new();
+            $(
+                m.insert($value.to_owned());
+            )+
+            m
+        }
+    };
+
     { $($value:expr),+ $(,)? } => {
         {
             let mut m = ::std::collections::BTreeSet::new();
@@ -248,6 +217,16 @@ macro_rules! list {
     { } =>  {
         {
             ::std::collections::LinkedList::new()
+        }
+    };
+
+    { owned: $($value:expr)=>+ } => {
+        {
+            let mut m = ::std::collections::LinkedList::new();
+            $(
+                m.push_back($value.to_owned());
+            )+
+            m
         }
     };
 

@@ -30,6 +30,7 @@
     missing_docs
 )]
 #![cfg_attr(not(feature = "std"), no_std)]
+
 #[cfg(feature = "alloc")]
 pub extern crate alloc;
 extern crate core;
@@ -60,7 +61,13 @@ pub use proc_attr::ident;
 pub use ascii;
 
 #[macro_use]
-mod macros;
+mod macro_default;
+#[cfg(feature = "std")]
+#[macro_use]
+mod macro_std;
+#[cfg(all(feature = "alloc", not(feature = "std")))]
+#[macro_use]
+mod macro_alloc;
 
 #[cfg(feature = "std")]
 mod io_util;
