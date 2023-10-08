@@ -56,124 +56,119 @@ impl Display for FromSliceError {
 #[cfg(feature = "std")]
 impl std::error::Error for FromSliceError {}
 
-/// Wrapper type for all array-based bytes implementing many important
-/// traits, so types based on it can simply derive their implementations.
-///
-/// Type keeps data in little-endian byte order and displays them in the same
-/// order (like bitcoin SHA256 single hash type).
-pub type Bytes<const LEN: usize> = Array<u8, LEN>;
-
 /// Wrapper type for all array-based 32-bit types implementing many important
 /// traits, so types based on it can simply derive their implementations.
 ///
 /// Type keeps data in little-endian byte order and displays them in the same
 /// order (like bitcoin SHA256 single hash type).
-pub type Bytes4 = Array<u8, 4>;
+pub type Bytes4 = ByteArray<4>;
 
 /// Wrapper type for all array-based 128-bit types implementing many important
 /// traits, so types based on it can simply derive their implementations.
 ///
 /// Type keeps data in little-endian byte order and displays them in the same
 /// order (like bitcoin SHA256 single hash type).
-pub type Bytes16 = Array<u8, 16>;
+pub type Bytes16 = ByteArray<16>;
 
 /// Wrapper type for all array-based 160-bit types implementing many important
 /// traits, so types based on it can simply derive their implementations.
 ///
 /// Type keeps data in little-endian byte order and displays them in the same
 /// order (like bitcoin SHA256 single hash type).
-pub type Bytes20 = Array<u8, 20>;
+pub type Bytes20 = ByteArray<20>;
 
 /// Wrapper type for all array-based 256-bit types implementing many important
 /// traits, so types based on it can simply derive their implementations.
 ///
 /// Type keeps data in little-endian byte order and displays them in the same
 /// order (like bitcoin SHA256 single hash type).
-pub type Bytes32 = Array<u8, 32>;
+pub type Bytes32 = ByteArray<32>;
 
 /// Wrapper type for all array-based 256-bit types implementing many important
 /// traits, so types based on it can simply derive their implementations.
 ///
 /// Type keeps data in little-endian byte order and displays them in the revers
 /// (like bitcoin SHA256d hash types).
-pub type Bytes32StrRev = Array<u8, 32, true>;
+pub type Bytes32StrRev = ByteArray<32, true>;
 
 /// Wrapper type for all array-based 512-bit types implementing many important
 /// traits, so types based on it can simply derive their implementations.
 ///
 /// Type keeps data in little-endian byte order and displays them in the same
 /// order (like bitcoin SHA256 single hash type).
-pub type Bytes64 = Array<u8, 64>;
+pub type Bytes64 = ByteArray<64>;
 
 /// Wrapper type for all fixed arrays implementing many important
 /// traits, so types based on it can simply derive their implementations.
 ///
 /// Type keeps data in little-endian byte order and displays them in the same
 /// order (like bitcoin SHA256 single hash type).
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct Array<T, const LEN: usize, const REVERSE_STR: bool = false>([T; LEN]);
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
+pub struct ByteArray<const LEN: usize, const REVERSE_STR: bool = false>([u8; LEN]);
 
-impl<T, const LEN: usize, const REVERSE_STR: bool> Array<T, LEN, REVERSE_STR> {
+impl<const LEN: usize, const REVERSE_STR: bool> ByteArray<LEN, REVERSE_STR> {
     /// Constructs array filled with given value.
-    /// TODO: Revert commit 7110cee0cf539d8ff4270450183f7060a585bc87 and make
-    ///       method `const` once `const_fn_trait_bound` stabilize
-    pub fn with_fill(val: T) -> Self
-    where
-        T: Copy,
-    {
+    pub const fn with_fill(val: u8) -> Self {
         Self([val; LEN])
     }
 
     /// Wraps inner representation into array type.
-    pub const fn from_array(inner: [T; LEN]) -> Self {
+    pub const fn from_array(inner: [u8; LEN]) -> Self {
         Self(inner)
     }
 
     /// Returns byte slice representation.
     #[inline]
-    pub fn as_slice(&self) -> &[T] {
-        self.as_ref()
+    pub const fn as_slice(&self) -> &[u8] {
+        &self.0
     }
 
     /// Returns mutable byte slice representation.
     #[inline]
-    pub fn as_slice_mut(&mut self) -> &mut [T] {
-        self.as_mut()
+    pub fn as_slice_mut(&mut self) -> &mut [u8] {
+        &mut self.0
+    }
+
+    /// Returns byte slice representation.
+    #[inline]
+    pub const fn as_array(&self) -> &[u8; LEN] {
+        &self.0
+    }
+
+    /// Returns mutable byte slice representation.
+    #[inline]
+    pub fn as_array_mut(&mut self) -> &mut [u8; LEN] {
+        &mut self.0
     }
 
     /// Returns vector representing internal slice data
     #[allow(clippy::wrong_self_convention)]
     #[cfg(any(test, feature = "std", feature = "alloc"))]
-    pub fn to_vec(&self) -> Vec<T>
-    where
-        T: Clone,
-    {
+    pub fn to_vec(&self) -> Vec<u8> {
         self.0.to_vec()
     }
 
     /// Returns an iterator over the array items.
     ///
     /// The iterator yields all items from start to end.
-    pub fn iter(&self) -> slice::Iter<T> {
+    pub fn bytes(&self) -> slice::Iter<u8> {
         self.0.iter()
     }
 
     /// Returns an iterator that allows modifying each value.
     ///
     /// The iterator yields all items from start to end.
-    pub fn iter_mut(&mut self) -> slice::IterMut<T> {
+    pub fn bytes_mut(&mut self) -> slice::IterMut<u8> {
         self.0.iter_mut()
     }
-}
 
-impl<const LEN: usize, const REVERSE_STR: bool> Array<u8, LEN, REVERSE_STR> {
     #[cfg(feature = "rand")]
     /// Generates array from `rand::thread_rng` random number generator
     pub fn random() -> Self {
         use rand::RngCore;
         let mut entropy = [0u8; LEN];
         rand::thread_rng().fill_bytes(&mut entropy);
-        Array::from_inner(entropy)
+        ByteArray::from_inner(entropy)
     }
 
     /// Constructs array filled with zero bytes
@@ -181,14 +176,12 @@ impl<const LEN: usize, const REVERSE_STR: bool> Array<u8, LEN, REVERSE_STR> {
         Self([0u8; LEN])
     }
 
-    /* TODO: Uncomment once Array::from_slice -> Option will be removed
     /// Constructs a byte array from the slice. Errors if the slice length
     /// doesn't match `LEN` constant generic.
     #[inline]
     pub fn from_slice(slice: impl AsRef<[u8]>) -> Result<Self, FromSliceError> {
         Self::try_from(slice)
     }
-     */
 
     /// Constructs a byte array from the slice. Expects the slice length
     /// doesn't match `LEN` constant generic.
@@ -207,14 +200,14 @@ impl<const LEN: usize, const REVERSE_STR: bool> Array<u8, LEN, REVERSE_STR> {
         self.0
     }
 
-    /// Constructs [`Array`] type from another type containing raw array.
+    /// Constructs [`ByteArray`] type from another type containing raw array.
     #[inline]
     pub fn from_byte_array(val: impl Into<[u8; LEN]>) -> Self {
-        Array::from_inner(val.into())
+        ByteArray::from_inner(val.into())
     }
 }
 
-impl<const LEN: usize, const REVERSE_STR: bool> BitAnd for Array<u8, LEN, REVERSE_STR> {
+impl<const LEN: usize, const REVERSE_STR: bool> BitAnd for ByteArray<LEN, REVERSE_STR> {
     type Output = Self;
 
     fn bitand(mut self, rhs: Self) -> Self::Output {
@@ -223,7 +216,7 @@ impl<const LEN: usize, const REVERSE_STR: bool> BitAnd for Array<u8, LEN, REVERS
     }
 }
 
-impl<const LEN: usize, const REVERSE_STR: bool> BitAndAssign for Array<u8, LEN, REVERSE_STR> {
+impl<const LEN: usize, const REVERSE_STR: bool> BitAndAssign for ByteArray<LEN, REVERSE_STR> {
     fn bitand_assign(&mut self, rhs: Self) {
         self.0
             .iter_mut()
@@ -232,7 +225,7 @@ impl<const LEN: usize, const REVERSE_STR: bool> BitAndAssign for Array<u8, LEN, 
     }
 }
 
-impl<const LEN: usize, const REVERSE_STR: bool> BitOr for Array<u8, LEN, REVERSE_STR> {
+impl<const LEN: usize, const REVERSE_STR: bool> BitOr for ByteArray<LEN, REVERSE_STR> {
     type Output = Self;
 
     fn bitor(mut self, rhs: Self) -> Self::Output {
@@ -241,7 +234,7 @@ impl<const LEN: usize, const REVERSE_STR: bool> BitOr for Array<u8, LEN, REVERSE
     }
 }
 
-impl<const LEN: usize, const REVERSE_STR: bool> BitOrAssign for Array<u8, LEN, REVERSE_STR> {
+impl<const LEN: usize, const REVERSE_STR: bool> BitOrAssign for ByteArray<LEN, REVERSE_STR> {
     fn bitor_assign(&mut self, rhs: Self) {
         self.0
             .iter_mut()
@@ -250,7 +243,7 @@ impl<const LEN: usize, const REVERSE_STR: bool> BitOrAssign for Array<u8, LEN, R
     }
 }
 
-impl<const LEN: usize, const REVERSE_STR: bool> BitXor for Array<u8, LEN, REVERSE_STR> {
+impl<const LEN: usize, const REVERSE_STR: bool> BitXor for ByteArray<LEN, REVERSE_STR> {
     type Output = Self;
 
     fn bitxor(mut self, rhs: Self) -> Self::Output {
@@ -259,7 +252,7 @@ impl<const LEN: usize, const REVERSE_STR: bool> BitXor for Array<u8, LEN, REVERS
     }
 }
 
-impl<const LEN: usize, const REVERSE_STR: bool> BitXorAssign for Array<u8, LEN, REVERSE_STR> {
+impl<const LEN: usize, const REVERSE_STR: bool> BitXorAssign for ByteArray<LEN, REVERSE_STR> {
     fn bitxor_assign(&mut self, rhs: Self) {
         self.0
             .iter_mut()
@@ -268,7 +261,7 @@ impl<const LEN: usize, const REVERSE_STR: bool> BitXorAssign for Array<u8, LEN, 
     }
 }
 
-impl<const LEN: usize, const REVERSE_STR: bool> Not for Array<u8, LEN, REVERSE_STR> {
+impl<const LEN: usize, const REVERSE_STR: bool> Not for ByteArray<LEN, REVERSE_STR> {
     type Output = Self;
 
     fn not(mut self) -> Self::Output {
@@ -277,26 +270,10 @@ impl<const LEN: usize, const REVERSE_STR: bool> Not for Array<u8, LEN, REVERSE_S
     }
 }
 
-impl<T, const LEN: usize, const REVERSE_STR: bool> Array<T, LEN, REVERSE_STR>
-where
-    T: Default + Copy,
-{
-    /// Constructs 256-bit array from a provided slice. If the slice length
-    /// is not equal to `LEN` bytes, returns `None`
-    #[deprecated(since = "4.2.0", note = "use copy_from_slice")]
-    pub fn from_slice(slice: impl AsRef<[T]>) -> Option<Self> {
-        let slice = slice.as_ref();
-        if slice.len() != LEN {
-            return None;
-        }
-        let mut inner = [T::default(); LEN];
-        inner.copy_from_slice(slice);
-        Some(Self(inner))
-    }
-
+impl<const LEN: usize, const REVERSE_STR: bool> ByteArray<LEN, REVERSE_STR> {
     /// Constructs 256-bit array by copying from a provided slice. Errors if the
     /// slice length is not equal to `LEN` bytes.
-    pub fn copy_from_slice(slice: impl AsRef<[T]>) -> Result<Self, FromSliceError> {
+    pub fn copy_from_slice(slice: impl AsRef<[u8]>) -> Result<Self, FromSliceError> {
         let slice = slice.as_ref();
         let len = slice.len();
         if len != LEN {
@@ -305,29 +282,26 @@ where
                 expected: LEN,
             });
         }
-        let mut inner = [T::default(); LEN];
+        let mut inner = [0; LEN];
         inner.copy_from_slice(slice);
         Ok(Self(inner))
     }
 }
 
-impl<T, const LEN: usize, const REVERSE_STR: bool> Default for Array<T, LEN, REVERSE_STR>
-where
-    T: Default + Copy,
-{
+impl<T, const LEN: usize, const REVERSE_STR: bool> Default for ByteArray<LEN, REVERSE_STR> {
     fn default() -> Self {
-        let inner = [T::default(); LEN];
+        let inner = [0u8; LEN];
         Self(inner)
     }
 }
 
-impl<T, const LEN: usize, const REVERSE_STR: bool> From<[T; LEN]> for Array<T, LEN, REVERSE_STR> {
+impl<T, const LEN: usize, const REVERSE_STR: bool> From<[T; LEN]> for ByteArray<LEN, REVERSE_STR> {
     fn from(array: [T; LEN]) -> Self {
-        Array(array)
+        ByteArray(array)
     }
 }
 
-impl<T, const LEN: usize, const REVERSE_STR: bool> TryFrom<&[T]> for Array<T, LEN, REVERSE_STR>
+impl<T, const LEN: usize, const REVERSE_STR: bool> TryFrom<&[T]> for ByteArray<LEN, REVERSE_STR>
 where
     T: Copy + Default,
 {
@@ -343,35 +317,37 @@ where
     }
 }
 
-impl<T, const LEN: usize, const REVERSE_STR: bool> AsRef<[T]> for Array<T, LEN, REVERSE_STR> {
+impl<const LEN: usize, const REVERSE_STR: bool> AsRef<[u8]> for ByteArray<LEN, REVERSE_STR> {
     #[inline]
-    fn as_ref(&self) -> &[T] {
-        self.0.as_ref()
+    fn as_ref(&self) -> &[u8] {
+        &self.0
     }
 }
 
-impl<T, const LEN: usize, const REVERSE_STR: bool> AsMut<[T]> for Array<T, LEN, REVERSE_STR> {
+impl<const LEN: usize, const REVERSE_STR: bool> AsMut<[u8]> for ByteArray<LEN, REVERSE_STR> {
     #[inline]
-    fn as_mut(&mut self) -> &mut [T] {
-        self.0.as_mut()
+    fn as_mut(&mut self) -> &mut [u8] {
+        &mut self.0
     }
 }
 
-impl<T, const LEN: usize, const REVERSE_STR: bool> Borrow<[T]> for Array<T, LEN, REVERSE_STR> {
+impl<const LEN: usize, const REVERSE_STR: bool> Borrow<[u8]> for ByteArray<LEN, REVERSE_STR> {
     #[inline]
-    fn borrow(&self) -> &[T] {
-        self.0.borrow()
+    fn borrow(&self) -> &[u8] {
+        &self.0
     }
 }
 
-impl<T, const LEN: usize, const REVERSE_STR: bool> BorrowMut<[T]> for Array<T, LEN, REVERSE_STR> {
+impl<T, const LEN: usize, const REVERSE_STR: bool> BorrowMut<[T]>
+    for ByteArray<T, LEN, REVERSE_STR>
+{
     #[inline]
     fn borrow_mut(&mut self) -> &mut [T] {
         self.0.borrow_mut()
     }
 }
 
-impl<T, const LEN: usize, const REVERSE_STR: bool> Index<usize> for Array<T, LEN, REVERSE_STR> {
+impl<T, const LEN: usize, const REVERSE_STR: bool> Index<usize> for ByteArray<T, LEN, REVERSE_STR> {
     type Output = T;
     #[inline]
     fn index(&self, index: usize) -> &Self::Output {
@@ -380,7 +356,7 @@ impl<T, const LEN: usize, const REVERSE_STR: bool> Index<usize> for Array<T, LEN
 }
 
 impl<T, const LEN: usize, const REVERSE_STR: bool> Index<Range<usize>>
-    for Array<T, LEN, REVERSE_STR>
+    for ByteArray<T, LEN, REVERSE_STR>
 {
     type Output = [T];
     #[inline]
@@ -390,7 +366,7 @@ impl<T, const LEN: usize, const REVERSE_STR: bool> Index<Range<usize>>
 }
 
 impl<T, const LEN: usize, const REVERSE_STR: bool> Index<RangeTo<usize>>
-    for Array<T, LEN, REVERSE_STR>
+    for ByteArray<T, LEN, REVERSE_STR>
 {
     type Output = [T];
     #[inline]
@@ -400,7 +376,7 @@ impl<T, const LEN: usize, const REVERSE_STR: bool> Index<RangeTo<usize>>
 }
 
 impl<T, const LEN: usize, const REVERSE_STR: bool> Index<RangeFrom<usize>>
-    for Array<T, LEN, REVERSE_STR>
+    for ByteArray<T, LEN, REVERSE_STR>
 {
     type Output = [T];
     #[inline]
@@ -410,7 +386,7 @@ impl<T, const LEN: usize, const REVERSE_STR: bool> Index<RangeFrom<usize>>
 }
 
 impl<T, const LEN: usize, const REVERSE_STR: bool> Index<RangeInclusive<usize>>
-    for Array<T, LEN, REVERSE_STR>
+    for ByteArray<T, LEN, REVERSE_STR>
 {
     type Output = [T];
     #[inline]
@@ -420,7 +396,7 @@ impl<T, const LEN: usize, const REVERSE_STR: bool> Index<RangeInclusive<usize>>
 }
 
 impl<T, const LEN: usize, const REVERSE_STR: bool> Index<RangeToInclusive<usize>>
-    for Array<T, LEN, REVERSE_STR>
+    for ByteArray<T, LEN, REVERSE_STR>
 {
     type Output = [T];
     #[inline]
@@ -429,7 +405,9 @@ impl<T, const LEN: usize, const REVERSE_STR: bool> Index<RangeToInclusive<usize>
     }
 }
 
-impl<T, const LEN: usize, const REVERSE_STR: bool> Index<RangeFull> for Array<T, LEN, REVERSE_STR> {
+impl<T, const LEN: usize, const REVERSE_STR: bool> Index<RangeFull>
+    for ByteArray<T, LEN, REVERSE_STR>
+{
     type Output = [T];
     #[inline]
     fn index(&self, index: RangeFull) -> &Self::Output {
@@ -437,14 +415,16 @@ impl<T, const LEN: usize, const REVERSE_STR: bool> Index<RangeFull> for Array<T,
     }
 }
 
-impl<T, const LEN: usize, const REVERSE_STR: bool> IndexMut<usize> for Array<T, LEN, REVERSE_STR> {
+impl<T, const LEN: usize, const REVERSE_STR: bool> IndexMut<usize>
+    for ByteArray<T, LEN, REVERSE_STR>
+{
     fn index_mut(&mut self, index: usize) -> &mut Self::Output {
         &mut self.0[index]
     }
 }
 
 impl<T, const LEN: usize, const REVERSE_STR: bool> IndexMut<Range<usize>>
-    for Array<T, LEN, REVERSE_STR>
+    for ByteArray<T, LEN, REVERSE_STR>
 {
     #[inline]
     fn index_mut(&mut self, index: Range<usize>) -> &mut Self::Output {
@@ -453,7 +433,7 @@ impl<T, const LEN: usize, const REVERSE_STR: bool> IndexMut<Range<usize>>
 }
 
 impl<T, const LEN: usize, const REVERSE_STR: bool> IndexMut<RangeTo<usize>>
-    for Array<T, LEN, REVERSE_STR>
+    for ByteArray<T, LEN, REVERSE_STR>
 {
     #[inline]
     fn index_mut(&mut self, index: RangeTo<usize>) -> &mut Self::Output {
@@ -462,7 +442,7 @@ impl<T, const LEN: usize, const REVERSE_STR: bool> IndexMut<RangeTo<usize>>
 }
 
 impl<T, const LEN: usize, const REVERSE_STR: bool> IndexMut<RangeFrom<usize>>
-    for Array<T, LEN, REVERSE_STR>
+    for ByteArray<T, LEN, REVERSE_STR>
 {
     #[inline]
     fn index_mut(&mut self, index: RangeFrom<usize>) -> &mut Self::Output {
@@ -471,7 +451,7 @@ impl<T, const LEN: usize, const REVERSE_STR: bool> IndexMut<RangeFrom<usize>>
 }
 
 impl<T, const LEN: usize, const REVERSE_STR: bool> IndexMut<RangeInclusive<usize>>
-    for Array<T, LEN, REVERSE_STR>
+    for ByteArray<T, LEN, REVERSE_STR>
 {
     #[inline]
     fn index_mut(&mut self, index: RangeInclusive<usize>) -> &mut Self::Output {
@@ -480,7 +460,7 @@ impl<T, const LEN: usize, const REVERSE_STR: bool> IndexMut<RangeInclusive<usize
 }
 
 impl<T, const LEN: usize, const REVERSE_STR: bool> IndexMut<RangeToInclusive<usize>>
-    for Array<T, LEN, REVERSE_STR>
+    for ByteArray<T, LEN, REVERSE_STR>
 {
     #[inline]
     fn index_mut(&mut self, index: RangeToInclusive<usize>) -> &mut Self::Output {
@@ -489,7 +469,7 @@ impl<T, const LEN: usize, const REVERSE_STR: bool> IndexMut<RangeToInclusive<usi
 }
 
 impl<T, const LEN: usize, const REVERSE_STR: bool> IndexMut<RangeFull>
-    for Array<T, LEN, REVERSE_STR>
+    for ByteArray<T, LEN, REVERSE_STR>
 {
     #[inline]
     fn index_mut(&mut self, index: RangeFull) -> &mut Self::Output {
@@ -497,7 +477,7 @@ impl<T, const LEN: usize, const REVERSE_STR: bool> IndexMut<RangeFull>
     }
 }
 
-impl<T, const LEN: usize, const REVERSE_STR: bool> IntoIterator for Array<T, LEN, REVERSE_STR> {
+impl<T, const LEN: usize, const REVERSE_STR: bool> IntoIterator for ByteArray<T, LEN, REVERSE_STR> {
     type Item = T;
     type IntoIter = array::IntoIter<T, LEN>;
 
@@ -506,7 +486,7 @@ impl<T, const LEN: usize, const REVERSE_STR: bool> IntoIterator for Array<T, LEN
     }
 }
 
-impl<T, const LEN: usize, const REVERSE_STR: bool> From<T> for Array<T, LEN, REVERSE_STR>
+impl<T, const LEN: usize, const REVERSE_STR: bool> From<T> for ByteArray<T, LEN, REVERSE_STR>
 where
     T: Into<[T; LEN]>,
 {
@@ -515,7 +495,7 @@ where
     }
 }
 
-impl<T, const LEN: usize, const REVERSE_STR: bool> Wrapper for Array<T, LEN, REVERSE_STR> {
+impl<T, const LEN: usize, const REVERSE_STR: bool> Wrapper for ByteArray<T, LEN, REVERSE_STR> {
     type Inner = [T; LEN];
 
     #[inline]
@@ -534,14 +514,14 @@ impl<T, const LEN: usize, const REVERSE_STR: bool> Wrapper for Array<T, LEN, REV
     }
 }
 
-impl<T, const LEN: usize, const REVERSE_STR: bool> WrapperMut for Array<T, LEN, REVERSE_STR> {
+impl<T, const LEN: usize, const REVERSE_STR: bool> WrapperMut for ByteArray<T, LEN, REVERSE_STR> {
     fn as_inner_mut(&mut self) -> &mut Self::Inner {
         &mut self.0
     }
 }
 
 #[cfg(all(feature = "hex", any(feature = "std", feature = "alloc")))]
-impl<const LEN: usize, const REVERSE_STR: bool> Display for Array<u8, LEN, REVERSE_STR> {
+impl<const LEN: usize, const REVERSE_STR: bool> Display for ByteArray<u8, LEN, REVERSE_STR> {
     #[inline]
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         LowerHex::fmt(self, f)
@@ -549,14 +529,14 @@ impl<const LEN: usize, const REVERSE_STR: bool> Display for Array<u8, LEN, REVER
 }
 
 #[cfg(all(feature = "hex", any(feature = "std", feature = "alloc")))]
-impl<const LEN: usize, const REVERSE_STR: bool> Debug for Array<u8, LEN, REVERSE_STR> {
+impl<const LEN: usize, const REVERSE_STR: bool> Debug for ByteArray<u8, LEN, REVERSE_STR> {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         write!(f, "Array<{}>({})", LEN, self.to_hex())
     }
 }
 
 #[cfg(all(feature = "hex", any(feature = "std", feature = "alloc")))]
-impl<const LEN: usize, const REVERSE_STR: bool> FromStr for Array<u8, LEN, REVERSE_STR> {
+impl<const LEN: usize, const REVERSE_STR: bool> FromStr for ByteArray<u8, LEN, REVERSE_STR> {
     type Err = hex::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -565,7 +545,7 @@ impl<const LEN: usize, const REVERSE_STR: bool> FromStr for Array<u8, LEN, REVER
 }
 
 #[cfg(all(feature = "hex", any(feature = "std", feature = "alloc")))]
-impl<const LEN: usize, const REVERSE_STR: bool> FromHex for Array<u8, LEN, REVERSE_STR> {
+impl<const LEN: usize, const REVERSE_STR: bool> FromHex for ByteArray<u8, LEN, REVERSE_STR> {
     fn from_byte_iter<I>(iter: I) -> Result<Self, hex::Error>
     where
         I: Iterator<Item = Result<u8, hex::Error>> + ExactSizeIterator + DoubleEndedIterator,
@@ -579,12 +559,12 @@ impl<const LEN: usize, const REVERSE_STR: bool> FromHex for Array<u8, LEN, REVER
         }
         let mut id = [0u8; LEN];
         id.copy_from_slice(&vec);
-        Ok(Array(id))
+        Ok(ByteArray(id))
     }
 }
 
 #[cfg(all(feature = "hex", any(feature = "std", feature = "alloc")))]
-impl<const LEN: usize, const REVERSE_STR: bool> LowerHex for Array<u8, LEN, REVERSE_STR> {
+impl<const LEN: usize, const REVERSE_STR: bool> LowerHex for ByteArray<u8, LEN, REVERSE_STR> {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         let mut slice = self.into_inner();
         if REVERSE_STR {
@@ -604,7 +584,7 @@ impl<const LEN: usize, const REVERSE_STR: bool> LowerHex for Array<u8, LEN, REVE
 }
 
 #[cfg(all(feature = "hex", any(feature = "std", feature = "alloc")))]
-impl<const LEN: usize, const REVERSE_STR: bool> UpperHex for Array<u8, LEN, REVERSE_STR> {
+impl<const LEN: usize, const REVERSE_STR: bool> UpperHex for ByteArray<u8, LEN, REVERSE_STR> {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         let mut slice = self.into_inner();
         if REVERSE_STR {
@@ -632,10 +612,12 @@ pub(crate) mod serde_helpers {
     use serde_crate::de::{SeqAccess, Visitor};
     use serde_crate::ser::SerializeTuple;
 
-    use crate::Array;
+    use crate::ByteArray;
     use crate::hex::{FromHex, ToHex};
 
-    impl<const LEN: usize, const REVERSE_STR: bool> Serialize for Array<u8, LEN, REVERSE_STR> {
+    // TODO: Add serde implementation for non-u8 arrays
+
+    impl<const LEN: usize, const REVERSE_STR: bool> Serialize for ByteArray<u8, LEN, REVERSE_STR> {
         fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
         where
             S: Serializer,
@@ -653,7 +635,7 @@ pub(crate) mod serde_helpers {
     }
 
     impl<'de, const LEN: usize, const REVERSE_STR: bool> Deserialize<'de>
-        for Array<u8, LEN, REVERSE_STR>
+        for ByteArray<u8, LEN, REVERSE_STR>
     {
         fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
         where
@@ -694,38 +676,15 @@ pub(crate) mod serde_helpers {
     }
 }
 
-/// Trait which does a blanket implementation for all types wrapping [`Array`]s
-#[deprecated(since = "4.2.0", note = "use ByteArray instead")]
-pub trait RawArray<const LEN: usize>: Sized {
-    /// Constructs a wrapper type around an array.
-    fn from_raw_array(val: impl Into<[u8; LEN]>) -> Self;
-
-    /// Returns a raw array representation stored in the wrapped type.
-    fn to_raw_array(&self) -> [u8; LEN];
-}
-
-#[allow(deprecated)]
-impl<Id, const LEN: usize, const REVERSE_STR: bool> RawArray<LEN> for Id
-where
-    Id: Wrapper<Inner = Array<u8, LEN, REVERSE_STR>>,
-{
-    fn from_raw_array(val: impl Into<[u8; LEN]>) -> Self {
-        Self::from_inner(Array::from_inner(val.into()))
-    }
-
-    fn to_raw_array(&self) -> [u8; LEN] {
-        self.as_inner().into_inner()
-    }
-}
-
-/// Trait which does a blanket implementation for all types wrapping [`Array`]s
-pub trait ByteArray<const LEN: usize>: Sized {
+/// Trait which does a blanket implementation for all types wrapping
+/// [`ByteArray`]s
+pub trait ByteArrayConv<const LEN: usize>: Sized {
     /// Constructs a wrapper type around a byte array.
     fn from_byte_array(val: impl Into<[u8; LEN]>) -> Self;
 
     /// Constructs a byte array from the slice. Errors if the slice length
     /// doesn't match `LEN` constant generic.
-    fn from_slice(slice: impl AsRef<[u8]>) -> Result<Self, FromSliceError>;
+    fn from_bytes(slice: impl AsRef<[u8]>) -> Result<Self, FromSliceError>;
 
     /// Constructs a byte array from the slice. Expects the slice length
     /// doesn't match `LEN` constant generic.
@@ -733,26 +692,50 @@ pub trait ByteArray<const LEN: usize>: Sized {
     /// # Safety
     ///
     /// Panics if the slice length doesn't match `LEN` constant generic.
-    fn from_slice_unsafe(slice: impl AsRef<[u8]>) -> Self;
+    fn from_bytes_unsafe(slice: impl AsRef<[u8]>) -> Self;
+
+    /// Returns a byte array representation stored in the wrapped type.
+    fn as_byte_array(&self) -> &[u8; LEN];
 
     /// Returns a byte array representation stored in the wrapped type.
     fn to_byte_array(&self) -> [u8; LEN];
+
+    /// Returns a byte array representation stored in the wrapped type.
+    fn into_byte_array(self) -> [u8; LEN];
 }
 
-impl<Id, const LEN: usize, const REVERSE_STR: bool> ByteArray<LEN> for Id
+impl<const LEN: usize, const REVERSE_STR: bool> ByteArrayConv<LEN> for ByteArray<LEN, REVERSE_STR> {
+    fn from_byte_array(val: impl Into<[u8; LEN]>) -> Self {
+        Self(val.into())
+    }
+
+    fn from_bytes(slice: impl AsRef<[u8]>) -> Result<Self, FromSliceError> {
+        Self::copy_from_slice(slice)
+    }
+
+    fn from_bytes_unsafe(slice: impl AsRef<[u8]>) -> Self {
+        Self::copy_from_slice(slice).expect("slice length not matching type requirements")
+    }
+
+    fn to_byte_array(&self) -> [u8; LEN] {
+        self.0
+    }
+}
+
+impl<Id, const LEN: usize, const REVERSE_STR: bool> ByteArrayConv<LEN> for Id
 where
-    Id: Wrapper<Inner = Array<u8, LEN, REVERSE_STR>>,
+    Id: Wrapper<Inner = ByteArray<LEN, REVERSE_STR>>,
 {
     fn from_byte_array(val: impl Into<[u8; LEN]>) -> Self {
-        Self::from_inner(Array::from_inner(val.into()))
+        Self::from_inner(ByteArray::from_inner(val.into()))
     }
 
-    fn from_slice(slice: impl AsRef<[u8]>) -> Result<Self, FromSliceError> {
-        Array::try_from(slice.as_ref()).map(Self::from_inner)
+    fn from_bytes(slice: impl AsRef<[u8]>) -> Result<Self, FromSliceError> {
+        ByteArray::try_from(slice.as_ref()).map(Self::from_inner)
     }
 
-    fn from_slice_unsafe(slice: impl AsRef<[u8]>) -> Self {
-        Self::from_slice(slice).expect("slice length not matching type requirements")
+    fn from_bytes_unsafe(slice: impl AsRef<[u8]>) -> Self {
+        Self::from_bytes(slice).expect("slice length not matching type requirements")
     }
 
     fn to_byte_array(&self) -> [u8; LEN] {
@@ -837,7 +820,7 @@ mod test {
     #[test]
     fn test_encoding() {
         let s = "a3401bcceb26201b55978ff705fecf7d8a0a03598ebeccf2a947030b91a0ff53";
-        let slice32 = Array::from_hex(s).unwrap();
+        let slice32 = ByteArray::from_hex(s).unwrap();
 
         let data = [
             0xa3, 0x40, 0x1b, 0xcc, 0xeb, 0x26, 0x20, 0x1b, 0x55, 0x97, 0x8f, 0xf7, 0x05, 0xfe,
@@ -854,8 +837,8 @@ mod test {
             })
         );
         assert_eq!(&slice32.to_vec(), &data);
-        assert_eq!(&slice32.as_inner()[..], &data);
-        assert_eq!(slice32.to_inner(), data);
-        assert_eq!(slice32.into_inner(), data);
+        assert_eq!(&slice32.as_array()[..], &data);
+        assert_eq!(slice32.to_array(), data);
+        assert_eq!(slice32.into_array(), data);
     }
 }

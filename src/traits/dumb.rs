@@ -13,7 +13,7 @@
 // along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
-use crate::{Array, Wrapper};
+use crate::ByteArray;
 
 /// Used as an alternative to default for test and prototyping purposes, when a
 /// type can't have a default value, but you need to generate some dumb data.
@@ -38,12 +38,12 @@ impl Dumb for u8 {
     }
 }
 
-impl<T, const LEN: usize> Dumb for Array<T, LEN>
+impl<T, const LEN: usize, const REVERSE_STR: bool> Dumb for ByteArray<T, LEN, REVERSE_STR>
 where
     T: Dumb + Copy,
 {
     fn dumb() -> Self {
-        Self::from_inner([T::dumb(); LEN])
+        Self::from_array([T::dumb(); LEN])
     }
 }
 

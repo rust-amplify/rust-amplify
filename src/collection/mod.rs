@@ -22,6 +22,6 @@ pub mod flags;
 
 #[allow(deprecated)]
 pub use array::{
-    Array, Bytes, Bytes4, Bytes16, Bytes20, Bytes32, Bytes32StrRev, Bytes64, ByteArray, RawArray,
-    FromSliceError,
+    ByteArray, Bytes, Bytes4, Bytes16, Bytes20, Bytes32, Bytes32StrRev, Bytes64, ByteArrayConv,
+    RawArray, FromSliceError,
 };
