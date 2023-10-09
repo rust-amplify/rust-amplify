@@ -25,7 +25,7 @@ exclude = [
 
 [dependencies]
 libc = { version = "0.2", optional = true }
-amplify_derive = { version = "3.0.1", optional = true }
+amplify_derive = { version = "4.0.0", optional = true }
 amplify_syn = { version = "2.0.1", optional = true }
 amplify_num = { version = "0.5.0" }
 amplify_apfloat = { version = "0.2.0", optional = true }
