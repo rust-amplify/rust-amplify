@@ -49,5 +49,3 @@ jobs:
           files: ./coverage.lcov
           flags: rust
           fail_ci_if_error: true
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
