@@ -26,6 +26,7 @@ use alloc::vec::Vec;
 use alloc::string::String;
 use alloc::borrow::ToOwned;
 use alloc::collections::{btree_map, BTreeMap, BTreeSet, VecDeque};
+use core::slice::SliceIndex;
 #[cfg(feature = "std")]
 use std::{
     io, usize,
@@ -1055,6 +1056,15 @@ impl<T, const MIN_LEN: usize, const MAX_LEN: usize> Confined<Vec<T>, MIN_LEN, MA
     #[inline]
     pub fn into_vec(self) -> Vec<T> {
         self.0
+    }
+
+    /// Gets the mutable element of a vector
+    #[inline]
+    pub fn get_mut<I>(&mut self, index: I) -> Option<&mut I::Output>
+    where
+        I: SliceIndex<[T]>,
+    {
+        self.0.get_mut(index)
     }
 }
 
