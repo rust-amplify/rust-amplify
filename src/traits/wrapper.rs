@@ -2,7 +2,7 @@
 // implementations, type wrappers, derive macros and other language enhancements
 //
 // Written in 2019-2022 by
-//     Dr. Maxim Orlovsky <orlovsky@pandoracore.com>
+//     Dr. Maxim Orlovsky <orlovsky@ubideco.org>
 //     Martin Habovstiak <martin.habovstiak@gmail.com>
 //
 // To the extent possible under law, the author(s) have dedicated all
