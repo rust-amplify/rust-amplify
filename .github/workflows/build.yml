@@ -68,7 +68,7 @@ jobs:
         run: |
           cargo new dep_test
           cd dep_test
-          printf 'amplify = { path = "..", features = ["all"] }\namplify_derive = { path = "../derive" }\n\n[workspace]' >> Cargo.toml
+          printf 'amplify = { path = "..", features = ["all"] }\n\n[workspace]' >> Cargo.toml
       - name: Build dependency
         uses: actions-rs/cargo@v1
         with:
