@@ -20,12 +20,10 @@ mod dumb;
 mod join_split;
 #[cfg(feature = "c_raw")]
 mod raw_str;
-#[cfg(feature = "serde")]
-mod to_serde_string;
 
 pub use as_any::AsAny;
 pub use join_split::JoinSplit;
 pub use wrapper::{Wrapper, WrapperMut};
 pub use dumb::Dumb;
-#[cfg(feature = "serde")]
-pub use to_serde_string::{ToYamlString, ToJsonString, ToTomlString};
+#[cfg(feature = "c_raw")]
+pub use raw_str::{TryFromRawStr, TryAsStr, TryIntoRawStr, TryIntoString};

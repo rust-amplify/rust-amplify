@@ -13,6 +13,8 @@
 // along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
+#![allow(missing_docs, clippy::missing_safety_doc)]
+
 use libc::c_char;
 use std::ffi::{CStr, CString};
 
@@ -21,7 +23,7 @@ pub trait TryIntoRawStr {
 }
 
 pub trait TryFromRawStr {
-    fn try_from_raw_str(ptr: *mut c_char) -> Option<Self>
+    unsafe fn try_from_raw_str(ptr: *mut c_char) -> Option<Self>
     where
         Self: Sized;
 }
@@ -36,21 +38,21 @@ impl TryIntoRawStr for String {
 }
 
 impl TryFromRawStr for String {
-    fn try_from_raw_str(ptr: *mut c_char) -> Option<String> {
+    unsafe fn try_from_raw_str(ptr: *mut c_char) -> Option<String> {
         unsafe { CString::from_raw(ptr) }.into_string().ok()
     }
 }
 
 pub trait TryAsStr {
-    fn try_as_str(self) -> Option<&'static str>;
+    unsafe fn try_as_str(self) -> Option<&'static str>;
 }
 
 pub trait TryIntoString {
-    fn try_into_string(self) -> Option<String>;
+    unsafe fn try_into_string(self) -> Option<String>;
 }
 
 impl TryAsStr for *const c_char {
-    fn try_as_str(self: *const c_char) -> Option<&'static str> {
+    unsafe fn try_as_str(self: *const c_char) -> Option<&'static str> {
         if self.is_null() {
             return None;
         }
@@ -59,10 +61,10 @@ impl TryAsStr for *const c_char {
 }
 
 impl TryIntoString for *mut c_char {
-    fn try_into_string(self: *mut c_char) -> Option<String> {
+    unsafe fn try_into_string(self: *mut c_char) -> Option<String> {
         if self.is_null() {
             return None;
         }
-        String::try_from_raw_str(self)
+        unsafe { String::try_from_raw_str(self) }
     }
 }

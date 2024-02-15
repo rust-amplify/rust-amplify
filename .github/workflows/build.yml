@@ -15,7 +15,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        feature: [ serde, std, alloc, parse_arg, stringly_conversions, rand, c_raw, proc_attr, hex, apfloat ]
+        feature: [ serde, std, alloc, stringly_conversions, rand, c_raw, proc_attr, hex, apfloat ]
     steps:
       - uses: actions/checkout@v2
       - name: Install rust stable
@@ -38,7 +38,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        toolchain: [ nightly, beta, stable, 1.66.0 ]
+        toolchain: [ nightly, beta, stable, 1.69.0 ]
     steps:
       - uses: actions/checkout@v2
       - name: Install rust ${{matrix.toolchain}}
