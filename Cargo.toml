@@ -83,39 +83,3 @@ serde = [
     "stringly_conversions/alloc",
     "stringly_conversions/serde_str_helpers",
 ]
-
-[target.'cfg(target_arch = "wasm32")'.features]
-all = [
-    "serde",
-    "std",
-    "parse_arg",
-    "stringly_conversions",
-    "c_raw",
-    "proc_attr",
-    "derive",
-    "rand",
-    "getrandom",
-    "apfloat",
-    "apfloat_std",
-]
-default = ["std", "derive", "hex"]
-std = ["amplify_num/std"]
-apfloat_std = ["amplify_apfloat/std"]
-alloc = ["amplify_num/alloc"]
-apfloat_alloc = ["amplify_apfloat/alloc"]
-c_raw = ["libc", "std"]
-hex = ["amplify_num/hex"]
-apfloat = ["amplify_apfloat"]
-proc_attr = ["amplify_syn"]
-derive = ["amplify_derive"]
-serde = [
-    "serde_crate",
-    "std",
-    "serde_yaml",
-    "serde_json",
-    "toml",
-    "amplify_num/serde",
-    "stringly_conversions",
-    "stringly_conversions/alloc",
-    "stringly_conversions/serde_str_helpers",
-]
