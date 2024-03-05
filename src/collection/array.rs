@@ -31,7 +31,7 @@ use core::{slice, array};
 
 #[cfg(all(feature = "hex", any(feature = "std", feature = "alloc")))]
 use crate::hex::{FromHex, ToHex, self};
-use crate::{Wrapper, WrapperMut};
+use crate::{FromInner, Inner, InnerMut};
 
 /// Error when slice size mismatches array length.
 #[derive(Copy, Clone, Eq, PartialEq, Debug)]
@@ -173,7 +173,7 @@ impl<const LEN: usize, const REVERSE_STR: bool> Array<u8, LEN, REVERSE_STR> {
         use rand::RngCore;
         let mut entropy = [0u8; LEN];
         rand::thread_rng().fill_bytes(&mut entropy);
-        Array::from_inner(entropy)
+        Array(entropy)
     }
 
     /// Constructs array filled with zero bytes
@@ -210,7 +210,35 @@ impl<const LEN: usize, const REVERSE_STR: bool> Array<u8, LEN, REVERSE_STR> {
     /// Constructs [`Array`] type from another type containing raw array.
     #[inline]
     pub fn from_byte_array(val: impl Into<[u8; LEN]>) -> Self {
-        Array::from_inner(val.into())
+        Array(val.into())
+    }
+}
+
+impl<T, const LEN: usize, const REVERSE_STR: bool> Inner for Array<T, LEN, REVERSE_STR> {
+    type Inner = [T; LEN];
+
+    #[inline]
+    fn as_inner(&self) -> &Self::Inner {
+        &self.0
+    }
+
+    #[inline]
+    fn into_inner(self) -> Self::Inner {
+        self.0
+    }
+}
+
+impl<T, const LEN: usize, const REVERSE_STR: bool> FromInner for Array<T, LEN, REVERSE_STR> {
+    #[inline]
+    fn from_inner(inner: Self::Inner) -> Self {
+        Array(inner)
+    }
+}
+
+impl<T, const LEN: usize, const REVERSE_STR: bool> InnerMut for Array<T, LEN, REVERSE_STR> {
+    #[inline]
+    fn as_inner_mut(&mut self) -> &mut Self::Inner {
+        &mut self.0
     }
 }
 
@@ -515,31 +543,6 @@ where
     }
 }
 
-impl<T, const LEN: usize, const REVERSE_STR: bool> Wrapper for Array<T, LEN, REVERSE_STR> {
-    type Inner = [T; LEN];
-
-    #[inline]
-    fn from_inner(inner: Self::Inner) -> Self {
-        Self(inner)
-    }
-
-    #[inline]
-    fn as_inner(&self) -> &Self::Inner {
-        &self.0
-    }
-
-    #[inline]
-    fn into_inner(self) -> Self::Inner {
-        self.0
-    }
-}
-
-impl<T, const LEN: usize, const REVERSE_STR: bool> WrapperMut for Array<T, LEN, REVERSE_STR> {
-    fn as_inner_mut(&mut self) -> &mut Self::Inner {
-        &mut self.0
-    }
-}
-
 #[cfg(all(feature = "hex", any(feature = "std", feature = "alloc")))]
 impl<const LEN: usize, const REVERSE_STR: bool> Display for Array<u8, LEN, REVERSE_STR> {
     #[inline]
@@ -586,7 +589,7 @@ impl<const LEN: usize, const REVERSE_STR: bool> FromHex for Array<u8, LEN, REVER
 #[cfg(all(feature = "hex", any(feature = "std", feature = "alloc")))]
 impl<const LEN: usize, const REVERSE_STR: bool> LowerHex for Array<u8, LEN, REVERSE_STR> {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        let mut slice = self.into_inner();
+        let mut slice = self.0;
         if REVERSE_STR {
             slice.reverse();
         }
@@ -606,7 +609,7 @@ impl<const LEN: usize, const REVERSE_STR: bool> LowerHex for Array<u8, LEN, REVE
 #[cfg(all(feature = "hex", any(feature = "std", feature = "alloc")))]
 impl<const LEN: usize, const REVERSE_STR: bool> UpperHex for Array<u8, LEN, REVERSE_STR> {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        let mut slice = self.into_inner();
+        let mut slice = self.0;
         if REVERSE_STR {
             slice.reverse();
         }
@@ -707,14 +710,14 @@ pub trait RawArray<const LEN: usize>: Sized {
 #[allow(deprecated)]
 impl<Id, const LEN: usize, const REVERSE_STR: bool> RawArray<LEN> for Id
 where
-    Id: Wrapper<Inner = Array<u8, LEN, REVERSE_STR>>,
+    Id: Inner<Inner = Array<u8, LEN, REVERSE_STR>> + FromInner,
 {
     fn from_raw_array(val: impl Into<[u8; LEN]>) -> Self {
-        Self::from_inner(Array::from_inner(val.into()))
+        Self::from_inner(Array(val.into()))
     }
 
     fn to_raw_array(&self) -> [u8; LEN] {
-        self.as_inner().into_inner()
+        self.as_inner().0
     }
 }
 
@@ -741,10 +744,10 @@ pub trait ByteArray<const LEN: usize>: Sized {
 
 impl<Id, const LEN: usize, const REVERSE_STR: bool> ByteArray<LEN> for Id
 where
-    Id: Wrapper<Inner = Array<u8, LEN, REVERSE_STR>>,
+    Id: Inner<Inner = Array<u8, LEN, REVERSE_STR>> + FromInner,
 {
     fn from_byte_array(val: impl Into<[u8; LEN]>) -> Self {
-        Self::from_inner(Array::from_inner(val.into()))
+        Self::from_inner(Array(val.into()))
     }
 
     fn from_slice(slice: impl AsRef<[u8]>) -> Result<Self, FromSliceError> {
@@ -756,7 +759,7 @@ where
     }
 
     fn to_byte_array(&self) -> [u8; LEN] {
-        self.as_inner().into_inner()
+        self.as_inner().0
     }
 }
 
@@ -765,7 +768,6 @@ mod test {
     use core::str::FromStr;
 
     use super::*;
-    use crate::Wrapper;
     use crate::hex::FromHex;
 
     #[test]
@@ -854,8 +856,6 @@ mod test {
             })
         );
         assert_eq!(&slice32.to_vec(), &data);
-        assert_eq!(&slice32.as_inner()[..], &data);
-        assert_eq!(slice32.to_inner(), data);
-        assert_eq!(slice32.into_inner(), data);
+        assert_eq!(&slice32.as_slice()[..], &data);
     }
 }

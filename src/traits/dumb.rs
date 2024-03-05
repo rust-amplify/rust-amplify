@@ -13,7 +13,7 @@
 // along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
-use crate::{Array, Wrapper};
+use crate::{Array};
 
 /// Used as an alternative to default for test and prototyping purposes, when a
 /// type can't have a default value, but you need to generate some dumb data.
@@ -43,7 +43,7 @@ where
     T: Dumb + Copy,
 {
     fn dumb() -> Self {
-        Self::from_inner([T::dumb(); LEN])
+        Self::from([T::dumb(); LEN])
     }
 }
 

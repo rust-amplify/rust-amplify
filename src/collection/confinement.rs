@@ -35,9 +35,9 @@ use std::{
 use amplify_num::hex;
 use amplify_num::hex::{FromHex, ToHex};
 use ascii::{AsAsciiStrError, AsciiChar, AsciiString};
+use crate::Inner;
 
 use crate::num::u24;
-use crate::Wrapper;
 
 /// Trait implemented by a collection types which need to support collection
 /// confinement.
@@ -406,14 +406,10 @@ pub const U64: usize = u64::MAX as usize;
 )]
 pub struct Confined<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize>(C);
 
-impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Wrapper
+impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Inner
     for Confined<C, MIN_LEN, MAX_LEN>
 {
     type Inner = C;
-
-    fn from_inner(inner: Self::Inner) -> Self {
-        Self(inner)
-    }
 
     fn as_inner(&self) -> &Self::Inner {
         &self.0
@@ -773,12 +769,14 @@ impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C, MIN_
         Self::from_collection_unsafe(col)
     }
 
-    /// Returns inner collection type
+    #[doc(hidden)]
+    #[deprecated(since = "4.5.0", note = "use as_collection")]
     pub fn as_inner(&self) -> &C {
         &self.0
     }
 
-    /// Clones inner collection type and returns it
+    #[doc(hidden)]
+    #[deprecated(since = "4.5.0", note = "use to_collection")]
     pub fn to_inner(&self) -> C
     where
         C: Clone,
@@ -786,8 +784,27 @@ impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C, MIN_
         self.0.clone()
     }
 
-    /// Decomposes into the inner collection type
+    #[doc(hidden)]
+    #[deprecated(since = "4.5.0", note = "use into_collection")]
     pub fn into_inner(self) -> C {
+        self.0
+    }
+
+    /// Returns inner collection type
+    pub fn as_collection(&self) -> &C {
+        &self.0
+    }
+
+    /// Clones inner collection type and returns it
+    pub fn to_collection(&self) -> C
+    where
+        C: Clone,
+    {
+        self.0.clone()
+    }
+
+    /// Removes confinement and returns the underlying collection.
+    pub fn into_collection(self) -> C {
         self.0
     }
 
@@ -815,7 +832,8 @@ impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C, MIN_
         Ok(())
     }
 
-    /// Removes confinement and returns the underlying collection.
+    #[doc(hidden)]
+    #[deprecated(since = "4.5.0", note = "use into_collection")]
     pub fn unbox(self) -> C {
         self.0
     }
