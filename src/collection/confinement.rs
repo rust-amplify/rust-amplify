@@ -13,7 +13,7 @@
 // along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
-//! Confinement puts a constrain on the number of elements within a collection.
+//! Confinement puts a constraint on the number of elements within a collection.
 
 use core::borrow::{Borrow, BorrowMut};
 use core::fmt::{self, Display, Formatter, LowerHex, UpperHex};
@@ -310,9 +310,9 @@ pub enum Error {
         max_len: usize,
     },
 
-    /// Attempt to address an index outside of the collection bounds.
+    /// Attempt to address an index outside the collection bounds.
     OutOfBoundary {
-        /** Index which was outside of the bounds */
+        /** Index which was outside the bounds */
         index: usize,
         /** The actual number of elements in the collection */
         len: usize,
@@ -388,7 +388,7 @@ pub const ONE: usize = 1;
 pub const U8: usize = u8::MAX as usize;
 /// Constant for a maximal size of a confined collection equal to [`u16::MAX`].
 pub const U16: usize = u16::MAX as usize;
-/// Constant for a maximal size of a confined collection equal to `u24::MAX`.
+/// Constant for a maximal size of a confined collection equal to [`u24::MAX`].
 pub const U24: usize = 0xFFFFFFusize;
 /// Constant for a maximal size of a confined collection equal to [`u32::MAX`].
 pub const U32: usize = u32::MAX as usize;
