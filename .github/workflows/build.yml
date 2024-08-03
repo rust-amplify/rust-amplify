@@ -10,6 +10,35 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
+  default:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install rust stable
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+      - uses: Swatinem/rust-cache@v2
+      - name: Default
+        uses: actions-rs/cargo@v1
+        with:
+          command: check
+  no-default:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install rust stable
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+      - uses: Swatinem/rust-cache@v2
+      - name: No default
+        uses: actions-rs/cargo@v1
+        with:
+          command: check
+          args: --no-default-features
   features:
     runs-on: ubuntu-latest
     strategy:
@@ -17,7 +46,7 @@ jobs:
       matrix:
         feature: [ serde, std, alloc, stringly_conversions, rand, c_raw, proc_attr, hex, apfloat ]
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Install rust stable
         uses: actions-rs/toolchain@v1
         with:
@@ -40,7 +69,7 @@ jobs:
       matrix:
         toolchain: [ nightly, beta, stable, 1.69.0 ]
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Install rust ${{matrix.toolchain}}
         uses: actions-rs/toolchain@v1
         with:
