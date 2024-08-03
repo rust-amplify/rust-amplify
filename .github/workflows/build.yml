@@ -14,31 +14,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Install rust stable
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          override: true
-      - uses: Swatinem/rust-cache@v2
-      - name: Default
-        uses: actions-rs/cargo@v1
-        with:
-          command: check
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo check
   no-default:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Install rust stable
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          override: true
-      - uses: Swatinem/rust-cache@v2
-      - name: No default
-        uses: actions-rs/cargo@v1
-        with:
-          command: check
-          args: --no-default-features
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo check --no-default-features
   features:
     runs-on: ubuntu-latest
     strategy:
@@ -47,39 +30,21 @@ jobs:
         feature: [ serde, std, alloc, stringly_conversions, rand, c_raw, proc_attr, hex, apfloat ]
     steps:
       - uses: actions/checkout@v4
-      - name: Install rust stable
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          override: true
-      - uses: Swatinem/rust-cache@v2
+      - uses: dtolnay/rust-toolchain@stable
       - name: Feature ${{matrix.feature}}
-        uses: actions-rs/cargo@v1
-        with:
-          command: check
-          args: --no-default-features --features=${{matrix.feature}}
-      - name: Defaults + ${{matrix.feature}}
-        uses: actions-rs/cargo@v1
-        with:
-          command: check
-          args: --features=${{matrix.feature}}
+        run: cargo check --no-default-features --features=${{matrix.feature}}
+      - name: Feature ${{matrix.feature}}
+        run: cargo check --features=${{matrix.feature}}
   toolchains:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         toolchain: [ nightly, beta, stable, 1.69.0 ]
     steps:
       - uses: actions/checkout@v4
-      - name: Install rust ${{matrix.toolchain}}
-        uses: actions-rs/toolchain@v1
+      - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: ${{matrix.toolchain}}
-          override: true
-      - uses: Swatinem/rust-cache@v2
-      - name: All features
-        uses: actions-rs/cargo@v1
-        env:
-          RUSTFLAGS: "--cfg bench"
-        with:
-          command: check
-          args: --workspace --all-targets --all-features
+      - name: Toolchain ${{matrix.toolchain}}
+        run: cargo check --workspace --all-targets --all-features
