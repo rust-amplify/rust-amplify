@@ -25,3 +25,5 @@ pub use array::{
     Array, Bytes, Bytes4, Bytes16, Bytes20, Bytes32, Bytes32StrRev, Bytes64, ByteArray, RawArray,
     FromSliceError,
 };
+#[cfg(feature = "std")]
+pub use flags::{FlagRef, FlagNo, FlagVec};
