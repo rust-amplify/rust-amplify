@@ -942,10 +942,7 @@ where
     }
 }
 
-impl<C: Collection, const MIN_LEN: usize> Confined<C, MIN_LEN, U8>
-where
-    C: Default,
-{
+impl<C: Collection, const MIN_LEN: usize> Confined<C, MIN_LEN, U8> {
     /// Returns number of elements in the confined collection as `u8`. The
     /// confinement guarantees that the collection length can't exceed
     /// `u8::MAX`.
@@ -954,10 +951,7 @@ where
     }
 }
 
-impl<C: Collection, const MIN_LEN: usize> Confined<C, MIN_LEN, U16>
-where
-    C: Default,
-{
+impl<C: Collection, const MIN_LEN: usize> Confined<C, MIN_LEN, U16> {
     /// Returns number of elements in the confined collection as `u16`. The
     /// confinement guarantees that the collection length can't exceed
     /// `u16::MAX`.
@@ -966,10 +960,7 @@ where
     }
 }
 
-impl<C: Collection, const MIN_LEN: usize> Confined<C, MIN_LEN, U24>
-where
-    C: Default,
-{
+impl<C: Collection, const MIN_LEN: usize> Confined<C, MIN_LEN, U24> {
     /// Returns number of elements in the confined collection as `u24`. The
     /// confinement guarantees that the collection length can't exceed
     /// `u24::MAX`.
@@ -978,10 +969,7 @@ where
     }
 }
 
-impl<C: Collection, const MIN_LEN: usize> Confined<C, MIN_LEN, U32>
-where
-    C: Default,
-{
+impl<C: Collection, const MIN_LEN: usize> Confined<C, MIN_LEN, U32> {
     /// Returns number of elements in the confined collection as `u32`. The
     /// confinement guarantees that the collection length can't exceed
     /// `u32::MAX`.
