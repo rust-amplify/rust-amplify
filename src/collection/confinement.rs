@@ -757,8 +757,13 @@ impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C, MIN_
     /// # Safety
     ///
     /// Panics if the collection size doesn't fit confinement type requirements.
-    pub fn from_collection_unsafe(col: C) -> Self {
+    pub fn from_collection_unchecked(col: C) -> Self {
         Self::try_from(col).expect("collection size mismatch, use try_from instead")
+    }
+
+    #[deprecated(since = "4.7.0", note = "use from_collection_unchecked")]
+    pub fn from_collection_unsafe(col: C) -> Self {
+        Self::from_collection_unchecked(col)
     }
 
     /// Tries to construct a confinement over a collection. Fails if the number
@@ -796,12 +801,13 @@ impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C, MIN_
     /// Construct a confinement with a collection of elements taken from an
     /// iterator. Panics if the number of items in the collection exceeds one
     /// of the confinement bounds.
+    pub fn from_iter_unchecked<I: IntoIterator<Item = C::Item>>(iter: I) -> Self {
+        Self::from_collection_unchecked(iter.into_iter().collect())
+    }
+
+    #[deprecated(since = "4.7.0", note = "use from_iter_unchecked")]
     pub fn from_iter_unsafe<I: IntoIterator<Item = C::Item>>(iter: I) -> Self {
-        let mut col = C::with_capacity(MIN_LEN);
-        for item in iter {
-            col.push(item);
-        }
-        Self::from_collection_unsafe(col)
+        Self::from_iter_unchecked(iter)
     }
 
     /// Returns inner collection type
@@ -1096,12 +1102,21 @@ impl<T, const MIN_LEN: usize, const MAX_LEN: usize> Confined<Vec<T>, MIN_LEN, MA
     /// Panics if the size of the slice doesn't match the confinement type
     /// bounds.
     #[inline]
-    pub fn from_slice_unsafe(slice: &[T]) -> Self
+    pub fn from_slice_unchecked(slice: &[T]) -> Self
     where
         T: Clone,
     {
         assert!(slice.len() > MIN_LEN && slice.len() <= MAX_LEN);
         Self(slice.to_vec())
+    }
+
+    #[deprecated(since = "4.7.0", note = "use from_slice_unchecked")]
+    #[inline]
+    pub fn from_slice_unsafe(slice: &[T]) -> Self
+    where
+        T: Clone,
+    {
+        Self::from_slice_unchecked(slice)
     }
 
     /// Constructs confinement out of slice of items. Does allocation.
