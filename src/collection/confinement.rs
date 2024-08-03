@@ -597,17 +597,6 @@ where
     }
 }
 
-impl<C, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C, MIN_LEN, MAX_LEN>
-where
-    C: KeyedCollection,
-{
-    /// Returns an iterator that allows modifying each value for each key.
-    pub fn values_mut(&mut self) -> impl Iterator<Item = &mut C::Value> {
-        let coll = &mut self.0;
-        coll.values_mut()
-    }
-}
-
 impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Index<usize>
     for Confined<C, MIN_LEN, MAX_LEN>
 where
@@ -785,9 +774,6 @@ where
 }
 
 impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C, MIN_LEN, MAX_LEN> {
-    // TODO: Add mutable methods:
-    // - retain
-
     /// Constructs confinement over collection which was already size-checked.
     ///
     /// # Safety
@@ -1080,17 +1066,9 @@ impl<C: SetCollection, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C, M
 }
 
 impl<C: KeyedCollection, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C, MIN_LEN, MAX_LEN> {
-    // TODO: Add mutable methods:
-    // - values_mut
-
     /// Checks whether a given key is contained in the map.
     pub fn contains_key(&self, key: &C::Key) -> bool {
         self.0.contains_key(key)
-    }
-
-    /// Gets mutable reference to an element of the collection.
-    pub fn get_mut(&mut self, key: &C::Key) -> Option<&mut C::Value> {
-        self.0.get_mut(key)
     }
 
     fn insert_key_value(
@@ -1186,6 +1164,7 @@ impl<const MIN_LEN: usize, const MAX_LEN: usize> Confined<String, MIN_LEN, MAX_L
     // - leak
 
     // TODO: Add mutable methods:
+    // - retain
     // - push_str
     // - reserve
     // - reserve_exact
@@ -1218,6 +1197,7 @@ impl<const MIN_LEN: usize, const MAX_LEN: usize> Confined<String, MIN_LEN, MAX_L
 
 impl<const MIN_LEN: usize, const MAX_LEN: usize> Confined<AsciiString, MIN_LEN, MAX_LEN> {
     // TODO: Add mutable methods:
+    // - retain
     // - push_str
     // - reserve
     // - reserve_exact
@@ -1248,6 +1228,7 @@ impl<T, const MIN_LEN: usize, const MAX_LEN: usize> Confined<Vec<T>, MIN_LEN, MA
     // - leak
 
     // TODO: Add mutable methods
+    // - retain
     // - reserve
     // - reserve_exact
     // - shrink_to_fit
@@ -1358,6 +1339,7 @@ impl<T, const MIN_LEN: usize, const MAX_LEN: usize> Confined<Vec<T>, MIN_LEN, MA
 
 impl<T, const MIN_LEN: usize, const MAX_LEN: usize> Confined<VecDeque<T>, MIN_LEN, MAX_LEN> {
     // TODO: Add mutable methods
+    // - retain
     // - swap
     // - reserve
     // - resize
@@ -1471,6 +1453,7 @@ impl<T: Hash + Eq, const MIN_LEN: usize, const MAX_LEN: usize>
     Confined<HashSet<T>, MIN_LEN, MAX_LEN>
 {
     // TODO: Add HashSet mutable methods:
+    // - retain
     // - drain
     // - reserve
     // - shrink_to_fit
@@ -1510,6 +1493,7 @@ impl<T: Hash + Eq, const MIN_LEN: usize, const MAX_LEN: usize>
 
 impl<T: Ord, const MIN_LEN: usize, const MAX_LEN: usize> Confined<BTreeSet<T>, MIN_LEN, MAX_LEN> {
     // TODO: Add BTreeSet mutable methods:
+    // - retain
     // - pop_first
     // - pop_last
     // - append
@@ -1552,11 +1536,22 @@ impl<K: Hash + Eq, V, const MIN_LEN: usize, const MAX_LEN: usize>
     Confined<HashMap<K, V>, MIN_LEN, MAX_LEN>
 {
     // TODO: Add HashMap mutable methods:
+    // - retain
     // - drain
     // - reserve
     // - shrink_to_fit
     // - shrink_to
     // - remove_entry
+
+    /// Gets mutable reference to an element of the collection.
+    pub fn get_mut(&mut self, key: &K) -> Option<&mut V> {
+        self.0.get_mut(key)
+    }
+
+    /// Returns an iterator that allows modifying each value for each key.
+    pub fn values_mut(&mut self) -> hash_map::ValuesMut<K, V> {
+        self.0.values_mut()
+    }
 
     /// Returns an iterator over map keys and values.
     ///
@@ -1613,6 +1608,7 @@ impl<K: Ord + Hash, V, const MIN_LEN: usize, const MAX_LEN: usize>
     Confined<BTreeMap<K, V>, MIN_LEN, MAX_LEN>
 {
     // TODO: Add BTreeMap mutable methods:
+    // - retain
     // - pop_first
     // - pop_last
     // - first_entry
@@ -1621,6 +1617,16 @@ impl<K: Ord + Hash, V, const MIN_LEN: usize, const MAX_LEN: usize>
     // - append
     // - range_mut
     // - split_off
+
+    /// Gets mutable reference to an element of the collection.
+    pub fn get_mut(&mut self, key: &K) -> Option<&mut V> {
+        self.0.get_mut(key)
+    }
+
+    /// Returns an iterator that allows modifying each value for each key.
+    pub fn values_mut(&mut self) -> btree_map::ValuesMut<K, V> {
+        self.0.values_mut()
+    }
 
     /// Returns an iterator over the map keys and values.
     ///
