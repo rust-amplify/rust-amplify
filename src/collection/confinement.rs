@@ -40,7 +40,7 @@ use crate::num::u24;
 
 /// Trait implemented by a collection types which need to support collection
 /// confinement.
-pub trait Collection: Extend<Self::Item> {
+pub trait Collection: FromIterator<Self::Item> + Extend<Self::Item> {
     /// Item type contained within the collection.
     type Item;
 
@@ -79,6 +79,12 @@ pub trait KeyedCollection: Collection<Item = (Self::Key, Self::Value)> {
 
     /// Gets mutable element of the collection.
     fn get_mut(&mut self, key: &Self::Key) -> Option<&mut Self::Value>;
+
+    /// Returns iterator over keys and mutable values.
+    fn iter_mut(&mut self) -> impl Iterator<Item = (&Self::Key, &mut Self::Value)>;
+
+    /// Constructs iterator over mutable values.
+    fn values_mut(&mut self) -> impl Iterator<Item = &mut Self::Value>;
 
     /// Inserts a new value under a key. Returns previous value if a value under
     /// the key was already present in the collection.
@@ -252,6 +258,14 @@ impl<K: Eq + Hash, V> KeyedCollection for HashMap<K, V> {
         HashMap::get_mut(self, key)
     }
 
+    fn iter_mut(&mut self) -> impl Iterator<Item = (&Self::Key, &mut Self::Value)> {
+        HashMap::iter_mut(self)
+    }
+
+    fn values_mut(&mut self) -> impl Iterator<Item = &mut Self::Value> {
+        HashMap::values_mut(self)
+    }
+
     fn insert(&mut self, key: Self::Key, value: Self::Value) -> Option<Self::Value> {
         HashMap::insert(self, key, value)
     }
@@ -297,6 +311,14 @@ impl<K: Ord + Hash, V> KeyedCollection for BTreeMap<K, V> {
 
     fn get_mut(&mut self, key: &Self::Key) -> Option<&mut Self::Value> {
         BTreeMap::get_mut(self, key)
+    }
+
+    fn iter_mut(&mut self) -> impl Iterator<Item = (&Self::Key, &mut Self::Value)> {
+        BTreeMap::iter_mut(self)
+    }
+
+    fn values_mut(&mut self) -> impl Iterator<Item = &mut Self::Value> {
+        BTreeMap::values_mut(self)
     }
 
     fn insert(&mut self, key: Self::Key, value: Self::Value) -> Option<Self::Value> {
@@ -536,20 +558,20 @@ where
     }
 }
 
-impl<'c, C, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C, MIN_LEN, MAX_LEN>
+impl<C, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C, MIN_LEN, MAX_LEN>
 where
-    C: KeyedCollection + 'c,
-    &'c mut C: IntoIterator<
-        Item = (
-            &'c <C as KeyedCollection>::Key,
-            &'c mut <C as KeyedCollection>::Value,
-        ),
-    >,
+    C: KeyedCollection,
 {
     /// Returns an iterator that allows modifying each value for each key.
-    pub fn keyed_values_mut(&'c mut self) -> <&'c mut C as IntoIterator>::IntoIter {
+    pub fn values_mut(&mut self) -> impl Iterator<Item = &mut C::Value> {
         let coll = &mut self.0;
-        coll.into_iter()
+        coll.values_mut()
+    }
+
+    /// Returns an iterator that allows modifying each value for each key.
+    pub fn keyed_values_mut(&mut self) -> impl Iterator<Item = (&C::Key, &mut C::Value)> {
+        let coll = &mut self.0;
+        coll.iter_mut()
     }
 }
 
@@ -1838,5 +1860,24 @@ mod test {
         small_bmap!("a" => 1, "b" => 2, "c" => 3);
 
         let _: TinyHashMap<_, _> = confined_map!("a" => 1, "b" => 2, "c" => 3);
+    }
+
+    #[test]
+    fn iter_mut_btree() {
+        let mut coll = tiny_bmap!(1 => "one");
+        for (_index, item) in &mut coll {
+            *item = "two";
+        }
+        assert_eq!(coll.get(&1), Some(&"two"));
+        for (_index, item) in coll.keyed_values_mut() {
+            *item = "three";
+        }
+        assert_eq!(coll.get(&1), Some(&"three"));
+        for item in coll.values_mut() {
+            *item = "four";
+        }
+        assert_eq!(coll.get(&1), Some(&"four"));
+        *coll.get_mut(&1).unwrap() = "five";
+        assert_eq!(coll.get(&1), Some(&"five"));
     }
 }
