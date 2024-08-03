@@ -1625,6 +1625,70 @@ macro_rules! medium_s {
     };
 }
 
+/// Helper macro to construct confined blob
+#[macro_export]
+macro_rules! confined_blob {
+    () => {
+        $crate::confinement::ConfinedBlob::new()
+    };
+    ($elem:expr; $n:expr) => (
+        $crate::confinement::ConfinedBlob::try_from(vec![$elem; $n])
+            .expect("inline confined_blob contains invalid number of items")
+    );
+    ($($x:expr),+ $(,)?) => (
+        $crate::confinement::ConfinedBlob::try_from(vec![$($x,)+])
+            .expect("inline confined_blob contains invalid number of items")
+    )
+}
+
+/// Helper macro to construct confined blob of a [`TinyBlob`] type
+#[macro_export]
+macro_rules! tiny_blob {
+    () => {
+        $crate::confinement::TinyBlob::new()
+    };
+    ($elem:expr; $n:expr) => (
+        $crate::confinement::TinyBlob::try_from(vec![$elem; $n])
+            .expect("inline tiny_blob contains invalid number of items")
+    );
+    ($($x:expr),+ $(,)?) => (
+        $crate::confinement::TinyBlob::try_from(vec![$($x,)+])
+            .expect("inline tiny_blob contains invalid number of items")
+    )
+}
+
+/// Helper macro to construct confined blob of a [`SmallBlob`] type
+#[macro_export]
+macro_rules! small_blob {
+    () => {
+        $crate::confinement::SmallBlob::new()
+    };
+    ($elem:expr; $n:expr) => (
+        $crate::confinement::SmallBlob::try_from(vec![$elem; $n])
+            .expect("inline small_blob contains invalid number of items")
+    );
+    ($($x:expr),+ $(,)?) => (
+        $crate::confinement::SmallBlob::try_from(vec![$($x,)+])
+            .expect("inline small_blob contains invalid number of items")
+    )
+}
+
+/// Helper macro to construct confined blob of a [`MediumBlob`] type
+#[macro_export]
+macro_rules! medium_blob {
+    () => {
+        $crate::confinement::MediumBlob::new()
+    };
+    ($elem:expr; $n:expr) => (
+        $crate::confinement::MediumBlob::try_from(vec![$elem; $n])
+            .expect("inline medium_blob contains invalid number of items")
+    );
+    ($($x:expr),+ $(,)?) => (
+        $crate::confinement::MediumBlob::try_from(vec![$($x,)+])
+            .expect("inline medium_blob contains invalid number of items")
+    )
+}
+
 /// Helper macro to construct confined vector of a given type
 #[macro_export]
 macro_rules! confined_vec {
