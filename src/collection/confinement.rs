@@ -1008,9 +1008,6 @@ impl<C: PlainCollection, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C,
 }
 
 impl<C: SetCollection, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C, MIN_LEN, MAX_LEN> {
-    // TODO: Add mutable methods:
-    // - replace
-
     /// Returns `true` if the set contains a value.
     pub fn contains(&self, elem: &C::Item) -> bool {
         self.0.contains(elem)
@@ -1046,9 +1043,20 @@ impl<C: SetCollection, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C, M
         Ok(self.0.remove(elem))
     }
 
-    /// Removes an element from the set. Errors if the index exceeds the number
-    /// of elements in the set, of if the new collection length will be less
-    /// than the confinement requirement. Returns the removed element
+    /// Adds a value to the set, replacing the existing element, if any, that is
+    /// equal to the value. Errors if the new set length will exceed the
+    /// confinement requirement. Otherwise, returns the replaced element.
+    pub fn replace(&mut self, value: C::Item) -> Result<Option<C::Item>, Error> {
+        if let Some(old) = self.0.take(&value) {
+            self.0.insert(value);
+            return Ok(Some(old));
+        }
+        self.insert_value(value)?;
+        Ok(None)
+    }
+
+    /// Removes an element from the set. Errors if the new set length will be
+    /// less than the confinement requirement. Returns the removed element
     /// otherwise.
     pub fn take(&mut self, elem: &C::Item) -> Result<Option<C::Item>, Error> {
         if !self.0.contains(elem) {
