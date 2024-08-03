@@ -961,6 +961,13 @@ impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C, MIN_
     }
 }
 
+impl<C: Collection, const MAX_LEN: usize> Confined<C, ZERO, MAX_LEN> {
+    /// Removes all elements from the confined collection.
+    pub fn clear(&mut self) {
+        self.0.clear()
+    }
+}
+
 impl<C: Collection, const MAX_LEN: usize> Confined<C, ZERO, MAX_LEN>
 where
     C: Default,
@@ -974,11 +981,6 @@ where
     /// pre-allocated storage for the `capacity` of elements.
     pub fn with_capacity(capacity: usize) -> Self {
         Self(C::with_capacity(capacity))
-    }
-
-    /// Removes all elements from the confined collection.
-    pub fn clear(&mut self) {
-        self.0.clear()
     }
 }
 
