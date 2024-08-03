@@ -1619,8 +1619,6 @@ impl<K: Ord + Hash, V, const MIN_LEN: usize, const MAX_LEN: usize>
     // - retain
     // - pop_first
     // - pop_last
-    // - first_entry
-    // - last_entry
     // - remove_entry
     // - append
     // - range_mut
@@ -1684,6 +1682,18 @@ impl<K: Ord + Hash, V, const MIN_LEN: usize, const MAX_LEN: usize>
     /// The iterator element type is `V`.
     pub fn into_values(self) -> btree_map::IntoValues<K, V> {
         self.0.into_values()
+    }
+
+    /// Returns the first entry in the map for in-place manipulation.
+    /// The key of this entry is the minimum key in the map.
+    pub fn first_entry(&mut self) -> Option<btree_map::OccupiedEntry<'_, K, V>> {
+        self.0.first_entry()
+    }
+
+    /// Returns the last entry in the map for in-place manipulation.
+    /// The key of this entry is the maximum key in the map.
+    pub fn last_entry(&mut self) -> Option<btree_map::OccupiedEntry<'_, K, V>> {
+        self.0.last_entry()
     }
 }
 
