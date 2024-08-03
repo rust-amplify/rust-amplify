@@ -1450,6 +1450,8 @@ pub type SmallString = Confined<String, ZERO, U16>;
 pub type MediumString = Confined<String, ZERO, U24>;
 /// [`String`] with maximum 2^32-1 characters.
 pub type LargeString = Confined<String, ZERO, U32>;
+/// Confined [`String`].
+pub type ConfinedString<const MIN: usize = 0, const MAX: usize = U64> = Confined<String, MIN, MAX>;
 /// [`String`] which contains at least a single character.
 pub type NonEmptyString<const MAX: usize = U64> = Confined<String, ONE, MAX>;
 
@@ -1461,6 +1463,9 @@ pub type SmallAscii = Confined<AsciiString, ZERO, U16>;
 pub type MediumAscii = Confined<AsciiString, ZERO, U24>;
 /// [`AsciiString`] with maximum 2^32-1 characters.
 pub type LargeAscii = Confined<AsciiString, ZERO, U32>;
+/// Confined [`AsciiString`].
+pub type ConfinedAscii<const MIN: usize = 0, const MAX: usize = U64> =
+    Confined<AsciiString, MIN, MAX>;
 /// [`AsciiString`] which contains at least a single character.
 pub type NonEmptyAscii<const MAX: usize = U64> = Confined<AsciiString, ONE, MAX>;
 
@@ -1472,6 +1477,8 @@ pub type SmallBlob = Confined<Vec<u8>, ZERO, U16>;
 pub type MediumBlob = Confined<Vec<u8>, ZERO, U24>;
 /// [`Vec<u8>`] with maximum 2^32-1 characters.
 pub type LargeBlob = Confined<Vec<u8>, ZERO, U32>;
+/// Confined [`Vec<u8>`].
+pub type ConfinedBlob<const MIN: usize = 0, const MAX: usize = U64> = Confined<Vec<u8>, MIN, MAX>;
 /// [`Vec<u8>`] which contains at least a single character.
 pub type NonEmptyBlob<const MAX: usize = U64> = Confined<Vec<u8>, ONE, MAX>;
 
@@ -1483,6 +1490,8 @@ pub type SmallVec<T> = Confined<Vec<T>, ZERO, U16>;
 pub type MediumVec<T> = Confined<Vec<T>, ZERO, U24>;
 /// [`Vec`] with maximum 2^32-1 items of type `T`.
 pub type LargeVec<T> = Confined<Vec<T>, ZERO, U32>;
+/// Confined [`Vec`].
+pub type ConfinedVec<T, const MIN: usize = 0, const MAX: usize = U64> = Confined<Vec<T>, MIN, MAX>;
 /// [`Vec`] which contains at least a single item.
 pub type NonEmptyVec<T, const MAX: usize = U64> = Confined<Vec<T>, ONE, MAX>;
 
@@ -1494,6 +1503,9 @@ pub type SmallDeque<T> = Confined<VecDeque<T>, ZERO, U16>;
 pub type MediumDeque<T> = Confined<VecDeque<T>, ZERO, U24>;
 /// [`VecDeque`] with maximum 2^32-1 items of type `T`.
 pub type LargeDeque<T> = Confined<VecDeque<T>, ZERO, U32>;
+/// Confined [`VecDeque`].
+pub type ConfinedDeque<T, const MIN: usize = 0, const MAX: usize = U64> =
+    Confined<VecDeque<T>, MIN, MAX>;
 /// [`VecDeque`] which contains at least a single item.
 pub type NonEmptyDeque<T, const MAX: usize = U64> = Confined<VecDeque<T>, ONE, MAX>;
 
@@ -1509,6 +1521,10 @@ pub type MediumHashSet<T> = Confined<HashSet<T>, ZERO, U24>;
 /// [`HashSet`] with maximum 2^32-1 items of type `T`.
 #[cfg(feature = "std")]
 pub type LargeHashSet<T> = Confined<HashSet<T>, ZERO, U32>;
+#[cfg(feature = "std")]
+/// Confined [`HashSet`].
+pub type ConfinedHashSet<T, const MIN: usize = 0, const MAX: usize = U64> =
+    Confined<HashSet<T>, MIN, MAX>;
 /// [`HashSet`] which contains at least a single item.
 #[cfg(feature = "std")]
 pub type NonEmptyHashSet<T, const MAX: usize = U64> = Confined<HashSet<T>, ONE, MAX>;
@@ -1521,6 +1537,9 @@ pub type SmallOrdSet<T> = Confined<BTreeSet<T>, ZERO, U16>;
 pub type MediumOrdSet<T> = Confined<BTreeSet<T>, ZERO, U24>;
 /// [`BTreeSet`] with maximum 2^32-1 items of type `T`.
 pub type LargeOrdSet<T> = Confined<BTreeSet<T>, ZERO, U32>;
+/// Confined [`BTreeSet`].
+pub type ConfinedOrdSet<T, const MIN: usize = 0, const MAX: usize = U64> =
+    Confined<BTreeSet<T>, MIN, MAX>;
 /// [`BTreeSet`] which contains at least a single item.
 pub type NonEmptyOrdSet<T, const MAX: usize = U64> = Confined<BTreeSet<T>, ONE, MAX>;
 
@@ -1536,6 +1555,10 @@ pub type MediumHashMap<K, V> = Confined<HashMap<K, V>, ZERO, U24>;
 /// [`HashMap`] with maximum 2^32-1 items.
 #[cfg(feature = "std")]
 pub type LargeHashMap<K, V> = Confined<HashMap<K, V>, ZERO, U32>;
+#[cfg(feature = "std")]
+/// Confined [`HashMap`].
+pub type ConfinedHashMap<K, V, const MIN: usize = 0, const MAX: usize = U64> =
+    Confined<HashSet<K, V>, MIN, MAX>;
 /// [`HashMap`] which contains at least a single item.
 #[cfg(feature = "std")]
 pub type NonEmptyHashMap<K, V, const MAX: usize = U64> = Confined<HashMap<K, V>, ONE, MAX>;
@@ -1548,6 +1571,9 @@ pub type SmallOrdMap<K, V> = Confined<BTreeMap<K, V>, ZERO, U16>;
 pub type MediumOrdMap<K, V> = Confined<BTreeMap<K, V>, ZERO, U24>;
 /// [`BTreeMap`] with maximum 2^32-1 items.
 pub type LargeOrdMap<K, V> = Confined<BTreeMap<K, V>, ZERO, U32>;
+/// Confined [`BTreeMap`].
+pub type ConfinedOrdMap<K, V, const MIN: usize = 0, const MAX: usize = U64> =
+    Confined<BTreeMap<K, V>, MIN, MAX>;
 /// [`BTreeMap`] which contains at least a single item.
 pub type NonEmptyOrdMap<K, V, const MAX: usize = U64> = Confined<BTreeMap<K, V>, ONE, MAX>;
 
