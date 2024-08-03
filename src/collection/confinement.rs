@@ -816,6 +816,7 @@ impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C, MIN_
     }
 
     /// Removes confinement and returns the underlying collection.
+    #[deprecated(since = "4.7.0", note = "use into_inner method")]
     pub fn unbox(self) -> C {
         self.0
     }
