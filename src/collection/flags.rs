@@ -596,6 +596,7 @@ mod test {
     }
 
     #[test]
+    #[allow(clippy::bool_assert_comparison)]
     fn test_flag_ops() {
         let mut f1 = FlagVec::with_capacity(10);
         assert_eq!(f1.is_set(33), false);
@@ -610,7 +611,7 @@ mod test {
         assert_eq!(f1.set(22), false);
         assert_eq!(f1.is_set(22), true);
         assert_eq!(f1.capacity(), 24);
-        assert_eq!(f1.invert(22), ());
+        f1.invert(22);
         assert_eq!(f1.is_set(22), false);
         assert_eq!(f1.capacity(), 24);
         f1.shrink();
@@ -618,6 +619,7 @@ mod test {
     }
 
     #[test]
+    #[allow(clippy::bool_assert_comparison)]
     fn test_fmt() {
         let mut f1 = FlagVec::from_str("-0-\t#__1 \n--\r+* +!").unwrap();
         assert_eq!(f1.is_set(0), false);

@@ -845,7 +845,7 @@ mod test {
             0x91, 0xa0, 0xff, 0x53,
         ];
 
-        assert_eq!(Bytes32::copy_from_slice(&data), Ok(slice32));
+        assert_eq!(Bytes32::copy_from_slice(data), Ok(slice32));
         assert_eq!(
             Bytes32::copy_from_slice(&data[..30]),
             Err(FromSliceError {

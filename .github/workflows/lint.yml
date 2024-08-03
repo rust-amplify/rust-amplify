@@ -13,48 +13,27 @@ jobs:
   fmt:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - name: Install rustc 1.70.0
-        uses: actions-rs/toolchain@v1
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@nightly
         with:
-          toolchain: 1.70.0
-          override: true
           components: rustfmt
-      - uses: Swatinem/rust-cache@v2
-      - uses: actions-rs/cargo@v1
-        name: Formatting
-        with:
-          command: fmt
-          args: --all -- --check
+      - name: Formatting
+        run: cargo fmt --all -- --check
   clippy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - name: Install rustc 1.70.0
-        uses: actions-rs/toolchain@v1
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: 1.70.0
-          override: true
           components: clippy
-      - uses: Swatinem/rust-cache@v2
-      - uses: actions-rs/cargo@v1
-        name: Clippy
-        with:
-          command: clippy
-          args: --workspace --all-features
+      - name: Formatting
+        run: cargo clippy --workspace --all-features --all-targets -- -D warnings
   doc:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - name: Install rustc 1.70.0
-        uses: actions-rs/toolchain@v1
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@nightly
         with:
-          toolchain: 1.70.0
-          override: true
           components: rust-docs
-      - uses: Swatinem/rust-cache@v2
-      - uses: actions-rs/cargo@v1
-        name: Doc
-        with:
-          command: doc
-          args: --workspace --all-features
+      - name: Formatting
+        run: cargo doc --workspace --all-features
