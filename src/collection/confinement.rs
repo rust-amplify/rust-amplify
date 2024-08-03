@@ -755,11 +755,18 @@ impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C, MIN_
     }
 
     /// Returns inner collection type
+    #[deprecated(since = "4.7.0", note = "use as_unconfined method")]
     pub fn as_inner(&self) -> &C {
         &self.0
     }
 
+    /// Returns reference to the inner collection type.
+    pub fn as_unconfined(&self) -> &C {
+        &self.0
+    }
+
     /// Clones inner collection type and returns it
+    #[deprecated(since = "4.7.0", note = "use to_unconfined method")]
     pub fn to_inner(&self) -> C
     where
         C: Clone,
@@ -767,7 +774,16 @@ impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C, MIN_
         self.0.clone()
     }
 
+    /// Clones inner collection and returns an unconfined version of it.
+    pub fn to_unconfined(&self) -> C
+    where
+        C: Clone,
+    {
+        self.0.clone()
+    }
+
     /// Decomposes into the inner collection type
+    #[deprecated(since = "4.7.0", note = "use release method")]
     pub fn into_inner(self) -> C {
         self.0
     }
@@ -797,8 +813,13 @@ impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C, MIN_
     }
 
     /// Removes confinement and returns the underlying collection.
-    #[deprecated(since = "4.7.0", note = "use into_inner method")]
+    #[deprecated(since = "4.7.0", note = "use release method")]
     pub fn unbox(self) -> C {
+        self.0
+    }
+
+    /// Releases underlying collection from the confinement.
+    pub fn release(self) -> C {
         self.0
     }
 }
