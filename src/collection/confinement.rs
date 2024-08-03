@@ -786,6 +786,9 @@ where
 }
 
 impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C, MIN_LEN, MAX_LEN> {
+    // TODO: Add mutable methods:
+    // - retain
+
     /// Constructs confinement over collection which was already size-checked.
     ///
     /// # Safety
@@ -1030,6 +1033,9 @@ impl<C: PlainCollection, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C,
 }
 
 impl<C: SetCollection, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C, MIN_LEN, MAX_LEN> {
+    // TODO: Add mutable methods:
+    // - replace
+
     /// Returns `true` if the set contains a value.
     pub fn contains(&self, elem: &C::Item) -> bool {
         self.0.contains(elem)
@@ -1085,6 +1091,9 @@ impl<C: SetCollection, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C, M
 }
 
 impl<C: KeyedCollection, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C, MIN_LEN, MAX_LEN> {
+    // TODO: Add mutable methods:
+    // - values_mut
+
     /// Checks whether a given key is contained in the map.
     pub fn contains_key(&self, key: &C::Key) -> bool {
         self.0.contains_key(key)
@@ -1175,6 +1184,31 @@ impl<const MIN_LEN: usize, const MAX_LEN: usize> TryFrom<&str>
 
 // TODO: Implement Pattern analogs for ConfinedString
 impl<const MIN_LEN: usize, const MAX_LEN: usize> Confined<String, MIN_LEN, MAX_LEN> {
+    // TODO: Add constructors:
+    // - from_utf8
+    // - from_utf8_lossy
+    // - from_utf16
+    // - from_utf16_lossy
+    // - from_utf8_unchecked
+
+    // TODO: Add consuming methods:
+    // - into_bytes
+    // - into_boxed_str
+    // - leak
+
+    // TODO: Add mutable methods:
+    // - push_str
+    // - reserve
+    // - reserve_exact
+    // - shrink_to_fit
+    // - shrink_to
+    // - truncate
+    // - remove_matches
+    // - insert_str
+    // - split_off
+    // - drain
+    // - replace_range
+
     /// Removes a single character from the confined string, unless the string
     /// doesn't shorten more than the confinement requirement. Errors
     /// otherwise.
@@ -1194,6 +1228,13 @@ impl<const MIN_LEN: usize, const MAX_LEN: usize> Confined<String, MIN_LEN, MAX_L
 }
 
 impl<const MIN_LEN: usize, const MAX_LEN: usize> Confined<AsciiString, MIN_LEN, MAX_LEN> {
+    // TODO: Add mutable methods:
+    // - push_str
+    // - reserve
+    // - reserve_exact
+    // - shrink_to_fit
+    // - truncate
+
     /// Removes a single character from the confined string, unless the string
     /// doesn't shorten more than the confinement requirement. Errors
     /// otherwise.
@@ -1213,6 +1254,32 @@ impl<const MIN_LEN: usize, const MAX_LEN: usize> Confined<AsciiString, MIN_LEN, 
 }
 
 impl<T, const MIN_LEN: usize, const MAX_LEN: usize> Confined<Vec<T>, MIN_LEN, MAX_LEN> {
+    // TODO: Add consuming methods
+    // - into_boxed_slice
+    // - leak
+
+    // TODO: Add mutable methods
+    // - reserve
+    // - reserve_exact
+    // - shrink_to_fit
+    // - shrink_to
+    // - truncate
+    // - as_mut_slice
+    // - swap_remove
+    // - retain_mut
+    // - dedup
+    // - dedup_by
+    // - dedup_by_key
+    // - pop_if
+    // - append
+    // - drain
+    // - split_off
+    // - resize
+    // - resize_with
+    // - extend_with
+    // - extend_from_slice
+    // - splice
+
     /// Constructs confinement out of slice of items. Does allocation.
     ///
     /// # Panics
@@ -1301,6 +1368,28 @@ impl<T, const MIN_LEN: usize, const MAX_LEN: usize> Confined<Vec<T>, MIN_LEN, MA
 }
 
 impl<T, const MIN_LEN: usize, const MAX_LEN: usize> Confined<VecDeque<T>, MIN_LEN, MAX_LEN> {
+    // TODO: Add mutable methods
+    // - swap
+    // - reserve
+    // - resize
+    // - reserve_exact
+    // - shrink_to_fit
+    // - shrink_to
+    // - truncate
+    // - range_mut
+    // - drain
+    // - front_mut
+    // - back_mut
+    // - swap_remove_front
+    // - swap_remove_back
+    // - split_off
+    // - append
+    // - retain_mut
+    // - resize_with
+    // - make_contiguous
+    // - rotate_left
+    // - rotate_right
+
     /// Returns an iterator over the vecdeque values.
     ///
     /// The iterator yields all items from start to end.
@@ -1392,6 +1481,12 @@ impl<T, const MIN_LEN: usize, const MAX_LEN: usize> Confined<VecDeque<T>, MIN_LE
 impl<T: Hash + Eq, const MIN_LEN: usize, const MAX_LEN: usize>
     Confined<HashSet<T>, MIN_LEN, MAX_LEN>
 {
+    // TODO: Add HashSet mutable methods:
+    // - drain
+    // - reserve
+    // - shrink_to_fit
+    // - shrink_to
+
     /// Returns an iterator over the set values.
     ///
     /// The iterator yields all items from start to end.
@@ -1422,11 +1517,15 @@ impl<T: Hash + Eq, const MIN_LEN: usize, const MAX_LEN: usize>
     pub fn remove(&mut self, elem: &T) -> Result<bool, Error> {
         self.remove_value(elem)
     }
-
-    // TODO: Add HashSet-specific methods
 }
 
 impl<T: Ord, const MIN_LEN: usize, const MAX_LEN: usize> Confined<BTreeSet<T>, MIN_LEN, MAX_LEN> {
+    // TODO: Add BTreeSet mutable methods:
+    // - pop_first
+    // - pop_last
+    // - append
+    // - split_off
+
     /// Returns an iterator overset values.
     ///
     /// The iterator yields all items from start to end.
@@ -1457,14 +1556,19 @@ impl<T: Ord, const MIN_LEN: usize, const MAX_LEN: usize> Confined<BTreeSet<T>, M
     pub fn remove(&mut self, elem: &T) -> Result<bool, Error> {
         self.remove_value(elem)
     }
-
-    // TODO: Add BTreeSet-specific methods
 }
 
 #[cfg(feature = "std")]
 impl<K: Hash + Eq, V, const MIN_LEN: usize, const MAX_LEN: usize>
     Confined<HashMap<K, V>, MIN_LEN, MAX_LEN>
 {
+    // TODO: Add HashMap mutable methods:
+    // - drain
+    // - reserve
+    // - shrink_to_fit
+    // - shrink_to
+    // - remove_entry
+
     /// Returns an iterator over map keys and values.
     ///
     /// The iterator yields all items from start to end.
@@ -1519,6 +1623,16 @@ impl<K: Hash + Eq, V, const MIN_LEN: usize, const MAX_LEN: usize>
 impl<K: Ord + Hash, V, const MIN_LEN: usize, const MAX_LEN: usize>
     Confined<BTreeMap<K, V>, MIN_LEN, MAX_LEN>
 {
+    // TODO: Add BTreeMap mutable methods:
+    // - pop_first
+    // - pop_last
+    // - first_entry
+    // - last_entry
+    // - remove_entry
+    // - append
+    // - range_mut
+    // - split_off
+
     /// Returns an iterator over the map keys and values.
     ///
     /// The iterator yields all items from start to end.
