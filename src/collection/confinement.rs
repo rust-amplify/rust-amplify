@@ -13,7 +13,7 @@
 // along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
-//! Confinement puts a constrain on the number of elements within a collection.
+//! Confinement puts a constraint on the number of elements within a collection.
 
 use core::borrow::{Borrow, BorrowMut};
 use core::fmt::{self, Display, Formatter, LowerHex, UpperHex};
@@ -37,11 +37,10 @@ use amplify_num::hex::{FromHex, ToHex};
 use ascii::{AsAsciiStrError, AsciiChar, AsciiString};
 
 use crate::num::u24;
-use crate::Wrapper;
 
 /// Trait implemented by a collection types which need to support collection
 /// confinement.
-pub trait Collection: Extend<Self::Item> {
+pub trait Collection: FromIterator<Self::Item> + Extend<Self::Item> {
     /// Item type contained within the collection.
     type Item;
 
@@ -71,9 +70,21 @@ pub trait KeyedCollection: Collection<Item = (Self::Key, Self::Value)> {
     type Key: Eq + Hash;
     /// Value type for the collection.
     type Value;
+    type Entry<'a>
+    where
+        Self: 'a;
 
-    /// Gets mutable element of the collection
+    /// Checks whether a given key is contained in the map.
+    fn contains_key(&self, key: &Self::Key) -> bool;
+
+    /// Gets mutable element of the collection.
     fn get_mut(&mut self, key: &Self::Key) -> Option<&mut Self::Value>;
+
+    /// Returns iterator over keys and mutable values.
+    fn iter_mut(&mut self) -> impl Iterator<Item = (&Self::Key, &mut Self::Value)>;
+
+    /// Constructs iterator over mutable values.
+    fn values_mut(&mut self) -> impl Iterator<Item = &mut Self::Value>;
 
     /// Inserts a new value under a key. Returns previous value if a value under
     /// the key was already present in the collection.
@@ -82,6 +93,10 @@ pub trait KeyedCollection: Collection<Item = (Self::Key, Self::Value)> {
     /// Removes a value stored under a given key, returning the owned value, if
     /// it was in the collection.
     fn remove(&mut self, key: &Self::Key) -> Option<Self::Value>;
+
+    /// Gets the given key's corresponding entry in the map for in-place
+    /// manipulation.
+    fn entry(&mut self, key: Self::Key) -> Self::Entry<'_>;
 }
 
 // Impls for main collection types
@@ -233,9 +248,22 @@ impl<K: Eq + Hash, V> Collection for HashMap<K, V> {
 impl<K: Eq + Hash, V> KeyedCollection for HashMap<K, V> {
     type Key = K;
     type Value = V;
+    type Entry<'a> = hash_map::Entry<'a, K, V> where K:'a, V: 'a;
+
+    fn contains_key(&self, key: &Self::Key) -> bool {
+        HashMap::contains_key(self, key)
+    }
 
     fn get_mut(&mut self, key: &Self::Key) -> Option<&mut Self::Value> {
         HashMap::get_mut(self, key)
+    }
+
+    fn iter_mut(&mut self) -> impl Iterator<Item = (&Self::Key, &mut Self::Value)> {
+        HashMap::iter_mut(self)
+    }
+
+    fn values_mut(&mut self) -> impl Iterator<Item = &mut Self::Value> {
+        HashMap::values_mut(self)
     }
 
     fn insert(&mut self, key: Self::Key, value: Self::Value) -> Option<Self::Value> {
@@ -244,6 +272,10 @@ impl<K: Eq + Hash, V> KeyedCollection for HashMap<K, V> {
 
     fn remove(&mut self, key: &Self::Key) -> Option<Self::Value> {
         HashMap::remove(self, key)
+    }
+
+    fn entry(&mut self, key: Self::Key) -> Self::Entry<'_> {
+        HashMap::entry(self, key)
     }
 }
 
@@ -271,9 +303,22 @@ impl<K: Ord + Hash, V> Collection for BTreeMap<K, V> {
 impl<K: Ord + Hash, V> KeyedCollection for BTreeMap<K, V> {
     type Key = K;
     type Value = V;
+    type Entry<'a> = btree_map::Entry<'a, K, V> where K: 'a, V: 'a;
+
+    fn contains_key(&self, key: &Self::Key) -> bool {
+        BTreeMap::contains_key(self, key)
+    }
 
     fn get_mut(&mut self, key: &Self::Key) -> Option<&mut Self::Value> {
         BTreeMap::get_mut(self, key)
+    }
+
+    fn iter_mut(&mut self) -> impl Iterator<Item = (&Self::Key, &mut Self::Value)> {
+        BTreeMap::iter_mut(self)
+    }
+
+    fn values_mut(&mut self) -> impl Iterator<Item = &mut Self::Value> {
+        BTreeMap::values_mut(self)
     }
 
     fn insert(&mut self, key: Self::Key, value: Self::Value) -> Option<Self::Value> {
@@ -282,6 +327,10 @@ impl<K: Ord + Hash, V> KeyedCollection for BTreeMap<K, V> {
 
     fn remove(&mut self, key: &Self::Key) -> Option<Self::Value> {
         BTreeMap::remove(self, key)
+    }
+
+    fn entry(&mut self, key: Self::Key) -> Self::Entry<'_> {
+        BTreeMap::entry(self, key)
     }
 }
 
@@ -310,9 +359,9 @@ pub enum Error {
         max_len: usize,
     },
 
-    /// Attempt to address an index outside of the collection bounds.
+    /// Attempt to address an index outside the collection bounds.
     OutOfBoundary {
-        /** Index which was outside of the bounds */
+        /** Index which was outside the bounds */
         index: usize,
         /** The actual number of elements in the collection */
         len: usize,
@@ -388,7 +437,7 @@ pub const ONE: usize = 1;
 pub const U8: usize = u8::MAX as usize;
 /// Constant for a maximal size of a confined collection equal to [`u16::MAX`].
 pub const U16: usize = u16::MAX as usize;
-/// Constant for a maximal size of a confined collection equal to `u24::MAX`.
+/// Constant for a maximal size of a confined collection equal to [`u24::MAX`].
 pub const U24: usize = 0xFFFFFFusize;
 /// Constant for a maximal size of a confined collection equal to [`u32::MAX`].
 pub const U32: usize = u32::MAX as usize;
@@ -405,24 +454,6 @@ pub const U64: usize = u64::MAX as usize;
     serde(crate = "serde_crate")
 )]
 pub struct Confined<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize>(C);
-
-impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Wrapper
-    for Confined<C, MIN_LEN, MAX_LEN>
-{
-    type Inner = C;
-
-    fn from_inner(inner: Self::Inner) -> Self {
-        Self(inner)
-    }
-
-    fn as_inner(&self) -> &Self::Inner {
-        &self.0
-    }
-
-    fn into_inner(self) -> Self::Inner {
-        self.0
-    }
-}
 
 impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Deref
     for Confined<C, MIN_LEN, MAX_LEN>
@@ -527,20 +558,20 @@ where
     }
 }
 
-impl<'c, C, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C, MIN_LEN, MAX_LEN>
+impl<C, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C, MIN_LEN, MAX_LEN>
 where
-    C: KeyedCollection + 'c,
-    &'c mut C: IntoIterator<
-        Item = (
-            &'c <C as KeyedCollection>::Key,
-            &'c mut <C as KeyedCollection>::Value,
-        ),
-    >,
+    C: KeyedCollection,
 {
     /// Returns an iterator that allows modifying each value for each key.
-    pub fn keyed_values_mut(&'c mut self) -> <&'c mut C as IntoIterator>::IntoIter {
+    pub fn values_mut(&mut self) -> impl Iterator<Item = &mut C::Value> {
         let coll = &mut self.0;
-        coll.into_iter()
+        coll.values_mut()
+    }
+
+    /// Returns an iterator that allows modifying each value for each key.
+    pub fn keyed_values_mut(&mut self) -> impl Iterator<Item = (&C::Key, &mut C::Value)> {
+        let coll = &mut self.0;
+        coll.iter_mut()
     }
 }
 
@@ -726,8 +757,13 @@ impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C, MIN_
     /// # Safety
     ///
     /// Panics if the collection size doesn't fit confinement type requirements.
-    pub fn from_collection_unsafe(col: C) -> Self {
+    pub fn from_collection_unchecked(col: C) -> Self {
         Self::try_from(col).expect("collection size mismatch, use try_from instead")
+    }
+
+    #[deprecated(since = "4.7.0", note = "use from_collection_unchecked")]
+    pub fn from_collection_unsafe(col: C) -> Self {
+        Self::from_collection_unchecked(col)
     }
 
     /// Tries to construct a confinement over a collection. Fails if the number
@@ -765,20 +801,28 @@ impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C, MIN_
     /// Construct a confinement with a collection of elements taken from an
     /// iterator. Panics if the number of items in the collection exceeds one
     /// of the confinement bounds.
+    pub fn from_iter_unchecked<I: IntoIterator<Item = C::Item>>(iter: I) -> Self {
+        Self::from_collection_unchecked(iter.into_iter().collect())
+    }
+
+    #[deprecated(since = "4.7.0", note = "use from_iter_unchecked")]
     pub fn from_iter_unsafe<I: IntoIterator<Item = C::Item>>(iter: I) -> Self {
-        let mut col = C::with_capacity(MIN_LEN);
-        for item in iter {
-            col.push(item);
-        }
-        Self::from_collection_unsafe(col)
+        Self::from_iter_unchecked(iter)
     }
 
     /// Returns inner collection type
+    #[deprecated(since = "4.7.0", note = "use as_unconfined method")]
     pub fn as_inner(&self) -> &C {
         &self.0
     }
 
+    /// Returns reference to the inner collection type.
+    pub fn as_unconfined(&self) -> &C {
+        &self.0
+    }
+
     /// Clones inner collection type and returns it
+    #[deprecated(since = "4.7.0", note = "use to_unconfined method")]
     pub fn to_inner(&self) -> C
     where
         C: Clone,
@@ -786,7 +830,16 @@ impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C, MIN_
         self.0.clone()
     }
 
+    /// Clones inner collection and returns an unconfined version of it.
+    pub fn to_unconfined(&self) -> C
+    where
+        C: Clone,
+    {
+        self.0.clone()
+    }
+
     /// Decomposes into the inner collection type
+    #[deprecated(since = "4.7.0", note = "use release method")]
     pub fn into_inner(self) -> C {
         self.0
     }
@@ -816,7 +869,13 @@ impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C, MIN_
     }
 
     /// Removes confinement and returns the underlying collection.
+    #[deprecated(since = "4.7.0", note = "use release method")]
     pub fn unbox(self) -> C {
+        self.0
+    }
+
+    /// Releases underlying collection from the confinement.
+    pub fn release(self) -> C {
         self.0
     }
 }
@@ -931,6 +990,20 @@ impl<C: KeyedCollection, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C,
         }
         Ok(self.0.insert(key, value))
     }
+
+    /// Gets the given key's corresponding entry in the map for in-place
+    /// manipulation. Errors if the collection entry is vacant and the
+    /// collection has already reached maximal size of its confinement.
+    pub fn entry(&mut self, key: C::Key) -> Result<C::Entry<'_>, Error> {
+        let len = self.len();
+        if len == MAX_LEN && !self.0.contains_key(&key) {
+            return Err(Error::Oversize {
+                len: len + 1,
+                max_len: MAX_LEN,
+            });
+        }
+        Ok(self.0.entry(key))
+    }
 }
 
 impl<C: KeyedCollection, const MAX_LEN: usize> Confined<C, ONE, MAX_LEN>
@@ -1029,12 +1102,21 @@ impl<T, const MIN_LEN: usize, const MAX_LEN: usize> Confined<Vec<T>, MIN_LEN, MA
     /// Panics if the size of the slice doesn't match the confinement type
     /// bounds.
     #[inline]
-    pub fn from_slice_unsafe(slice: &[T]) -> Self
+    pub fn from_slice_unchecked(slice: &[T]) -> Self
     where
         T: Clone,
     {
         assert!(slice.len() > MIN_LEN && slice.len() <= MAX_LEN);
         Self(slice.to_vec())
+    }
+
+    #[deprecated(since = "4.7.0", note = "use from_slice_unchecked")]
+    #[inline]
+    pub fn from_slice_unsafe(slice: &[T]) -> Self
+    where
+        T: Clone,
+    {
+        Self::from_slice_unchecked(slice)
     }
 
     /// Constructs confinement out of slice of items. Does allocation.
@@ -1368,6 +1450,8 @@ pub type SmallString = Confined<String, ZERO, U16>;
 pub type MediumString = Confined<String, ZERO, U24>;
 /// [`String`] with maximum 2^32-1 characters.
 pub type LargeString = Confined<String, ZERO, U32>;
+/// Confined [`String`].
+pub type ConfinedString<const MIN: usize = 0, const MAX: usize = U64> = Confined<String, MIN, MAX>;
 /// [`String`] which contains at least a single character.
 pub type NonEmptyString<const MAX: usize = U64> = Confined<String, ONE, MAX>;
 
@@ -1379,6 +1463,9 @@ pub type SmallAscii = Confined<AsciiString, ZERO, U16>;
 pub type MediumAscii = Confined<AsciiString, ZERO, U24>;
 /// [`AsciiString`] with maximum 2^32-1 characters.
 pub type LargeAscii = Confined<AsciiString, ZERO, U32>;
+/// Confined [`AsciiString`].
+pub type ConfinedAscii<const MIN: usize = 0, const MAX: usize = U64> =
+    Confined<AsciiString, MIN, MAX>;
 /// [`AsciiString`] which contains at least a single character.
 pub type NonEmptyAscii<const MAX: usize = U64> = Confined<AsciiString, ONE, MAX>;
 
@@ -1390,6 +1477,8 @@ pub type SmallBlob = Confined<Vec<u8>, ZERO, U16>;
 pub type MediumBlob = Confined<Vec<u8>, ZERO, U24>;
 /// [`Vec<u8>`] with maximum 2^32-1 characters.
 pub type LargeBlob = Confined<Vec<u8>, ZERO, U32>;
+/// Confined [`Vec<u8>`].
+pub type ConfinedBlob<const MIN: usize = 0, const MAX: usize = U64> = Confined<Vec<u8>, MIN, MAX>;
 /// [`Vec<u8>`] which contains at least a single character.
 pub type NonEmptyBlob<const MAX: usize = U64> = Confined<Vec<u8>, ONE, MAX>;
 
@@ -1401,6 +1490,8 @@ pub type SmallVec<T> = Confined<Vec<T>, ZERO, U16>;
 pub type MediumVec<T> = Confined<Vec<T>, ZERO, U24>;
 /// [`Vec`] with maximum 2^32-1 items of type `T`.
 pub type LargeVec<T> = Confined<Vec<T>, ZERO, U32>;
+/// Confined [`Vec`].
+pub type ConfinedVec<T, const MIN: usize = 0, const MAX: usize = U64> = Confined<Vec<T>, MIN, MAX>;
 /// [`Vec`] which contains at least a single item.
 pub type NonEmptyVec<T, const MAX: usize = U64> = Confined<Vec<T>, ONE, MAX>;
 
@@ -1412,6 +1503,9 @@ pub type SmallDeque<T> = Confined<VecDeque<T>, ZERO, U16>;
 pub type MediumDeque<T> = Confined<VecDeque<T>, ZERO, U24>;
 /// [`VecDeque`] with maximum 2^32-1 items of type `T`.
 pub type LargeDeque<T> = Confined<VecDeque<T>, ZERO, U32>;
+/// Confined [`VecDeque`].
+pub type ConfinedDeque<T, const MIN: usize = 0, const MAX: usize = U64> =
+    Confined<VecDeque<T>, MIN, MAX>;
 /// [`VecDeque`] which contains at least a single item.
 pub type NonEmptyDeque<T, const MAX: usize = U64> = Confined<VecDeque<T>, ONE, MAX>;
 
@@ -1427,6 +1521,10 @@ pub type MediumHashSet<T> = Confined<HashSet<T>, ZERO, U24>;
 /// [`HashSet`] with maximum 2^32-1 items of type `T`.
 #[cfg(feature = "std")]
 pub type LargeHashSet<T> = Confined<HashSet<T>, ZERO, U32>;
+#[cfg(feature = "std")]
+/// Confined [`HashSet`].
+pub type ConfinedHashSet<T, const MIN: usize = 0, const MAX: usize = U64> =
+    Confined<HashSet<T>, MIN, MAX>;
 /// [`HashSet`] which contains at least a single item.
 #[cfg(feature = "std")]
 pub type NonEmptyHashSet<T, const MAX: usize = U64> = Confined<HashSet<T>, ONE, MAX>;
@@ -1439,6 +1537,9 @@ pub type SmallOrdSet<T> = Confined<BTreeSet<T>, ZERO, U16>;
 pub type MediumOrdSet<T> = Confined<BTreeSet<T>, ZERO, U24>;
 /// [`BTreeSet`] with maximum 2^32-1 items of type `T`.
 pub type LargeOrdSet<T> = Confined<BTreeSet<T>, ZERO, U32>;
+/// Confined [`BTreeSet`].
+pub type ConfinedOrdSet<T, const MIN: usize = 0, const MAX: usize = U64> =
+    Confined<BTreeSet<T>, MIN, MAX>;
 /// [`BTreeSet`] which contains at least a single item.
 pub type NonEmptyOrdSet<T, const MAX: usize = U64> = Confined<BTreeSet<T>, ONE, MAX>;
 
@@ -1454,6 +1555,10 @@ pub type MediumHashMap<K, V> = Confined<HashMap<K, V>, ZERO, U24>;
 /// [`HashMap`] with maximum 2^32-1 items.
 #[cfg(feature = "std")]
 pub type LargeHashMap<K, V> = Confined<HashMap<K, V>, ZERO, U32>;
+#[cfg(feature = "std")]
+/// Confined [`HashMap`].
+pub type ConfinedHashMap<K, V, const MIN: usize = 0, const MAX: usize = U64> =
+    Confined<HashSet<K, V>, MIN, MAX>;
 /// [`HashMap`] which contains at least a single item.
 #[cfg(feature = "std")]
 pub type NonEmptyHashMap<K, V, const MAX: usize = U64> = Confined<HashMap<K, V>, ONE, MAX>;
@@ -1466,12 +1571,30 @@ pub type SmallOrdMap<K, V> = Confined<BTreeMap<K, V>, ZERO, U16>;
 pub type MediumOrdMap<K, V> = Confined<BTreeMap<K, V>, ZERO, U24>;
 /// [`BTreeMap`] with maximum 2^32-1 items.
 pub type LargeOrdMap<K, V> = Confined<BTreeMap<K, V>, ZERO, U32>;
+/// Confined [`BTreeMap`].
+pub type ConfinedOrdMap<K, V, const MIN: usize = 0, const MAX: usize = U64> =
+    Confined<BTreeMap<K, V>, MIN, MAX>;
 /// [`BTreeMap`] which contains at least a single item.
 pub type NonEmptyOrdMap<K, V, const MAX: usize = U64> = Confined<BTreeMap<K, V>, ONE, MAX>;
+
+/// Helper macro to construct confined string
+#[macro_export]
+macro_rules! confined_s {
+    () => {
+        $crate::confinement::Confined::<String>::new()
+    };
+    ($s:literal) => {
+        $crate::confinement::Confined::try_from(s!($s))
+            .expect("inline confined_s literal exceeds confinement length")
+    };
+}
 
 /// Helper macro to construct confined string of a [`TinyString`] type
 #[macro_export]
 macro_rules! tiny_s {
+    () => {
+        $crate::confinement::TinyString::new()
+    };
     ($lit:literal) => {
         $crate::confinement::TinyString::try_from(s!($lit))
             .expect("static string for tiny_s literal cis too long")
@@ -1481,15 +1604,97 @@ macro_rules! tiny_s {
 /// Helper macro to construct confined string of a [`SmallString`] type
 #[macro_export]
 macro_rules! small_s {
+    () => {
+        $crate::confinement::SmallString::new()
+    };
     ($lit:literal) => {
         $crate::confinement::SmallString::try_from(s!($lit))
             .expect("static string for small_s literal cis too long")
     };
 }
 
+/// Helper macro to construct confined string of a [`MediumString`] type
+#[macro_export]
+macro_rules! medium_s {
+    () => {
+        $crate::confinement::MediumString::new()
+    };
+    ($lit:literal) => {
+        $crate::confinement::MediumString::try_from(s!($lit))
+            .expect("static string for medium_s literal cis too long")
+    };
+}
+
+/// Helper macro to construct confined blob
+#[macro_export]
+macro_rules! confined_blob {
+    () => {
+        $crate::confinement::ConfinedBlob::new()
+    };
+    ($elem:expr; $n:expr) => (
+        $crate::confinement::ConfinedBlob::try_from(vec![$elem; $n])
+            .expect("inline confined_blob contains invalid number of items")
+    );
+    ($($x:expr),+ $(,)?) => (
+        $crate::confinement::ConfinedBlob::try_from(vec![$($x,)+])
+            .expect("inline confined_blob contains invalid number of items")
+    )
+}
+
+/// Helper macro to construct confined blob of a [`TinyBlob`] type
+#[macro_export]
+macro_rules! tiny_blob {
+    () => {
+        $crate::confinement::TinyBlob::new()
+    };
+    ($elem:expr; $n:expr) => (
+        $crate::confinement::TinyBlob::try_from(vec![$elem; $n])
+            .expect("inline tiny_blob contains invalid number of items")
+    );
+    ($($x:expr),+ $(,)?) => (
+        $crate::confinement::TinyBlob::try_from(vec![$($x,)+])
+            .expect("inline tiny_blob contains invalid number of items")
+    )
+}
+
+/// Helper macro to construct confined blob of a [`SmallBlob`] type
+#[macro_export]
+macro_rules! small_blob {
+    () => {
+        $crate::confinement::SmallBlob::new()
+    };
+    ($elem:expr; $n:expr) => (
+        $crate::confinement::SmallBlob::try_from(vec![$elem; $n])
+            .expect("inline small_blob contains invalid number of items")
+    );
+    ($($x:expr),+ $(,)?) => (
+        $crate::confinement::SmallBlob::try_from(vec![$($x,)+])
+            .expect("inline small_blob contains invalid number of items")
+    )
+}
+
+/// Helper macro to construct confined blob of a [`MediumBlob`] type
+#[macro_export]
+macro_rules! medium_blob {
+    () => {
+        $crate::confinement::MediumBlob::new()
+    };
+    ($elem:expr; $n:expr) => (
+        $crate::confinement::MediumBlob::try_from(vec![$elem; $n])
+            .expect("inline medium_blob contains invalid number of items")
+    );
+    ($($x:expr),+ $(,)?) => (
+        $crate::confinement::MediumBlob::try_from(vec![$($x,)+])
+            .expect("inline medium_blob contains invalid number of items")
+    )
+}
+
 /// Helper macro to construct confined vector of a given type
 #[macro_export]
 macro_rules! confined_vec {
+    () => {
+        $crate::confinement::Confined::<Vec<_>>::new()
+    };
     ($elem:expr; $n:expr) => (
         $crate::confinement::Confined::try_from(vec![$elem; $n])
             .expect("inline confined_vec literal contains invalid number of items")
@@ -1497,13 +1702,15 @@ macro_rules! confined_vec {
     ($($x:expr),+ $(,)?) => (
         $crate::confinement::Confined::try_from(vec![$($x,)+])
             .expect("inline confined_vec literal contains invalid number of items")
-            .into()
     )
 }
 
 /// Helper macro to construct confined vector of a [`TinyVec`] type
 #[macro_export]
 macro_rules! tiny_vec {
+    () => {
+        $crate::confinement::TinyVec::new()
+    };
     ($elem:expr; $n:expr) => (
         $crate::confinement::TinyVec::try_from(vec![$elem; $n])
             .expect("inline tiny_vec literal contains invalid number of items")
@@ -1517,6 +1724,9 @@ macro_rules! tiny_vec {
 /// Helper macro to construct confined vector of a [`SmallVec`] type
 #[macro_export]
 macro_rules! small_vec {
+    () => {
+        $crate::confinement::SmallVec::new()
+    };
     ($elem:expr; $n:expr) => (
         $crate::confinement::SmallVec::try_from(vec![$elem; $n])
             .expect("inline small_vec literal contains invalid number of items")
@@ -1527,19 +1737,40 @@ macro_rules! small_vec {
     )
 }
 
+/// Helper macro to construct confined vector of a [`MediumVec`] type
+#[macro_export]
+macro_rules! medium_vec {
+    () => {
+        $crate::confinement::MediumVec::new()
+    };
+    ($elem:expr; $n:expr) => (
+        $crate::confinement::MediumVec::try_from(vec![$elem; $n])
+            .expect("inline medium_vec literal contains invalid number of items")
+    );
+    ($($x:expr),+ $(,)?) => (
+        $crate::confinement::MediumVec::try_from(vec![$($x,)+])
+            .expect("inline medium_vec literal contains invalid number of items")
+    )
+}
+
 /// Helper macro to construct confined [`HashSet`] of a given type
 #[macro_export]
 macro_rules! confined_set {
+    () => {
+        $crate::confinement::Confined::<HashSet<_>>::new()
+    };
     ($($x:expr),+ $(,)?) => (
         $crate::confinement::Confined::try_from(set![$($x,)+])
             .expect("inline confined_set literal contains invalid number of items")
-            .into()
     )
 }
 
 /// Helper macro to construct confined [`HashSet`] of a [`TinyHashSet`] type
 #[macro_export]
 macro_rules! tiny_set {
+    () => {
+        $crate::confinement::TinyHashSet::new()
+    };
     ($($x:expr),+ $(,)?) => (
         $crate::confinement::TinyHashSet::try_from(set![$($x,)+])
             .expect("inline tiny_set literal contains invalid number of items")
@@ -1549,25 +1780,45 @@ macro_rules! tiny_set {
 /// Helper macro to construct confined [`HashSet`] of a [`SmallHashSet`] type
 #[macro_export]
 macro_rules! small_set {
+    () => {
+        $crate::confinement::SmallHashSet::new()
+    };
     ($($x:expr),+ $(,)?) => (
         $crate::confinement::SmallHashSet::try_from(set![$($x,)+])
             .expect("inline small_set literal contains invalid number of items")
     )
 }
 
+/// Helper macro to construct confined [`HashSet`] of a [`MediumHashSet`] type
+#[macro_export]
+macro_rules! medium_set {
+    () => {
+        $crate::confinement::MediumHashSet::new()
+    };
+    ($($x:expr),+ $(,)?) => (
+        $crate::confinement::MediumHashSet::try_from(set![$($x,)+])
+            .expect("inline medium_set literal contains invalid number of items")
+    )
+}
+
 /// Helper macro to construct confined [`BTreeSet`] of a given type
 #[macro_export]
 macro_rules! confined_bset {
+    () => {
+        $crate::confinement::Confined::<BTreeSet<_>>::new()
+    };
     ($($x:expr),+ $(,)?) => (
         $crate::confinement::Confined::try_from(bset![$($x,)+])
             .expect("inline confined_bset literal contains invalid number of items")
-            .into()
     )
 }
 
 /// Helper macro to construct confined [`BTreeSet`] of a [`TinyOrdSet`] type
 #[macro_export]
 macro_rules! tiny_bset {
+    () => {
+        $crate::confinement::TinyOrdSet::new()
+    };
     ($($x:expr),+ $(,)?) => (
         $crate::confinement::TinyOrdSet::try_from(bset![$($x,)+])
             .expect("inline tiny_bset literal contains invalid number of items")
@@ -1577,25 +1828,45 @@ macro_rules! tiny_bset {
 /// Helper macro to construct confined [`BTreeSet`] of a [`SmallOrdSet`] type
 #[macro_export]
 macro_rules! small_bset {
+    () => {
+        $crate::confinement::SmallOrdSet::new()
+    };
     ($($x:expr),+ $(,)?) => (
         $crate::confinement::SmallOrdSet::try_from(bset![$($x,)+])
             .expect("inline small_bset literal contains invalid number of items")
     )
 }
 
+/// Helper macro to construct confined [`BTreeSet`] of a [`MediumOrdSet`] type
+#[macro_export]
+macro_rules! medium_bset {
+    () => {
+        $crate::confinement::MediumOrdSet::new()
+    };
+    ($($x:expr),+ $(,)?) => (
+        $crate::confinement::MediumOrdSet::try_from(bset![$($x,)+])
+            .expect("inline medium_bset literal contains invalid number of items")
+    )
+}
+
 /// Helper macro to construct confined [`HashMap`] of a given type
 #[macro_export]
 macro_rules! confined_map {
+    () => {
+        $crate::confinement::Confined::<HashMap<_, _>>::new()
+    };
     ($($key:expr => $value:expr),+ $(,)?) => (
         $crate::confinement::Confined::try_from(map!{ $($key => $value),+ })
             .expect("inline confined_map literal contains invalid number of items")
-            .into()
     )
 }
 
 /// Helper macro to construct confined [`HashMap`] of a [`TinyHashMap`] type
 #[macro_export]
 macro_rules! tiny_map {
+    () => {
+        $crate::confinement::TinyHashMap::new()
+    };
     { $($key:expr => $value:expr),+ $(,)? } => {
         $crate::confinement::TinyHashMap::try_from(map!{ $($key => $value,)+ })
             .expect("inline tiny_map literal contains invalid number of items")
@@ -1605,25 +1876,45 @@ macro_rules! tiny_map {
 /// Helper macro to construct confined [`HashMap`] of a [`SmallHashMap`] type
 #[macro_export]
 macro_rules! small_map {
+    () => {
+        $crate::confinement::SmallHashMap::new()
+    };
     { $($key:expr => $value:expr),+ $(,)? } => {
         $crate::confinement::SmallHashMap::try_from(map!{ $($key => $value,)+ })
             .expect("inline small_map literal contains invalid number of items")
     }
 }
 
+/// Helper macro to construct confined [`HashMap`] of a [`MediumHashMap`] type
+#[macro_export]
+macro_rules! medium_map {
+    () => {
+        $crate::confinement::MediumHashMap::new()
+    };
+    { $($key:expr => $value:expr),+ $(,)? } => {
+        $crate::confinement::MediumHashMap::try_from(map!{ $($key => $value,)+ })
+            .expect("inline medium_map literal contains invalid number of items")
+    }
+}
+
 /// Helper macro to construct confined [`BTreeMap`] of a given type
 #[macro_export]
 macro_rules! confined_bmap {
+    () => {
+        $crate::confinement::Confined::<BTreeMap<_, _>>::new()
+    };
     ($($key:expr => $value:expr),+ $(,)?) => (
         $crate::confinement::Confined::try_from(bmap!{ $($key => $value),+ })
             .expect("inline confined_bmap literal contains invalid number of items")
-            .into()
     )
 }
 
 /// Helper macro to construct confined [`BTreeMap`] of a [`TinyOrdMap`] type
 #[macro_export]
 macro_rules! tiny_bmap {
+    () => {
+        $crate::confinement::TinyOrdMap::new()
+    };
     { $($key:expr => $value:expr),+ $(,)? } => {
         $crate::confinement::TinyOrdMap::try_from(bmap!{ $($key => $value,)+ })
             .expect("inline tiny_bmap literal contains invalid number of items")
@@ -1633,9 +1924,24 @@ macro_rules! tiny_bmap {
 /// Helper macro to construct confined [`BTreeMap`] of a [`SmallOrdMap`] type
 #[macro_export]
 macro_rules! small_bmap {
+    () => {
+        $crate::confinement::SmallOrdMap::new()
+    };
     { $($key:expr => $value:expr),+ $(,)? } => {
         $crate::confinement::SmallOrdMap::try_from(bmap!{ $($key => $value,)+ })
             .expect("inline small_bmap literal contains invalid number of items")
+    }
+}
+
+/// Helper macro to construct confined [`BTreeMap`] of a [`MediumOrdMap`] type
+#[macro_export]
+macro_rules! medium_bmap {
+    () => {
+        $crate::confinement::MediumOrdMap::new()
+    };
+    { $($key:expr => $value:expr),+ $(,)? } => {
+        $crate::confinement::MediumOrdMap::try_from(bmap!{ $($key => $value,)+ })
+            .expect("inline medium_bmap literal contains invalid number of items")
     }
 }
 
@@ -1702,13 +2008,36 @@ mod test {
     }
 
     #[test]
+    fn entry() {
+        let mut col = tiny_bmap!(0u16 => 'a');
+        assert!(matches!(
+            col.entry(0).unwrap(),
+            btree_map::Entry::Occupied(_)
+        ));
+        assert!(matches!(col.entry(1).unwrap(), btree_map::Entry::Vacant(_)));
+        for idx in 1..u8::MAX {
+            col.insert(idx as u16, 'b').unwrap();
+        }
+        assert!(matches!(
+            col.entry(2).unwrap(),
+            btree_map::Entry::Occupied(_)
+        ));
+        assert!(col.entry(256).is_err());
+    }
+
+    #[test]
     fn macros() {
+        tiny_vec!() as TinyVec<&str>;
         tiny_vec!("a", "b", "c");
         small_vec!("a", "b", "c");
 
+        tiny_set!() as TinyHashSet<&str>;
         tiny_set!("a", "b", "c");
+        tiny_bset!() as TinyOrdSet<&str>;
         tiny_bset!("a", "b", "c");
+        tiny_map!() as TinyHashMap<&str, u8>;
         tiny_map!("a" => 1, "b" => 2, "c" => 3);
+        tiny_bmap!() as TinyOrdMap<&str, u8>;
         tiny_bmap!("a" => 1, "b" => 2, "c" => 3);
 
         small_set!("a", "b", "c");
@@ -1717,5 +2046,24 @@ mod test {
         small_bmap!("a" => 1, "b" => 2, "c" => 3);
 
         let _: TinyHashMap<_, _> = confined_map!("a" => 1, "b" => 2, "c" => 3);
+    }
+
+    #[test]
+    fn iter_mut_btree() {
+        let mut coll = tiny_bmap!(1 => "one");
+        for (_index, item) in &mut coll {
+            *item = "two";
+        }
+        assert_eq!(coll.get(&1), Some(&"two"));
+        for (_index, item) in coll.keyed_values_mut() {
+            *item = "three";
+        }
+        assert_eq!(coll.get(&1), Some(&"three"));
+        for item in coll.values_mut() {
+            *item = "four";
+        }
+        assert_eq!(coll.get(&1), Some(&"four"));
+        *coll.get_mut(&1).unwrap() = "five";
+        assert_eq!(coll.get(&1), Some(&"five"));
     }
 }
