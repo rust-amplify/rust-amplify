@@ -1577,6 +1577,18 @@ pub type ConfinedOrdMap<K, V, const MIN: usize = 0, const MAX: usize = U64> =
 /// [`BTreeMap`] which contains at least a single item.
 pub type NonEmptyOrdMap<K, V, const MAX: usize = U64> = Confined<BTreeMap<K, V>, ONE, MAX>;
 
+/// Helper macro to construct confined string
+#[macro_export]
+macro_rules! confined_s {
+    () => {
+        $crate::confinement::Confined::<String>::new()
+    };
+    ($s:literal) => {
+        $crate::confinement::Confined::try_from(s!($s))
+            .expect("inline confined_s literal exceeds confinement length")
+    };
+}
+
 /// Helper macro to construct confined string of a [`TinyString`] type
 #[macro_export]
 macro_rules! tiny_s {
