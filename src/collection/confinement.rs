@@ -1626,7 +1626,6 @@ macro_rules! confined_vec {
     ($($x:expr),+ $(,)?) => (
         $crate::confinement::Confined::try_from(vec![$($x,)+])
             .expect("inline confined_vec literal contains invalid number of items")
-            .into()
     )
 }
 
@@ -1687,7 +1686,6 @@ macro_rules! confined_set {
     ($($x:expr),+ $(,)?) => (
         $crate::confinement::Confined::try_from(set![$($x,)+])
             .expect("inline confined_set literal contains invalid number of items")
-            .into()
     )
 }
 
@@ -1736,7 +1734,6 @@ macro_rules! confined_bset {
     ($($x:expr),+ $(,)?) => (
         $crate::confinement::Confined::try_from(bset![$($x,)+])
             .expect("inline confined_bset literal contains invalid number of items")
-            .into()
     )
 }
 
@@ -1785,7 +1782,6 @@ macro_rules! confined_map {
     ($($key:expr => $value:expr),+ $(,)?) => (
         $crate::confinement::Confined::try_from(map!{ $($key => $value),+ })
             .expect("inline confined_map literal contains invalid number of items")
-            .into()
     )
 }
 
@@ -1834,7 +1830,6 @@ macro_rules! confined_bmap {
     ($($key:expr => $value:expr),+ $(,)?) => (
         $crate::confinement::Confined::try_from(bmap!{ $($key => $value),+ })
             .expect("inline confined_bmap literal contains invalid number of items")
-            .into()
     )
 }
 
