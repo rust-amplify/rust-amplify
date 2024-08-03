@@ -70,8 +70,14 @@ pub trait KeyedCollection: Collection<Item = (Self::Key, Self::Value)> {
     type Key: Eq + Hash;
     /// Value type for the collection.
     type Value;
+    type Entry<'a>
+    where
+        Self: 'a;
 
-    /// Gets mutable element of the collection
+    /// Checks whether a given key is contained in the map.
+    fn contains_key(&self, key: &Self::Key) -> bool;
+
+    /// Gets mutable element of the collection.
     fn get_mut(&mut self, key: &Self::Key) -> Option<&mut Self::Value>;
 
     /// Inserts a new value under a key. Returns previous value if a value under
@@ -81,6 +87,10 @@ pub trait KeyedCollection: Collection<Item = (Self::Key, Self::Value)> {
     /// Removes a value stored under a given key, returning the owned value, if
     /// it was in the collection.
     fn remove(&mut self, key: &Self::Key) -> Option<Self::Value>;
+
+    /// Gets the given key's corresponding entry in the map for in-place
+    /// manipulation.
+    fn entry(&mut self, key: Self::Key) -> Self::Entry<'_>;
 }
 
 // Impls for main collection types
@@ -232,6 +242,11 @@ impl<K: Eq + Hash, V> Collection for HashMap<K, V> {
 impl<K: Eq + Hash, V> KeyedCollection for HashMap<K, V> {
     type Key = K;
     type Value = V;
+    type Entry<'a> = hash_map::Entry<'a, K, V> where K:'a, V: 'a;
+
+    fn contains_key(&self, key: &Self::Key) -> bool {
+        HashMap::contains_key(self, key)
+    }
 
     fn get_mut(&mut self, key: &Self::Key) -> Option<&mut Self::Value> {
         HashMap::get_mut(self, key)
@@ -243,6 +258,10 @@ impl<K: Eq + Hash, V> KeyedCollection for HashMap<K, V> {
 
     fn remove(&mut self, key: &Self::Key) -> Option<Self::Value> {
         HashMap::remove(self, key)
+    }
+
+    fn entry(&mut self, key: Self::Key) -> Self::Entry<'_> {
+        HashMap::entry(self, key)
     }
 }
 
@@ -270,6 +289,11 @@ impl<K: Ord + Hash, V> Collection for BTreeMap<K, V> {
 impl<K: Ord + Hash, V> KeyedCollection for BTreeMap<K, V> {
     type Key = K;
     type Value = V;
+    type Entry<'a> = btree_map::Entry<'a, K, V> where K: 'a, V: 'a;
+
+    fn contains_key(&self, key: &Self::Key) -> bool {
+        BTreeMap::contains_key(self, key)
+    }
 
     fn get_mut(&mut self, key: &Self::Key) -> Option<&mut Self::Value> {
         BTreeMap::get_mut(self, key)
@@ -281,6 +305,10 @@ impl<K: Ord + Hash, V> KeyedCollection for BTreeMap<K, V> {
 
     fn remove(&mut self, key: &Self::Key) -> Option<Self::Value> {
         BTreeMap::remove(self, key)
+    }
+
+    fn entry(&mut self, key: Self::Key) -> Self::Entry<'_> {
+        BTreeMap::entry(self, key)
     }
 }
 
@@ -933,6 +961,20 @@ impl<C: KeyedCollection, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C,
             });
         }
         Ok(self.0.insert(key, value))
+    }
+
+    /// Gets the given key's corresponding entry in the map for in-place
+    /// manipulation. Errors if the collection entry is vacant and the
+    /// collection has already reached maximal size of its confinement.
+    pub fn entry(&mut self, key: C::Key) -> Result<C::Entry<'_>, Error> {
+        let len = self.len();
+        if len == MAX_LEN && !self.0.contains_key(&key) {
+            return Err(Error::Oversize {
+                len: len + 1,
+                max_len: MAX_LEN,
+            });
+        }
+        Ok(self.0.entry(key))
     }
 }
 
@@ -1702,6 +1744,24 @@ mod test {
     fn cant_go_below_min() {
         let mut s = NonEmptyString::<U8>::with('a');
         s.remove(0).unwrap();
+    }
+
+    #[test]
+    fn entry() {
+        let mut col = tiny_bmap!(0u16 => 'a');
+        assert!(matches!(
+            col.entry(0).unwrap(),
+            btree_map::Entry::Occupied(_)
+        ));
+        assert!(matches!(col.entry(1).unwrap(), btree_map::Entry::Vacant(_)));
+        for idx in 1..u8::MAX {
+            col.insert(idx as u16, 'b').unwrap();
+        }
+        assert!(matches!(
+            col.entry(2).unwrap(),
+            btree_map::Entry::Occupied(_)
+        ));
+        assert!(col.entry(256).is_err());
     }
 
     #[test]
