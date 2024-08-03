@@ -18,17 +18,15 @@ use core::any::Any;
 use alloc::string::String;
 
 /// Trait `AsAny` allows simple conversion of any type into a generic "thick"
-/// pointer `&dyn Any` (see [`::core::any::Any`]), that can be later converted
+/// pointer `&dyn Any` (see [`Any`]), that can be later converted
 /// back to the original type with a graceful failing for all other conversions.
 /// For simple conversions it is recommended to use `#[derive(AsAny)]` macro
 /// from `amplify_derive` crate (see [`amplify_derive::AsAny`]).
 ///
 /// # Example
 ///
-/// ```compile_fail
+/// ```
 /// #[macro_use]
-/// extern crate amplify_derive;
-/// extern crate amplify;
 /// use amplify::AsAny;
 ///
 /// #[derive(AsAny, Copy, Clone, PartialEq, Eq, Debug)]
