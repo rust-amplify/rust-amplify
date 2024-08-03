@@ -1532,6 +1532,15 @@ macro_rules! small_s {
     };
 }
 
+/// Helper macro to construct confined string of a [`MediumString`] type
+#[macro_export]
+macro_rules! medium_s {
+    ($lit:literal) => {
+        $crate::confinement::MediumString::try_from(s!($lit))
+            .expect("static string for medium_s literal cis too long")
+    };
+}
+
 /// Helper macro to construct confined vector of a given type
 #[macro_export]
 macro_rules! confined_vec {
@@ -1572,6 +1581,19 @@ macro_rules! small_vec {
     )
 }
 
+/// Helper macro to construct confined vector of a [`MediumVec`] type
+#[macro_export]
+macro_rules! medium_vec {
+    ($elem:expr; $n:expr) => (
+        $crate::confinement::MediumVec::try_from(vec![$elem; $n])
+            .expect("inline medium_vec literal contains invalid number of items")
+    );
+    ($($x:expr),+ $(,)?) => (
+        $crate::confinement::MediumVec::try_from(vec![$($x,)+])
+            .expect("inline medium_vec literal contains invalid number of items")
+    )
+}
+
 /// Helper macro to construct confined [`HashSet`] of a given type
 #[macro_export]
 macro_rules! confined_set {
@@ -1597,6 +1619,15 @@ macro_rules! small_set {
     ($($x:expr),+ $(,)?) => (
         $crate::confinement::SmallHashSet::try_from(set![$($x,)+])
             .expect("inline small_set literal contains invalid number of items")
+    )
+}
+
+/// Helper macro to construct confined [`HashSet`] of a [`MediumHashSet`] type
+#[macro_export]
+macro_rules! medium_set {
+    ($($x:expr),+ $(,)?) => (
+        $crate::confinement::MediumHashSet::try_from(set![$($x,)+])
+            .expect("inline medium_set literal contains invalid number of items")
     )
 }
 
@@ -1628,6 +1659,15 @@ macro_rules! small_bset {
     )
 }
 
+/// Helper macro to construct confined [`BTreeSet`] of a [`MediumOrdSet`] type
+#[macro_export]
+macro_rules! medium_bset {
+    ($($x:expr),+ $(,)?) => (
+        $crate::confinement::MediumOrdSet::try_from(bset![$($x,)+])
+            .expect("inline medium_bset literal contains invalid number of items")
+    )
+}
+
 /// Helper macro to construct confined [`HashMap`] of a given type
 #[macro_export]
 macro_rules! confined_map {
@@ -1656,6 +1696,15 @@ macro_rules! small_map {
     }
 }
 
+/// Helper macro to construct confined [`HashMap`] of a [`MediumHashMap`] type
+#[macro_export]
+macro_rules! medium_map {
+    { $($key:expr => $value:expr),+ $(,)? } => {
+        $crate::confinement::MediumHashMap::try_from(map!{ $($key => $value,)+ })
+            .expect("inline medium_map literal contains invalid number of items")
+    }
+}
+
 /// Helper macro to construct confined [`BTreeMap`] of a given type
 #[macro_export]
 macro_rules! confined_bmap {
@@ -1681,6 +1730,15 @@ macro_rules! small_bmap {
     { $($key:expr => $value:expr),+ $(,)? } => {
         $crate::confinement::SmallOrdMap::try_from(bmap!{ $($key => $value,)+ })
             .expect("inline small_bmap literal contains invalid number of items")
+    }
+}
+
+/// Helper macro to construct confined [`BTreeMap`] of a [`MediumOrdMap`] type
+#[macro_export]
+macro_rules! medium_bmap {
+    { $($key:expr => $value:expr),+ $(,)? } => {
+        $crate::confinement::MediumOrdMap::try_from(bmap!{ $($key => $value,)+ })
+            .expect("inline medium_bmap literal contains invalid number of items")
     }
 }
 
