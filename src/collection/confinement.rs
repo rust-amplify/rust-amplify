@@ -26,14 +26,13 @@ use core::slice;
 use alloc::vec::Vec;
 use alloc::string::String;
 use alloc::borrow::ToOwned;
-use alloc::collections::{vec_deque, btree_map, BTreeMap, BTreeSet, VecDeque};
+use alloc::collections::{vec_deque, btree_map, btree_set, BTreeMap, BTreeSet, VecDeque};
 use core::slice::SliceIndex;
 #[cfg(feature = "std")]
 use std::{
     io,
     collections::{hash_map, hash_set, HashMap, HashSet},
 };
-use std::collections::btree_set;
 use amplify_num::hex;
 use amplify_num::hex::{FromHex, ToHex};
 use ascii::{AsAsciiStrError, AsciiChar, AsciiString};
