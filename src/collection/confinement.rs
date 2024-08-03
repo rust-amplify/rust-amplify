@@ -29,7 +29,7 @@ use alloc::collections::{btree_map, BTreeMap, BTreeSet, VecDeque};
 use core::slice::SliceIndex;
 #[cfg(feature = "std")]
 use std::{
-    io, usize,
+    io,
     collections::{hash_map, HashMap, HashSet},
 };
 use amplify_num::hex;

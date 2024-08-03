@@ -171,7 +171,10 @@ impl<Io, const LIM: usize> From<Io> for ConfinedIo<Io, LIM> {
 
 impl<Io: Default, const LIM: usize> Default for ConfinedIo<Io, LIM> {
     fn default() -> Self {
-        Self::new()
+        Self {
+            pos: 0,
+            io: Io::default(),
+        }
     }
 }
 

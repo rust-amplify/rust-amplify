@@ -66,7 +66,7 @@ mod test {
     use super::*;
 
     #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
-    struct TestWrapper(u8);
+    struct TestWrapper(pub(super) u8);
 
     impl Wrapper for TestWrapper {
         type Inner = u8;
