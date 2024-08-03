@@ -916,6 +916,14 @@ where
     }
 }
 
+impl<C: PlainCollection, const MAX_LEN: usize> Confined<C, ZERO, MAX_LEN> {
+    /// Removes the last element from the collection and returns it, or [`None`]
+    /// if the collection is empty.
+    pub fn pop(&mut self) -> Option<C::Item> {
+        self.0.pop()
+    }
+}
+
 impl<C: PlainCollection, const MAX_LEN: usize> Confined<C, ONE, MAX_LEN>
 where
     C: Default,
@@ -1004,6 +1012,8 @@ impl<C: PlainCollection, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C,
 
     /// Attempts to pop a single element from the confined collection. Fails if
     /// the number of elements in the collection already minimal.
+    ///
+    /// For collections which can be empty please use `pop` method instead.
     pub fn try_pop(&mut self) -> Result<Option<C::Item>, Error> {
         if self.is_empty() {
             return Ok(None);
@@ -1163,14 +1173,7 @@ impl<const MIN_LEN: usize, const MAX_LEN: usize> TryFrom<&str>
     }
 }
 
-impl<const MAX_LEN: usize> Confined<String, ZERO, MAX_LEN> {
-    /// Removes the last character from a string and returns it, or [`None`] if
-    /// it is empty.
-    pub fn pop(&mut self) -> Option<char> {
-        self.0.pop()
-    }
-}
-
+// TODO: Implement Pattern analogs for ConfinedString
 impl<const MIN_LEN: usize, const MAX_LEN: usize> Confined<String, MIN_LEN, MAX_LEN> {
     /// Removes a single character from the confined string, unless the string
     /// doesn't shorten more than the confinement requirement. Errors
@@ -1187,14 +1190,6 @@ impl<const MIN_LEN: usize, const MAX_LEN: usize> Confined<String, MIN_LEN, MAX_L
             return Err(Error::OutOfBoundary { index, len });
         }
         Ok(self.0.remove(index))
-    }
-}
-
-impl<const MAX_LEN: usize> Confined<AsciiString, ZERO, MAX_LEN> {
-    /// Removes the last character from a string and returns it, or [`None`] if
-    /// it is empty.
-    pub fn pop(&mut self) -> Option<AsciiChar> {
-        self.0.pop()
     }
 }
 
@@ -1302,15 +1297,6 @@ impl<T, const MIN_LEN: usize, const MAX_LEN: usize> Confined<Vec<T>, MIN_LEN, MA
     /// The iterator yields all items from start to end.
     pub fn iter_mut(&mut self) -> slice::IterMut<T> {
         self.0.iter_mut()
-    }
-}
-
-impl<T, const MAX_LEN: usize> Confined<Vec<T>, ZERO, MAX_LEN> {
-    /// Removes the last element from a vector and returns it, or [`None`] if it
-    /// is empty.
-    #[inline]
-    pub fn pop(&mut self) -> Option<T> {
-        self.0.pop()
     }
 }
 
