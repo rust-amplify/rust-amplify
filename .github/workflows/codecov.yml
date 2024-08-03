@@ -13,39 +13,22 @@ jobs:
   codecov:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - name: Set up toolchain
-        uses: actions-rs/toolchain@v1
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@nightly
         with:
-          profile: minimal
-          toolchain: stable
-          override: true
-          components: rustfmt, llvm-tools-preview
-      - name: Build
-        uses: actions-rs/cargo@v1
+          components: llvm-tools-preview
+      - uses: taiki-e/install-action@cargo-llvm-cov
+      - uses: taiki-e/install-action@nextest
+      - name: Collect coverage data (including doctests)
+        run: |
+          cargo +nightly llvm-cov --no-report nextest
+          cargo +nightly llvm-cov --no-report --doc
+          cargo +nightly llvm-cov report --doctests --lcov --output-path lcov.info
+      - name: Upload coverage data to codecov
+        uses: codecov/codecov-action@v4
         with:
-          command: build
-          args: --release
-        env:
-          CARGO_INCREMENTAL: "0"
-          RUSTFLAGS: "-Cinstrument-coverage"
-          RUSTDOCFLAGS: "-Cinstrument-coverage"
-      - name: Test
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: --all-features --no-fail-fast
-        env:
-          CARGO_INCREMENTAL: "0"
-          RUSTFLAGS: "-Cinstrument-coverage"
-          RUSTDOCFLAGS: "-Cinstrument-coverage"
-      - name: Install grcov
-        run: if [[ ! -e ~/.cargo/bin/grcov ]]; then cargo install grcov; fi
-      - name: Generate coverage
-        run: grcov . --binary-path target/debug/deps/ -s . -t lcov --branch --ignore-not-existing --ignore '../**' --ignore '/*' -o coverage.lcov
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
-        with:
-          files: ./coverage.lcov
           flags: rust
+          files: lcov.info
           fail_ci_if_error: true
+          token: ${{ secrets.CODECOV_TOKEN }}
+          verbose: true
