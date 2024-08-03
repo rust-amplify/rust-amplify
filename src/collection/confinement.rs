@@ -22,16 +22,18 @@ use core::hash::Hash;
 use core::ops::{
     Deref, Index, IndexMut, Range, RangeFrom, RangeFull, RangeInclusive, RangeTo, RangeToInclusive,
 };
+use core::slice;
 use alloc::vec::Vec;
 use alloc::string::String;
 use alloc::borrow::ToOwned;
-use alloc::collections::{btree_map, BTreeMap, BTreeSet, VecDeque};
+use alloc::collections::{vec_deque, btree_map, BTreeMap, BTreeSet, VecDeque};
 use core::slice::SliceIndex;
 #[cfg(feature = "std")]
 use std::{
     io,
-    collections::{hash_map, HashMap, HashSet},
+    collections::{hash_map, hash_set, HashMap, HashSet},
 };
+use std::collections::btree_set;
 use amplify_num::hex;
 use amplify_num::hex::{FromHex, ToHex};
 use ascii::{AsAsciiStrError, AsciiChar, AsciiString};
@@ -107,9 +109,6 @@ pub trait KeyedCollection: Collection<Item = (Self::Key, Self::Value)> {
 
     /// Gets mutable element of the collection.
     fn get_mut(&mut self, key: &Self::Key) -> Option<&mut Self::Value>;
-
-    /// Returns iterator over keys and mutable values.
-    fn iter_mut(&mut self) -> impl Iterator<Item = (&Self::Key, &mut Self::Value)>;
 
     /// Constructs iterator over mutable values.
     fn values_mut(&mut self) -> impl Iterator<Item = &mut Self::Value>;
@@ -325,10 +324,6 @@ impl<K: Eq + Hash, V> KeyedCollection for HashMap<K, V> {
         HashMap::get_mut(self, key)
     }
 
-    fn iter_mut(&mut self) -> impl Iterator<Item = (&Self::Key, &mut Self::Value)> {
-        HashMap::iter_mut(self)
-    }
-
     fn values_mut(&mut self) -> impl Iterator<Item = &mut Self::Value> {
         HashMap::values_mut(self)
     }
@@ -374,10 +369,6 @@ impl<K: Ord + Hash, V> KeyedCollection for BTreeMap<K, V> {
 
     fn get_mut(&mut self, key: &Self::Key) -> Option<&mut Self::Value> {
         BTreeMap::get_mut(self, key)
-    }
-
-    fn iter_mut(&mut self) -> impl Iterator<Item = (&Self::Key, &mut Self::Value)> {
-        BTreeMap::iter_mut(self)
     }
 
     fn values_mut(&mut self) -> impl Iterator<Item = &mut Self::Value> {
@@ -607,20 +598,6 @@ where
     }
 }
 
-impl<'c, C, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C, MIN_LEN, MAX_LEN>
-where
-    C: Collection + 'c,
-    &'c mut C: IntoIterator<Item = &'c mut <C as Collection>::Item>,
-{
-    /// Returns an iterator that allows modifying each value.
-    ///
-    /// The iterator yields all items from start to end.
-    pub fn iter_mut(&'c mut self) -> <&'c mut C as IntoIterator>::IntoIter {
-        let coll = &mut self.0;
-        coll.into_iter()
-    }
-}
-
 impl<C, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C, MIN_LEN, MAX_LEN>
 where
     C: KeyedCollection,
@@ -629,12 +606,6 @@ where
     pub fn values_mut(&mut self) -> impl Iterator<Item = &mut C::Value> {
         let coll = &mut self.0;
         coll.values_mut()
-    }
-
-    /// Returns an iterator that allows modifying each value for each key.
-    pub fn keyed_values_mut(&mut self) -> impl Iterator<Item = (&C::Key, &mut C::Value)> {
-        let coll = &mut self.0;
-        coll.iter_mut()
     }
 }
 
@@ -1300,18 +1271,7 @@ impl<T, const MIN_LEN: usize, const MAX_LEN: usize> Confined<Vec<T>, MIN_LEN, MA
     {
         self.0.get_mut(index)
     }
-}
 
-impl<T, const MAX_LEN: usize> Confined<Vec<T>, ZERO, MAX_LEN> {
-    /// Removes the last element from a vector and returns it, or [`None`] if it
-    /// is empty.
-    #[inline]
-    pub fn pop(&mut self) -> Option<T> {
-        self.0.pop()
-    }
-}
-
-impl<T, const MIN_LEN: usize, const MAX_LEN: usize> Confined<Vec<T>, MIN_LEN, MAX_LEN> {
     /// Removes an element from the vector at a given index. Errors if the index
     /// exceeds the number of elements in the vector, of if the new vector
     /// length will be less than the confinement requirement. Returns the
@@ -1330,15 +1290,45 @@ impl<T, const MIN_LEN: usize, const MAX_LEN: usize> Confined<Vec<T>, MIN_LEN, MA
         Ok(self.0.remove(index))
     }
 
-    /// Returns an iterator over the slice.
+    /// Returns an iterator over the vector values.
     ///
     /// The iterator yields all items from start to end.
-    pub fn iter(&self) -> core::slice::Iter<T> {
+    pub fn iter(&self) -> slice::Iter<T> {
         self.0.iter()
+    }
+
+    /// Returns an iterator that allows modifying each value.
+    ///
+    /// The iterator yields all items from start to end.
+    pub fn iter_mut(&mut self) -> slice::IterMut<T> {
+        self.0.iter_mut()
+    }
+}
+
+impl<T, const MAX_LEN: usize> Confined<Vec<T>, ZERO, MAX_LEN> {
+    /// Removes the last element from a vector and returns it, or [`None`] if it
+    /// is empty.
+    #[inline]
+    pub fn pop(&mut self) -> Option<T> {
+        self.0.pop()
     }
 }
 
 impl<T, const MIN_LEN: usize, const MAX_LEN: usize> Confined<VecDeque<T>, MIN_LEN, MAX_LEN> {
+    /// Returns an iterator over the vecdeque values.
+    ///
+    /// The iterator yields all items from start to end.
+    pub fn iter(&self) -> vec_deque::Iter<T> {
+        self.0.iter()
+    }
+
+    /// Returns an iterator that allows modifying each value.
+    ///
+    /// The iterator yields all items from start to end.
+    pub fn iter_mut(&mut self) -> vec_deque::IterMut<T> {
+        self.0.iter_mut()
+    }
+
     /// Removes the first element and returns it, or `None` if the deque is
     /// empty.
     pub fn pop_front(&mut self) -> Option<T> {
@@ -1416,6 +1406,13 @@ impl<T, const MIN_LEN: usize, const MAX_LEN: usize> Confined<VecDeque<T>, MIN_LE
 impl<T: Hash + Eq, const MIN_LEN: usize, const MAX_LEN: usize>
     Confined<HashSet<T>, MIN_LEN, MAX_LEN>
 {
+    /// Returns an iterator over the set values.
+    ///
+    /// The iterator yields all items from start to end.
+    pub fn iter(&self) -> hash_set::Iter<T> {
+        self.0.iter()
+    }
+
     /// Adds a value to the set.
     ///
     /// Returns whether the value was newly inserted. That is:
@@ -1444,6 +1441,13 @@ impl<T: Hash + Eq, const MIN_LEN: usize, const MAX_LEN: usize>
 }
 
 impl<T: Ord, const MIN_LEN: usize, const MAX_LEN: usize> Confined<BTreeSet<T>, MIN_LEN, MAX_LEN> {
+    /// Returns an iterator overset values.
+    ///
+    /// The iterator yields all items from start to end.
+    pub fn iter(&self) -> btree_set::Iter<T> {
+        self.0.iter()
+    }
+
     /// Adds a value to the set.
     ///
     /// Returns whether the value was newly inserted. That is:
@@ -1475,6 +1479,27 @@ impl<T: Ord, const MIN_LEN: usize, const MAX_LEN: usize> Confined<BTreeSet<T>, M
 impl<K: Hash + Eq, V, const MIN_LEN: usize, const MAX_LEN: usize>
     Confined<HashMap<K, V>, MIN_LEN, MAX_LEN>
 {
+    /// Returns an iterator over map keys and values.
+    ///
+    /// The iterator yields all items from start to end.
+    pub fn iter(&self) -> hash_map::Iter<K, V> {
+        self.0.iter()
+    }
+
+    /// Returns an iterator that allows modifying each value for each key.
+    pub fn iter_mut(&mut self) -> hash_map::IterMut<K, V> {
+        self.0.iter_mut()
+    }
+
+    #[inline]
+    #[deprecated(
+        since = "4.7.0",
+        note = "use iter_mut or `for .. in &mut ..` construction"
+    )]
+    pub fn keyed_values_mut(&mut self) -> impl Iterator<Item = (&K, &mut V)> {
+        self.iter_mut()
+    }
+
     /// Inserts a new value into the confined collection under a given key.
     /// Fails if the collection already contains maximum number of elements
     /// allowed by the confinement.
@@ -1508,6 +1533,27 @@ impl<K: Hash + Eq, V, const MIN_LEN: usize, const MAX_LEN: usize>
 impl<K: Ord + Hash, V, const MIN_LEN: usize, const MAX_LEN: usize>
     Confined<BTreeMap<K, V>, MIN_LEN, MAX_LEN>
 {
+    /// Returns an iterator over the map keys and values.
+    ///
+    /// The iterator yields all items from start to end.
+    pub fn iter(&self) -> btree_map::Iter<K, V> {
+        self.0.iter()
+    }
+
+    /// Returns an iterator that allows modifying each value for each key.
+    pub fn iter_mut(&mut self) -> btree_map::IterMut<K, V> {
+        self.0.iter_mut()
+    }
+
+    #[inline]
+    #[deprecated(
+        since = "4.7.0",
+        note = "use iter_mut or `for .. in &mut ..` construction"
+    )]
+    pub fn keyed_values_mut(&mut self) -> impl Iterator<Item = (&K, &mut V)> {
+        self.iter_mut()
+    }
+
     /// Inserts a new value into the confined collection under a given key.
     /// Fails if the collection already contains maximum number of elements
     /// allowed by the confinement.
@@ -2193,7 +2239,7 @@ mod test {
             *item = "two";
         }
         assert_eq!(coll.get(&1), Some(&"two"));
-        for (_index, item) in coll.keyed_values_mut() {
+        for (_index, item) in coll.iter_mut() {
             *item = "three";
         }
         assert_eq!(coll.get(&1), Some(&"three"));
