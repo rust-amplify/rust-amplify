@@ -964,16 +964,6 @@ impl<C: Collection, const MIN_LEN: usize> Confined<C, MIN_LEN, U32> {
 }
 
 impl<C: PlainCollection, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C, MIN_LEN, MAX_LEN> {
-    /// Attempts to add all elements from an iterator to the confined
-    /// collection. Fails if the number of elements in the collection
-    /// will exceed the maximum.
-    pub fn extend<T: IntoIterator<Item = C::Item>>(&mut self, iter: T) -> Result<(), Error> {
-        for elem in iter {
-            self.push(elem)?;
-        }
-        Ok(())
-    }
-
     /// Attempts to push a single element to the confined collection. Fails if
     /// the number of elements in the collection already maximal.
     pub fn push(&mut self, elem: C::Item) -> Result<(), Error> {
@@ -1185,6 +1175,15 @@ impl<const MIN_LEN: usize, const MAX_LEN: usize> Confined<String, MIN_LEN, MAX_L
     // - drain
     // - replace_range
 
+    /// Attempts to add all chars from an iterator to the confined string. Fails
+    /// if the length of the string/ will exceed the maximum.
+    pub fn extend<I: IntoIterator<Item = char>>(&mut self, iter: I) -> Result<(), Error> {
+        for elem in iter {
+            self.push(elem)?;
+        }
+        Ok(())
+    }
+
     /// Removes a single character from the confined string, unless the string
     /// doesn't shorten more than the confinement requirement. Errors
     /// otherwise.
@@ -1211,6 +1210,15 @@ impl<const MIN_LEN: usize, const MAX_LEN: usize> Confined<AsciiString, MIN_LEN, 
     // - reserve_exact
     // - shrink_to_fit
     // - truncate
+
+    /// Attempts to add all chars from an iterator to the confined string. Fails
+    /// if the length of the string will exceed the maximum.
+    pub fn extend<I: IntoIterator<Item = AsciiChar>>(&mut self, iter: I) -> Result<(), Error> {
+        for elem in iter {
+            self.push(elem)?;
+        }
+        Ok(())
+    }
 
     /// Removes a single character from the confined string, unless the string
     /// doesn't shorten more than the confinement requirement. Errors
@@ -1257,6 +1265,16 @@ impl<T, const MIN_LEN: usize, const MAX_LEN: usize> Confined<Vec<T>, MIN_LEN, MA
     // - extend_with
     // - extend_from_slice
     // - splice
+
+    /// Attempts to add all elements from an iterator to the confined
+    /// collection. Fails if the number of elements in the collection
+    /// will exceed the maximum.
+    pub fn extend<I: IntoIterator<Item = T>>(&mut self, iter: I) -> Result<(), Error> {
+        for elem in iter {
+            self.push(elem)?;
+        }
+        Ok(())
+    }
 
     /// Constructs confinement out of slice of items. Does allocation.
     ///
@@ -1369,6 +1387,16 @@ impl<T, const MIN_LEN: usize, const MAX_LEN: usize> Confined<VecDeque<T>, MIN_LE
     // - rotate_left
     // - rotate_right
 
+    /// Attempts to add all elements from an iterator to the end of the confined
+    /// vecdeque. Fails if the number of elements in the collection will exceed
+    /// the maximum.
+    pub fn extend<I: IntoIterator<Item = T>>(&mut self, iter: I) -> Result<(), Error> {
+        for elem in iter {
+            self.push_back(elem)?;
+        }
+        Ok(())
+    }
+
     /// Returns an iterator over the vecdeque values.
     ///
     /// The iterator yields all items from start to end.
@@ -1467,6 +1495,16 @@ impl<T: Hash + Eq, const MIN_LEN: usize, const MAX_LEN: usize>
     // - shrink_to_fit
     // - shrink_to
 
+    /// Attempts to add all elements from an iterator to the confined
+    /// collection. Fails if the number of elements in the collection
+    /// will exceed the maximum.
+    pub fn extend<I: IntoIterator<Item = T>>(&mut self, iter: I) -> Result<(), Error> {
+        for elem in iter {
+            self.insert(elem)?;
+        }
+        Ok(())
+    }
+
     /// Returns an iterator over the set values.
     ///
     /// The iterator yields all items from start to end.
@@ -1506,6 +1544,16 @@ impl<T: Ord, const MIN_LEN: usize, const MAX_LEN: usize> Confined<BTreeSet<T>, M
     // - pop_last
     // - append
     // - split_off
+
+    /// Attempts to add all elements from an iterator to the confined
+    /// collection. Fails if the number of elements in the collection
+    /// will exceed the maximum.
+    pub fn extend<I: IntoIterator<Item = T>>(&mut self, iter: I) -> Result<(), Error> {
+        for elem in iter {
+            self.insert(elem)?;
+        }
+        Ok(())
+    }
 
     /// Returns an iterator overset values.
     ///
@@ -1550,6 +1598,16 @@ impl<K: Hash + Eq, V, const MIN_LEN: usize, const MAX_LEN: usize>
     // - shrink_to_fit
     // - shrink_to
     // - remove_entry
+
+    /// Attempts to add all keys nad values from an iterator to the confined
+    /// map. Fails if the number of elements in the collection will exceed the
+    /// maximum.
+    pub fn extend<I: IntoIterator<Item = (K, V)>>(&mut self, iter: I) -> Result<(), Error> {
+        for (key, val) in iter {
+            self.insert(key, val)?;
+        }
+        Ok(())
+    }
 
     /// Gets mutable reference to an element of the collection.
     pub fn get_mut(&mut self, key: &K) -> Option<&mut V> {
@@ -1624,7 +1682,18 @@ impl<K: Ord + Hash, V, const MIN_LEN: usize, const MAX_LEN: usize>
     // - range_mut
     // - split_off
 
-    /// Gets mutable reference to an element of the collection.
+    /// Attempts to add all keys nad values from an iterator to the confined
+    /// map. Fails if the number of elements in the collection will exceed the
+    /// maximum.
+    pub fn extend<I: IntoIterator<Item = (K, V)>>(&mut self, iter: I) -> Result<(), Error> {
+        for (key, val) in iter {
+            self.insert(key, val)?;
+        }
+        Ok(())
+    }
+
+    /// Gets mutable reference to an element of
+    /// the collection.
     pub fn get_mut(&mut self, key: &K) -> Option<&mut V> {
         self.0.get_mut(key)
     }
