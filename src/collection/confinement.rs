@@ -783,7 +783,7 @@ impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C, MIN_
         Self::try_from(col).expect("collection size mismatch, use try_from instead")
     }
 
-    #[deprecated(since = "4.7.0", note = "use from_collection_unchecked")]
+    #[deprecated(since = "4.7.0", note = "use `from_collection_unchecked`")]
     pub fn from_collection_unsafe(col: C) -> Self {
         Self::from_collection_unchecked(col)
     }
@@ -823,13 +823,13 @@ impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C, MIN_
         Self::from_collection_unchecked(iter.into_iter().collect())
     }
 
-    #[deprecated(since = "4.7.0", note = "use from_iter_unchecked")]
+    #[deprecated(since = "4.7.0", note = "use `from_iter_unchecked`")]
     pub fn from_iter_unsafe<I: IntoIterator<Item = C::Item>>(iter: I) -> Self {
         Self::from_iter_unchecked(iter)
     }
 
     /// Returns inner collection type
-    #[deprecated(since = "4.7.0", note = "use as_unconfined method")]
+    #[deprecated(since = "4.7.0", note = "use `as_unconfined` method")]
     pub fn as_inner(&self) -> &C {
         &self.0
     }
@@ -840,7 +840,7 @@ impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C, MIN_
     }
 
     /// Clones inner collection type and returns it
-    #[deprecated(since = "4.7.0", note = "use to_unconfined method")]
+    #[deprecated(since = "4.7.0", note = "use `to_unconfined` method")]
     pub fn to_inner(&self) -> C
     where
         C: Clone,
@@ -857,13 +857,13 @@ impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C, MIN_
     }
 
     /// Decomposes into the inner collection type
-    #[deprecated(since = "4.7.0", note = "use release method")]
+    #[deprecated(since = "4.7.0", note = "use `release` method")]
     pub fn into_inner(self) -> C {
         self.0
     }
 
     /// Removes confinement and returns the underlying collection.
-    #[deprecated(since = "4.7.0", note = "use release method")]
+    #[deprecated(since = "4.7.0", note = "use `release` method")]
     pub fn unbox(self) -> C {
         self.0
     }
@@ -1291,7 +1291,7 @@ impl<T, const MIN_LEN: usize, const MAX_LEN: usize> Confined<Vec<T>, MIN_LEN, MA
         Self(slice.to_vec())
     }
 
-    #[deprecated(since = "4.7.0", note = "use from_slice_unchecked")]
+    #[deprecated(since = "4.7.0", note = "use `from_slice_unchecked`")]
     #[inline]
     pub fn from_slice_unsafe(slice: &[T]) -> Self
     where
@@ -1690,7 +1690,7 @@ impl<K: Hash + Eq, V, const MIN_LEN: usize, const MAX_LEN: usize>
     #[inline]
     #[deprecated(
         since = "4.7.0",
-        note = "use iter_mut or `for .. in &mut ..` construction"
+        note = "use `iter_mut` or `for .. in &mut ..` construction"
     )]
     pub fn keyed_values_mut(&mut self) -> impl Iterator<Item = (&K, &mut V)> {
         self.iter_mut()
@@ -1798,7 +1798,7 @@ impl<K: Ord + Hash, V, const MIN_LEN: usize, const MAX_LEN: usize>
     #[inline]
     #[deprecated(
         since = "4.7.0",
-        note = "use iter_mut or `for .. in &mut ..` construction"
+        note = "use `iter_mut` or `for .. in &mut ..` construction"
     )]
     pub fn keyed_values_mut(&mut self) -> impl Iterator<Item = (&K, &mut V)> {
         self.iter_mut()
