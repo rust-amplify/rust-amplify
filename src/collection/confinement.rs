@@ -1485,6 +1485,16 @@ impl<T, const MIN_LEN: usize, const MAX_LEN: usize> Confined<VecDeque<T>, MIN_LE
 }
 
 #[cfg(feature = "std")]
+impl<T: Hash + Eq, const MAX_LEN: usize> Confined<HashSet<T>, ONE, MAX_LEN> {
+    /// Constructs a confinement with a set made of a single required element.
+    pub fn with(elem: T) -> Self {
+        let mut c = HashSet::default();
+        c.insert(elem);
+        Self(c)
+    }
+}
+
+#[cfg(feature = "std")]
 impl<T: Hash + Eq, const MIN_LEN: usize, const MAX_LEN: usize>
     Confined<HashSet<T>, MIN_LEN, MAX_LEN>
 {
@@ -1543,6 +1553,15 @@ impl<T: Hash + Eq, const MIN_LEN: usize, const MAX_LEN: usize>
     }
 }
 
+impl<T: Ord, const MAX_LEN: usize> Confined<BTreeSet<T>, ONE, MAX_LEN> {
+    /// Constructs a confinement with a set made of a single required element.
+    pub fn with(elem: T) -> Self {
+        let mut c = BTreeSet::default();
+        c.insert(elem);
+        Self(c)
+    }
+}
+
 impl<T: Ord, const MIN_LEN: usize, const MAX_LEN: usize> Confined<BTreeSet<T>, MIN_LEN, MAX_LEN> {
     // TODO: Add BTreeSet mutable methods:
     // - retain
@@ -1596,6 +1615,25 @@ impl<T: Ord, const MIN_LEN: usize, const MAX_LEN: usize> Confined<BTreeSet<T>, M
     #[inline]
     pub fn remove(&mut self, elem: &T) -> Result<bool, Error> {
         self.remove_value(elem)
+    }
+}
+
+#[cfg(feature = "std")]
+impl<K: Hash + Eq, V, const MAX_LEN: usize> Confined<HashMap<K, V>, ONE, MAX_LEN> {
+    /// Constructs a new confined map which has exactly one key and value.
+    #[deprecated(since = "5.0.0", note = "use `with`")]
+    pub fn one(key: K, value: V) -> Self {
+        let mut c = HashMap::default();
+        c.insert(key, value);
+        Self(c)
+    }
+
+    // TODO: Replace with newer implementation taking two arguments (in 5.0)
+    #[deprecated(since = "4.7.0", note = "use `new`")]
+    pub fn with((key, value): (K, V)) -> Self {
+        let mut c = HashMap::default();
+        c.insert(key, value);
+        Self(c)
     }
 }
 
@@ -1685,6 +1723,24 @@ impl<K: Hash + Eq, V, const MIN_LEN: usize, const MAX_LEN: usize>
     /// The iterator element type is `V`.
     pub fn into_values(self) -> hash_map::IntoValues<K, V> {
         self.0.into_values()
+    }
+}
+
+impl<K: Ord + Hash, V, const MAX_LEN: usize> Confined<BTreeMap<K, V>, ONE, MAX_LEN> {
+    /// Constructs a new confined map which has exactly one key and value.
+    #[deprecated(since = "5.0.0", note = "use `with`")]
+    pub fn one(key: K, value: V) -> Self {
+        let mut c = BTreeMap::default();
+        c.insert(key, value);
+        Self(c)
+    }
+
+    // TODO: Replace with newer implementation taking two arguments (in 5.0)
+    #[deprecated(since = "4.7.0", note = "use `new`")]
+    pub fn with((key, value): (K, V)) -> Self {
+        let mut c = BTreeMap::default();
+        c.insert(key, value);
+        Self(c)
     }
 }
 
