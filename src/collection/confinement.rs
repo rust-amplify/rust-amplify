@@ -57,6 +57,11 @@ pub trait Collection: FromIterator<Self::Item> + Extend<Self::Item> {
         self.len() == 0
     }
 
+    /// Adds a new item to the collection. If collection allows inserting
+    /// elements at different positions, this should append item as the last
+    /// to the end of the collection.
+    fn add(&mut self, item: Self::Item);
+
     /// Removes all elements from the collection.
     fn clear(&mut self);
 }
@@ -138,6 +143,10 @@ impl Collection for String {
         self.len()
     }
 
+    fn add(&mut self, item: Self::Item) {
+        self.push(item)
+    }
+
     fn clear(&mut self) {
         self.clear()
     }
@@ -162,6 +171,10 @@ impl Collection for AsciiString {
 
     fn len(&self) -> usize {
         self.len()
+    }
+
+    fn add(&mut self, item: Self::Item) {
+        self.push(item)
     }
 
     fn clear(&mut self) {
@@ -190,6 +203,10 @@ impl<T> Collection for Vec<T> {
         self.len()
     }
 
+    fn add(&mut self, item: Self::Item) {
+        self.push(item)
+    }
+
     fn clear(&mut self) {
         self.clear()
     }
@@ -216,6 +233,10 @@ impl<T> Collection for VecDeque<T> {
         self.len()
     }
 
+    fn add(&mut self, item: Self::Item) {
+        self.push_back(item)
+    }
+
     fn clear(&mut self) {
         self.clear()
     }
@@ -231,6 +252,10 @@ impl<T: Eq + Hash> Collection for HashSet<T> {
 
     fn len(&self) -> usize {
         self.len()
+    }
+
+    fn add(&mut self, item: Self::Item) {
+        self.insert(item);
     }
 
     fn clear(&mut self) {
@@ -269,6 +294,10 @@ impl<T: Ord> Collection for BTreeSet<T> {
         self.len()
     }
 
+    fn add(&mut self, item: Self::Item) {
+        self.insert(item);
+    }
+
     fn clear(&mut self) {
         self.clear()
     }
@@ -302,6 +331,10 @@ impl<K: Eq + Hash, V> Collection for HashMap<K, V> {
 
     fn len(&self) -> usize {
         self.len()
+    }
+
+    fn add(&mut self, (key, value): (K, V)) {
+        self.insert(key, value);
     }
 
     fn clear(&mut self) {
@@ -350,6 +383,10 @@ impl<K: Ord + Hash, V> Collection for BTreeMap<K, V> {
 
     fn len(&self) -> usize {
         self.len()
+    }
+
+    fn add(&mut self, (key, value): (K, V)) {
+        self.insert(key, value);
     }
 
     fn clear(&mut self) {
@@ -901,6 +938,20 @@ where
     }
 }
 
+impl<C: Collection, const MAX_LEN: usize> Confined<C, ONE, MAX_LEN>
+where
+    C: Default,
+{
+    /// Constructs a confinement with a collection made of a single required
+    /// element.
+    #[deprecated(since = "4.7.0", note = "use `single`")]
+    pub fn with(elem: C::Item) -> Self {
+        let mut c = C::default();
+        c.add(elem);
+        Self(c)
+    }
+}
+
 impl<C: Collection, const MAX_LEN: usize> Default for Confined<C, ZERO, MAX_LEN>
 where
     C: Default,
@@ -924,7 +975,7 @@ where
 {
     /// Constructs a confinement with a collection made of a single required
     /// element.
-    pub fn with(elem: C::Item) -> Self {
+    pub fn single(elem: C::Item) -> Self {
         let mut c = C::default();
         c.push(elem);
         Self(c)
@@ -1114,19 +1165,6 @@ impl<C: KeyedCollection, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C,
             });
         }
         Ok(self.0.entry(key))
-    }
-}
-
-impl<C: KeyedCollection, const MAX_LEN: usize> Confined<C, ONE, MAX_LEN>
-where
-    C: Default,
-{
-    /// Constructs a confinement with a collection made of a single required
-    /// key-value pair.
-    pub fn with_key_value(key: C::Key, value: C::Value) -> Self {
-        let mut c = C::default();
-        c.insert(key, value);
-        Self(c)
     }
 }
 
@@ -1491,7 +1529,7 @@ impl<T, const MIN_LEN: usize, const MAX_LEN: usize> Confined<VecDeque<T>, MIN_LE
 #[cfg(feature = "std")]
 impl<T: Hash + Eq, const MAX_LEN: usize> Confined<HashSet<T>, ONE, MAX_LEN> {
     /// Constructs a confinement with a set made of a single required element.
-    pub fn with(elem: T) -> Self {
+    pub fn single(elem: T) -> Self {
         let mut c = HashSet::default();
         c.insert(elem);
         Self(c)
@@ -1559,7 +1597,7 @@ impl<T: Hash + Eq, const MIN_LEN: usize, const MAX_LEN: usize>
 
 impl<T: Ord, const MAX_LEN: usize> Confined<BTreeSet<T>, ONE, MAX_LEN> {
     /// Constructs a confinement with a set made of a single required element.
-    pub fn with(elem: T) -> Self {
+    pub fn single(elem: T) -> Self {
         let mut c = BTreeSet::default();
         c.insert(elem);
         Self(c)
@@ -1625,16 +1663,7 @@ impl<T: Ord, const MIN_LEN: usize, const MAX_LEN: usize> Confined<BTreeSet<T>, M
 #[cfg(feature = "std")]
 impl<K: Hash + Eq, V, const MAX_LEN: usize> Confined<HashMap<K, V>, ONE, MAX_LEN> {
     /// Constructs a new confined map which has exactly one key and value.
-    #[deprecated(since = "5.0.0", note = "use `with`")]
-    pub fn one(key: K, value: V) -> Self {
-        let mut c = HashMap::default();
-        c.insert(key, value);
-        Self(c)
-    }
-
-    // TODO: Replace with newer implementation taking two arguments (in 5.0)
-    #[deprecated(since = "4.7.0", note = "use `new`")]
-    pub fn with((key, value): (K, V)) -> Self {
+    pub fn single(key: K, value: V) -> Self {
         let mut c = HashMap::default();
         c.insert(key, value);
         Self(c)
@@ -1732,16 +1761,7 @@ impl<K: Hash + Eq, V, const MIN_LEN: usize, const MAX_LEN: usize>
 
 impl<K: Ord + Hash, V, const MAX_LEN: usize> Confined<BTreeMap<K, V>, ONE, MAX_LEN> {
     /// Constructs a new confined map which has exactly one key and value.
-    #[deprecated(since = "5.0.0", note = "use `with`")]
-    pub fn one(key: K, value: V) -> Self {
-        let mut c = BTreeMap::default();
-        c.insert(key, value);
-        Self(c)
-    }
-
-    // TODO: Replace with newer implementation taking two arguments (in 5.0)
-    #[deprecated(since = "4.7.0", note = "use `new`")]
-    pub fn with((key, value): (K, V)) -> Self {
+    pub fn single(key: K, value: V) -> Self {
         let mut c = BTreeMap::default();
         c.insert(key, value);
         Self(c)
@@ -2467,7 +2487,7 @@ mod test {
     #[test]
     #[should_panic(expected = "Undersize")]
     fn cant_go_below_min() {
-        let mut s = NonEmptyString::<U8>::with('a');
+        let mut s = NonEmptyString::<U8>::single('a');
         s.remove(0).unwrap();
     }
 
