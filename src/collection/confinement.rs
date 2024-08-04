@@ -1495,6 +1495,12 @@ impl<T: Hash + Eq, const MIN_LEN: usize, const MAX_LEN: usize>
     // - shrink_to_fit
     // - shrink_to
 
+    #[inline]
+    #[deprecated(since = "4.7.0", note = "use `insert`")]
+    pub fn push(&mut self, elem: T) -> Result<bool, Error> {
+        self.insert(elem)
+    }
+
     /// Attempts to add all elements from an iterator to the confined
     /// collection. Fails if the number of elements in the collection
     /// will exceed the maximum.
@@ -1544,6 +1550,12 @@ impl<T: Ord, const MIN_LEN: usize, const MAX_LEN: usize> Confined<BTreeSet<T>, M
     // - pop_last
     // - append
     // - split_off
+
+    #[inline]
+    #[deprecated(since = "4.7.0", note = "use `insert`")]
+    pub fn push(&mut self, elem: T) -> Result<bool, Error> {
+        self.insert(elem)
+    }
 
     /// Attempts to add all elements from an iterator to the confined
     /// collection. Fails if the number of elements in the collection
@@ -1607,6 +1619,12 @@ impl<K: Hash + Eq, V, const MIN_LEN: usize, const MAX_LEN: usize>
             self.insert(key, val)?;
         }
         Ok(())
+    }
+
+    #[inline]
+    #[deprecated(since = "4.7.0", note = "use `insert`")]
+    pub fn push(&mut self, (key, value): (K, V)) -> Result<Option<V>, Error> {
+        self.insert(key, value)
     }
 
     /// Gets mutable reference to an element of the collection.
@@ -1690,6 +1708,12 @@ impl<K: Ord + Hash, V, const MIN_LEN: usize, const MAX_LEN: usize>
             self.insert(key, val)?;
         }
         Ok(())
+    }
+
+    #[inline]
+    #[deprecated(since = "4.7.0", note = "use `insert`")]
+    pub fn push(&mut self, (key, value): (K, V)) -> Result<Option<V>, Error> {
+        self.insert(key, value)
     }
 
     /// Gets mutable reference to an element of
