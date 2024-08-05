@@ -35,6 +35,17 @@ jobs:
         run: cargo check --no-default-features --features=${{matrix.feature}}
       - name: Feature ${{matrix.feature}}
         run: cargo check --features=${{matrix.feature}}
+  platforms:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ ubuntu-22.04, ubuntu-latest, macos-13, macos-latest, windows-2019, windows-latest ]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Platform ${{matrix.os}}
+        run: cargo check --workspace --all-features # we skip test targets here to be sure that the main library can be built
   toolchains:
     runs-on: ubuntu-latest
     strategy:
