@@ -13,7 +13,7 @@ homepage = "https://github.com/rust-amplify"
 license = "MIT"
 readme = "README.md"
 edition = "2021"
-rust-version = "1.69.0"
+rust-version = "1.75.0" # Due to the use of `impl` in trait return types
 exclude = [
     ".github",
     "derive",

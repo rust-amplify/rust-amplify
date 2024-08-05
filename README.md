@@ -10,11 +10,11 @@
 [![unsafe forbidden](https://img.shields.io/badge/unsafe-forbidden-success.svg)](https://github.com/rust-secure-code/safety-dance/)
 [![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 
-Amplifying Rust language capabilities: multiple generic trait implementations, 
+Amplifying Rust language capabilities: multiple generic trait implementations,
 type wrappers, derive macros. Tiny library with zero non-optional dependencies.
 Able to work as `no_std`.
 
-Minimum supported rust compiler version (MSRV): 1.66.0; rust edition 2021.
+Minimum supported rust compiler version (MSRV): 1.75.0; rust edition 2021.
 
 ## Main features
 
@@ -23,10 +23,10 @@ Minimum supported rust compiler version (MSRV): 1.66.0; rust edition 2021.
 Library proposes **generic implementation strategies**, which allow multiple
 generic trait implementations.
 
-Implementing trait for a generic type ("blanket implementation") more than once 
-(applies both for local and foreign traits) - or implement foreign trait for a 
-concrete type where there is some blanket implementation in the upstream. The 
-solution is to use special pattern by @Kixunil. I use it widely and have a 
+Implementing trait for a generic type ("blanket implementation") more than once
+(applies both for local and foreign traits) - or implement foreign trait for a
+concrete type where there is some blanket implementation in the upstream. The
+solution is to use special pattern by @Kixunil. I use it widely and have a
 special helper type in [`src/strategy.rs`]()src/strategy.rs module.
 
 With that helper type you can write the following code, which will provide you
@@ -40,7 +40,9 @@ pub trait SampleTrait {
 // Define strategies, one per specific implementation that you need,
 // either blanket or concrete
 pub struct StrategyA;
+
 pub struct StrategyB;
+
 pub struct StrategyC;
 
 // Define a single marker type
@@ -50,9 +52,9 @@ pub trait Strategy {
 
 // Do a single blanket implementation using Holder and Strategy marker trait
 impl<T> SampleTrait for T
-where
-    T: Strategy + Clone,
-    amplify::Holder<T, <T as Strategy>::Strategy>: SampleTrait,
+    where
+        T: Strategy + Clone,
+        amplify::Holder<T, <T as Strategy>::Strategy>: SampleTrait,
 {
     // Do this for each of sample trait methods:
     fn sample_trait_method(&self) {
@@ -62,8 +64,8 @@ where
 
 // Do this type of implementation for each of the strategies
 impl<T> SampleTrait for amplify::Holder<T, StrategyA>
-where
-    T: Strategy,
+    where
+        T: Strategy,
 {
     fn sample_trait_method(&self) {
         /* ... write your implementation-specific code here */
@@ -71,6 +73,7 @@ where
 }
 
 # pub struct ConcreteTypeA;
+
 // Finally, apply specific implementation strategy to a concrete type
 // (or do it in a blanket generic way) as a marker:
 impl Strategy for ConcreteTypeA {
@@ -88,6 +91,7 @@ impl Strategy for ConcreteTypeA {
 - Wrapper
 
 A sample of what can be done with the macros:
+
 ```rust
 #[derive(From, Error, Display, Debug)]
 #[display(doc_comments)]
@@ -126,17 +130,17 @@ More information is given in `amplify_derive` crate [README](derive/README.md).
 ### Macros
 
 - `none!` as an alias for `Default::default()` on collection types and types
-  for which semantics makes it sensible to emphasize that the operation 
+  for which semantics makes it sensible to emphasize that the operation
   initializes empty structure.
 - `s!` for fast `&str` -> `String` conversions
 - Collection-generating macros:
-  - `map!` & `bmap!` for a rappid `HashMap` and `BTreeMap` creation
-  - `set!` & `bset!` for a rappid `HashSet` and `BTreeSet` creation
-  - `list!` for `LinkedList`
+    - `map!` & `bmap!` for a rappid `HashMap` and `BTreeMap` creation
+    - `set!` & `bset!` for a rappid `HashSet` and `BTreeSet` creation
+    - `list!` for `LinkedList`
 
 ### Wapper type
 
-Wrapper trait helps in creating wrapped rust *newtypes*, Wrapped types are used 
+Wrapper trait helps in creating wrapped rust *newtypes*, Wrapped types are used
 for allowing implemeting foreign traits to foreign types:
 <https://doc.rust-lang.org/stable/rust-by-example/generics/new_types.html>
 
@@ -144,7 +148,6 @@ Trait defines convenient methods for accessing inner data, construct
 and deconstruct newtype. It also serves as a marker trait for newtypes.
 
 The trait works well with `#[derive(Wrapper)]` from `amplify_derive` crate
-
 
 ## Build
 
@@ -154,7 +157,7 @@ cargo test
 ```
 
 As a reminder, minimum supported rust compiler version (MSRV) is 1.36.0, so it
-can be build with either nightly, dev, stable or 1.36+ version of the rust 
+can be build with either nightly, dev, stable or 1.36+ version of the rust
 compiler. Use `rustup` for getting the proper version, or add `+toolchain`
 parameter to both `cargo build` and `cargo test` commands.
 
