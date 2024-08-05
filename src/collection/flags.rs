@@ -302,12 +302,12 @@ impl FlagVec {
 
     /// Returns inner byte vector containing all flags
     pub fn to_vec(&self) -> Vec<u8> {
-        self.0.to_inner()
+        self.0.to_unconfined()
     }
 
     /// Returns inner byte vector containing all flags
     pub fn into_vec(self) -> Vec<u8> {
-        self.0.into_inner()
+        self.0.to_unconfined()
     }
 
     /// Constructs flags from the inner representation in form of [`TinyVec`].
