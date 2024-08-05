@@ -4,7 +4,7 @@ version = 3
 
 [[package]]
 name = "amplify"
-version = "4.6.1"
+version = "4.7.0"
 dependencies = [
  "amplify_apfloat",
  "amplify_derive",
@@ -23,9 +23,9 @@ dependencies = [
 
 [[package]]
 name = "amplify_apfloat"
-version = "0.3.0"
+version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "72e23f5ede99065fa6957a633498d2728d51016d61dae23b69c866112b7c61ee"
+checksum = "695e433882668b55b3d7fb0ba22bf9be66a91abe30d7ca1f1a774f8b90b4db4c"
 dependencies = [
  "amplify_num",
  "bitflags",
@@ -46,9 +46,9 @@ dependencies = [
 
 [[package]]
 name = "amplify_num"
-version = "0.5.2"
+version = "0.5.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "04c009c5c4de814911b177e2ea59e4930bb918978ed3cce4900d846a6ceb0838"
+checksum = "99bcb75a2982047f733547042fc3968c0f460dfcf7d90b90dea3b2744580e9ad"
 dependencies = [
  "serde",
  "wasm-bindgen",
