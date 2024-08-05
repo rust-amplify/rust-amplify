@@ -754,16 +754,16 @@ where
 impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C, MIN_LEN, MAX_LEN> {
     /// Constructs confinement over collection which was already size-checked.
     ///
-    /// # Safety
+    /// # Panics
     ///
     /// Panics if the collection size doesn't fit confinement type requirements.
-    pub fn from_collection_unchecked(col: C) -> Self {
+    pub fn from_checked(col: C) -> Self {
         Self::try_from(col).expect("collection size mismatch, use try_from instead")
     }
 
-    #[deprecated(since = "4.7.0", note = "use from_collection_unchecked")]
+    #[deprecated(since = "4.7.0", note = "use `from_checked`")]
     pub fn from_collection_unsafe(col: C) -> Self {
-        Self::from_collection_unchecked(col)
+        Self::from_checked(col)
     }
 
     /// Tries to construct a confinement over a collection. Fails if the number
@@ -799,15 +799,19 @@ impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C, MIN_
     }
 
     /// Construct a confinement with a collection of elements taken from an
-    /// iterator. Panics if the number of items in the collection exceeds one
+    /// iterator.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the number of items in the collection exceeds one
     /// of the confinement bounds.
-    pub fn from_iter_unchecked<I: IntoIterator<Item = C::Item>>(iter: I) -> Self {
-        Self::from_collection_unchecked(iter.into_iter().collect())
+    pub fn from_iter_checked<I: IntoIterator<Item = C::Item>>(iter: I) -> Self {
+        Self::from_checked(iter.into_iter().collect())
     }
 
-    #[deprecated(since = "4.7.0", note = "use from_iter_unchecked")]
+    #[deprecated(since = "4.7.0", note = "use `from_iter_checked`")]
     pub fn from_iter_unsafe<I: IntoIterator<Item = C::Item>>(iter: I) -> Self {
-        Self::from_iter_unchecked(iter)
+        Self::from_iter_checked(iter)
     }
 
     /// Returns inner collection type
@@ -1102,7 +1106,7 @@ impl<T, const MIN_LEN: usize, const MAX_LEN: usize> Confined<Vec<T>, MIN_LEN, MA
     /// Panics if the size of the slice doesn't match the confinement type
     /// bounds.
     #[inline]
-    pub fn from_slice_unchecked(slice: &[T]) -> Self
+    pub fn from_slice_checked(slice: &[T]) -> Self
     where
         T: Clone,
     {
@@ -1110,13 +1114,13 @@ impl<T, const MIN_LEN: usize, const MAX_LEN: usize> Confined<Vec<T>, MIN_LEN, MA
         Self(slice.to_vec())
     }
 
-    #[deprecated(since = "4.7.0", note = "use from_slice_unchecked")]
+    #[deprecated(since = "4.7.0", note = "use `from_slice_checked`")]
     #[inline]
     pub fn from_slice_unsafe(slice: &[T]) -> Self
     where
         T: Clone,
     {
-        Self::from_slice_unchecked(slice)
+        Self::from_slice_checked(slice)
     }
 
     /// Constructs confinement out of slice of items. Does allocation.
@@ -1579,6 +1583,7 @@ pub type NonEmptyOrdMap<K, V, const MAX: usize = U64> = Confined<BTreeMap<K, V>,
 
 /// Helper macro to construct confined string
 #[macro_export]
+#[deprecated(since = "4.7.0", note = "use size-specific macros")]
 macro_rules! confined_s {
     () => {
         $crate::confinement::Confined::<String>::new()
@@ -1586,6 +1591,7 @@ macro_rules! confined_s {
     ($s:literal) => {
         $crate::confinement::Confined::try_from(s!($s))
             .expect("inline confined_s literal exceeds confinement length")
+            .into()
     };
 }
 
@@ -1627,6 +1633,7 @@ macro_rules! medium_s {
 
 /// Helper macro to construct confined blob
 #[macro_export]
+#[deprecated(since = "4.7.0", note = "use size-specific macros")]
 macro_rules! confined_blob {
     () => {
         $crate::confinement::ConfinedBlob::new()
@@ -1638,6 +1645,7 @@ macro_rules! confined_blob {
     ($($x:expr),+ $(,)?) => (
         $crate::confinement::ConfinedBlob::try_from(vec![$($x,)+])
             .expect("inline confined_blob contains invalid number of items")
+            .into()
     )
 }
 
@@ -1691,6 +1699,7 @@ macro_rules! medium_blob {
 
 /// Helper macro to construct confined vector of a given type
 #[macro_export]
+#[deprecated(since = "4.7.0", note = "use size-specific macros")]
 macro_rules! confined_vec {
     () => {
         $crate::confinement::Confined::<Vec<_>>::new()
@@ -1702,6 +1711,7 @@ macro_rules! confined_vec {
     ($($x:expr),+ $(,)?) => (
         $crate::confinement::Confined::try_from(vec![$($x,)+])
             .expect("inline confined_vec literal contains invalid number of items")
+            .into()
     )
 }
 
@@ -1755,6 +1765,7 @@ macro_rules! medium_vec {
 
 /// Helper macro to construct confined [`HashSet`] of a given type
 #[macro_export]
+#[deprecated(since = "4.7.0", note = "use size-specific macros")]
 macro_rules! confined_set {
     () => {
         $crate::confinement::Confined::<HashSet<_>>::new()
@@ -1762,6 +1773,7 @@ macro_rules! confined_set {
     ($($x:expr),+ $(,)?) => (
         $crate::confinement::Confined::try_from(set![$($x,)+])
             .expect("inline confined_set literal contains invalid number of items")
+            .into()
     )
 }
 
@@ -1803,6 +1815,7 @@ macro_rules! medium_set {
 
 /// Helper macro to construct confined [`BTreeSet`] of a given type
 #[macro_export]
+#[deprecated(since = "4.7.0", note = "use size-specific macros")]
 macro_rules! confined_bset {
     () => {
         $crate::confinement::Confined::<BTreeSet<_>>::new()
@@ -1810,6 +1823,7 @@ macro_rules! confined_bset {
     ($($x:expr),+ $(,)?) => (
         $crate::confinement::Confined::try_from(bset![$($x,)+])
             .expect("inline confined_bset literal contains invalid number of items")
+            .into()
     )
 }
 
@@ -1851,6 +1865,7 @@ macro_rules! medium_bset {
 
 /// Helper macro to construct confined [`HashMap`] of a given type
 #[macro_export]
+#[deprecated(since = "4.7.0", note = "use size-specific macros")]
 macro_rules! confined_map {
     () => {
         $crate::confinement::Confined::<HashMap<_, _>>::new()
@@ -1858,6 +1873,7 @@ macro_rules! confined_map {
     ($($key:expr => $value:expr),+ $(,)?) => (
         $crate::confinement::Confined::try_from(map!{ $($key => $value),+ })
             .expect("inline confined_map literal contains invalid number of items")
+            .into()
     )
 }
 
@@ -1899,6 +1915,7 @@ macro_rules! medium_map {
 
 /// Helper macro to construct confined [`BTreeMap`] of a given type
 #[macro_export]
+#[deprecated(since = "4.7.0", note = "use size-specific macros")]
 macro_rules! confined_bmap {
     () => {
         $crate::confinement::Confined::<BTreeMap<_, _>>::new()
@@ -1906,6 +1923,7 @@ macro_rules! confined_bmap {
     ($($key:expr => $value:expr),+ $(,)?) => (
         $crate::confinement::Confined::try_from(bmap!{ $($key => $value),+ })
             .expect("inline confined_bmap literal contains invalid number of items")
+            .into()
     )
 }
 
@@ -2044,8 +2062,6 @@ mod test {
         small_bset!("a", "b", "c");
         small_map!("a" => 1, "b" => 2, "c" => 3);
         small_bmap!("a" => 1, "b" => 2, "c" => 3);
-
-        let _: TinyHashMap<_, _> = confined_map!("a" => 1, "b" => 2, "c" => 3);
     }
 
     #[test]
