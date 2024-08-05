@@ -18,7 +18,7 @@ jobs:
         with:
           components: rustfmt
       - name: Formatting
-        run: cargo fmt --all -- --check
+        run: cargo +nightly fmt --all -- --check
   clippy:
     runs-on: ubuntu-latest
     steps:
@@ -36,4 +36,4 @@ jobs:
         with:
           components: rust-docs
       - name: Formatting
-        run: cargo doc --workspace --all-features
+        run: cargo +nightly doc --workspace --all-features
