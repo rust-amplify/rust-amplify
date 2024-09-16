@@ -21,6 +21,8 @@ use std::fmt::{self, Binary, Debug, Display, Formatter, LowerHex, Octal, UpperHe
 use std::hash::{Hash, Hasher};
 use std::ops::{BitAnd, BitOr, BitXor};
 use std::str::FromStr;
+use std::vec;
+use std::vec::Vec;
 
 use crate::confinement::TinyVec;
 

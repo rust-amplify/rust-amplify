@@ -17,12 +17,22 @@
 //! Amplifying Rust language capabilities: multiple generic trait
 //! implementations, type wrappers, derive macros.
 //!
-//! Minimum supported rust compiler version (MSRV): 1.46 (stable channel)
+//! Minimum supported rust compiler version (MSRV): 1.75 (stable channel)
 
-#![cfg_attr(not(feature = "std"), no_std)]
+#![no_std]
+
+#[cfg(feature = "std")]
+extern crate std;
 
 #[cfg(feature = "alloc")]
-pub extern crate alloc;
+extern crate alloc;
+
+#[cfg(not(any(feature = "std", feature = "alloc")))]
+compile_error!("Either `std` or `alloc` feature must be enabled.");
+
+#[cfg(all(feature = "std", feature = "alloc"))]
+compile_error!("Both `std` and `alloc` features cannot be enabled at the same time.");
+
 extern crate core;
 
 #[cfg(feature = "derive")]
@@ -55,7 +65,7 @@ mod macro_default;
 #[cfg(feature = "std")]
 #[macro_use]
 mod macro_std;
-#[cfg(all(feature = "alloc", not(feature = "std")))]
+#[cfg(feature = "alloc")]
 #[macro_use]
 mod macro_alloc;
 

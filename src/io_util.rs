@@ -14,11 +14,14 @@
 // along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
+use std::boxed::Box;
 use std::cmp::Ordering;
 use std::io;
+use std::format;
 use std::fmt::{Debug, Display, Formatter, self};
 use std::error::Error as StdError;
 use std::hash::{Hash, Hasher};
+use std::string::{String, ToString};
 
 /// A simple way to count bytes written through [`io::Write`].
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Default, Debug)]

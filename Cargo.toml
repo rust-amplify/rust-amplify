@@ -28,8 +28,8 @@ libc = { version = "0.2", optional = true }
 amplify_derive = { version = "4.0.1", optional = true }
 amplify_syn = { version = "2.0.1", optional = true }
 amplify_num = { version = "0.5.3" }
-amplify_apfloat = { version = "0.3.1", optional = true }
-ascii = "1.1.0"
+amplify_apfloat = { version = "0.3.1", default-features = false, optional = true }
+ascii = { version = "1.1.0", default-features = false }
 rand = { version = "0.8.5", optional = true }
 # This strange naming is a workaround for not being able to define required features for a dependency
 # See https://github.com/rust-lang/api-guidelines/issues/180 for the explanation and references.
@@ -60,9 +60,9 @@ all = [
     "apfloat_std",
 ]
 default = ["std", "derive", "hex"]
-std = ["amplify_num/std", "alloc"]
+std = ["amplify_num/std", "ascii/std"]
 apfloat_std = ["amplify_apfloat/std"]
-alloc = ["amplify_num/alloc"]
+alloc = ["amplify_num/alloc", "ascii/alloc"]
 apfloat_alloc = ["amplify_apfloat/alloc"]
 c_raw = ["libc", "std"]
 hex = ["amplify_num/hex"]
@@ -78,3 +78,6 @@ serde = [
     "stringly_conversions/alloc",
     "stringly_conversions/serde_str_helpers",
 ]
+
+[patch.crates-io]
+amplify_derive = { git = "https://github.com/zoedberg/amplify-derive", branch = "minor_fixes" }

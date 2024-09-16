@@ -13,9 +13,10 @@
 // along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
+#[cfg(feature = "std")]
+use std::vec::Vec;
 #[cfg(all(feature = "hex", any(feature = "std", feature = "alloc")))]
 use core::fmt::{LowerHex, UpperHex};
-#[cfg(any(feature = "std", feature = "alloc"))]
 use core::fmt::{self, Display, Debug, Formatter};
 #[cfg(all(feature = "hex", any(feature = "std", feature = "alloc")))]
 use core::str::FromStr;

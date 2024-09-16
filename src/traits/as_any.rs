@@ -13,6 +13,8 @@
 // along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
+#[cfg(feature = "std")]
+use std::string::String;
 use core::any::Any;
 #[cfg(feature = "alloc")]
 use alloc::string::String;

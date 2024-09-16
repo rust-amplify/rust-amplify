@@ -22,16 +22,23 @@ use core::hash::Hash;
 use core::ops::{
     Deref, Index, IndexMut, Range, RangeFrom, RangeFull, RangeInclusive, RangeTo, RangeToInclusive,
 };
-use alloc::vec::Vec;
-use alloc::string::String;
-use alloc::borrow::ToOwned;
-use alloc::collections::{btree_map, BTreeMap, BTreeSet, VecDeque};
-use core::slice::SliceIndex;
+#[cfg(feature = "alloc")]
+use alloc::{
+    vec::Vec,
+    string::String,
+    borrow::ToOwned,
+    collections::{btree_map, BTreeMap, BTreeSet, VecDeque},
+};
 #[cfg(feature = "std")]
 use std::{
+    vec::Vec,
+    string::String,
+    borrow::ToOwned,
+    collections::{btree_map, BTreeMap, BTreeSet, VecDeque},
     io,
     collections::{hash_map, HashMap, HashSet},
 };
+use core::slice::SliceIndex;
 use amplify_num::hex;
 use amplify_num::hex::{FromHex, ToHex};
 use ascii::{AsAsciiStrError, AsciiChar, AsciiString};
