@@ -26,7 +26,9 @@ use alloc::vec::Vec;
 use alloc::string::String;
 use alloc::borrow::ToOwned;
 use alloc::collections::{btree_map, BTreeMap, BTreeSet, VecDeque};
+use alloc::collections::vec_deque::Drain;
 use core::slice::SliceIndex;
+use core::ops::RangeBounds;
 #[cfg(feature = "std")]
 use std::{
     io,
@@ -1207,7 +1209,7 @@ impl<T, const MIN_LEN: usize, const MAX_LEN: usize> Confined<VecDeque<T>, MIN_LE
 impl<T, const MIN_LEN: usize, const MAX_LEN: usize> Confined<VecDeque<T>, MIN_LEN, MAX_LEN> {
     /// Prepends an element to the deque. Errors if the new collection length
     /// will not fit the confinement requirements.
-    pub fn push_from(&mut self, elem: T) -> Result<(), Error> {
+    pub fn push_front(&mut self, elem: T) -> Result<(), Error> {
         let len = self.len();
         if len == MAX_LEN || len + 1 > MAX_LEN {
             return Err(Error::Oversize {
@@ -1217,6 +1219,11 @@ impl<T, const MIN_LEN: usize, const MAX_LEN: usize> Confined<VecDeque<T>, MIN_LE
         }
         self.0.push_front(elem);
         Ok(())
+    }
+
+    #[deprecated(since = "4.7.1", note = "use `push_front`")]
+    pub fn push_from(&mut self, elem: T) -> Result<(), Error> {
+        self.push_front(elem)
     }
 
     /// Appends an element to the deque. Errors if the new collection length
@@ -1249,6 +1256,36 @@ impl<T, const MIN_LEN: usize, const MAX_LEN: usize> Confined<VecDeque<T>, MIN_LE
             return Err(Error::OutOfBoundary { index, len });
         }
         Ok(self.0.remove(index).expect("element within the length"))
+    }
+
+    /// Removes the specified range from the deque in bulk, returning all
+    /// removed elements as an iterator. If the iterator is dropped before
+    /// being fully consumed, it drops the remaining removed elements.
+    ///
+    /// The returned iterator keeps a mutable borrow on the queue to optimize
+    /// its implementation.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the starting point is greater than the end point or if
+    /// the end point is greater than the length of the deque.
+    ///
+    /// # Leaking
+    ///
+    /// If the returned iterator goes out of scope without being dropped (due to
+    /// [`mem::forget`], for example), the deque may have lost and leaked
+    /// elements arbitrarily, including elements outside the range.
+    pub fn drain<R: RangeBounds<usize>>(&mut self, range: R) -> Drain<'_, T> {
+        self.0.drain(range)
+    }
+
+    /// Shortens the deque, keeping the first `len` elements and dropping
+    /// the rest.
+    ///
+    /// If `len` is greater or equal to the deque's current length, this has
+    /// no effect.
+    pub fn truncate(&mut self, len: usize) {
+        self.0.truncate(len)
     }
 }
 
