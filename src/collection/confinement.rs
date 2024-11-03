@@ -250,7 +250,11 @@ impl<K: Eq + Hash, V> Collection for HashMap<K, V> {
 impl<K: Eq + Hash, V> KeyedCollection for HashMap<K, V> {
     type Key = K;
     type Value = V;
-    type Entry<'a> = hash_map::Entry<'a, K, V> where K:'a, V: 'a;
+    type Entry<'a>
+        = hash_map::Entry<'a, K, V>
+    where
+        K: 'a,
+        V: 'a;
 
     fn contains_key(&self, key: &Self::Key) -> bool {
         HashMap::contains_key(self, key)
@@ -305,7 +309,11 @@ impl<K: Ord + Hash, V> Collection for BTreeMap<K, V> {
 impl<K: Ord + Hash, V> KeyedCollection for BTreeMap<K, V> {
     type Key = K;
     type Value = V;
-    type Entry<'a> = btree_map::Entry<'a, K, V> where K: 'a, V: 'a;
+    type Entry<'a>
+        = btree_map::Entry<'a, K, V>
+    where
+        K: 'a,
+        V: 'a;
 
     fn contains_key(&self, key: &Self::Key) -> bool {
         BTreeMap::contains_key(self, key)
