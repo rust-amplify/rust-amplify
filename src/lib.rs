@@ -55,7 +55,7 @@ mod macro_default;
 #[cfg(feature = "std")]
 #[macro_use]
 mod macro_std;
-#[cfg(all(feature = "alloc", not(feature = "std")))]
+#[cfg(feature = "alloc")]
 #[macro_use]
 mod macro_alloc;
 

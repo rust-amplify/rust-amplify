@@ -14,11 +14,12 @@
 // along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
-/// Macro for creating [`std::collections::BTreeMap`] in the same manner as
+/// Macro for creating [`alloc::collections::BTreeMap`] in the same manner as
 /// `vec!` is used for [`Vec`]:
 /// ```
 /// #[macro_use]
 /// extern crate amplify;
+/// extern crate alloc;
 ///
 /// # fn main() {
 /// let map = bmap! {
@@ -31,13 +32,13 @@
 macro_rules! bmap {
     { } =>  {
         {
-            ::alloc::collections::BTreeMap::new()
+            $crate::alloc::collections::BTreeMap::new()
         }
     };
 
     { owned: $($key:expr => $value:expr),+ $(,)? } => {
         {
-            let mut m = ::alloc::collections::BTreeMap::new();
+            let mut m = $crate::alloc::collections::BTreeMap::new();
             $(
                 m.insert($key.to_owned(), $value.to_owned());
             )+
@@ -47,7 +48,7 @@ macro_rules! bmap {
 
     { $($key:expr => $value:expr),+ $(,)? } => {
         {
-            let mut m = ::alloc::collections::BTreeMap::new();
+            let mut m = $crate::alloc::collections::BTreeMap::new();
             $(
                 m.insert($key, $value);
             )+
@@ -56,22 +57,24 @@ macro_rules! bmap {
     }
 }
 
-/// Macro for creating [`std::collections::BTreeSet`] in the same manner as
+/// Macro for creating [`alloc::collections::BTreeSet`] in the same manner as
 /// `vec!` is used for [`Vec`]:
 /// ```
 /// #[macro_use]
 /// extern crate amplify;
+/// extern crate alloc;
 ///
 /// # fn main() {
 /// let map = bset![5, 6, 7];
 /// # }
 /// ```
 ///
-/// NB: you can't use repeated values with [`std::collections::HashSet`], unlike
-/// to [`Vec`]'s:
+/// NB: you can't use repeated values with [`alloc::collections::HashSet`],
+/// unlike to [`Vec`]'s:
 /// ```
 /// #[macro_use]
 /// extern crate amplify;
+/// extern crate alloc;
 ///
 /// # fn main() {
 /// assert_eq!(bset![1, 2, 3, 1], bset![1, 2, 3]);
@@ -81,13 +84,13 @@ macro_rules! bmap {
 macro_rules! bset {
     { } =>  {
         {
-            ::alloc::collections::BTreeSet::new()
+            $crate::alloc::collections::BTreeSet::new()
         }
     };
 
     { owned: $($value:expr),+ $(,)? } => {
         {
-            let mut m = ::alloc::collections::BTreeSet::new();
+            let mut m = $crate::alloc::collections::BTreeSet::new();
             $(
                 m.insert($value.to_owned());
             )+
@@ -97,7 +100,7 @@ macro_rules! bset {
 
     { $($value:expr),+ $(,)? } => {
         {
-            let mut m = ::alloc::collections::BTreeSet::new();
+            let mut m = $crate::alloc::collections::BTreeSet::new();
             $(
                 m.insert($value);
             )+
@@ -106,11 +109,12 @@ macro_rules! bset {
     }
 }
 
-/// Macro for creating [`std::collections::LinkedList`] in the same manner as
+/// Macro for creating [`alloc::collections::LinkedList`] in the same manner as
 /// `vec!` is used for [`Vec`]:
 /// ```
 /// #[macro_use]
 /// extern crate amplify;
+/// extern crate alloc;
 ///
 /// # fn main() {
 /// let list = list! {
@@ -124,13 +128,13 @@ macro_rules! bset {
 macro_rules! list {
     { } =>  {
         {
-            ::alloc::collections::LinkedList::new()
+            $crate::alloc::collections::LinkedList::new()
         }
     };
 
     { owned: $($value:expr)=>+ } => {
         {
-            let mut m = ::alloc::collections::LinkedList::new();
+            let mut m = $crate::alloc::collections::LinkedList::new();
             $(
                 m.push_back($value.to_owned());
             )+
@@ -140,7 +144,7 @@ macro_rules! list {
 
     { $($value:expr)=>+ } => {
         {
-            let mut m = ::alloc::collections::LinkedList::new();
+            let mut m = $crate::alloc::collections::LinkedList::new();
             $(
                 m.push_back($value);
             )+
