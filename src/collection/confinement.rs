@@ -46,13 +46,13 @@ pub trait Collection: FromIterator<Self::Item> + Extend<Self::Item> {
     /// Item type contained within the collection.
     type Item;
 
-    /// Creates new collection with certain capacity.
+    /// Creates a new collection with certain capacity.
     fn with_capacity(capacity: usize) -> Self;
 
     /// Returns the length of a collection.
     fn len(&self) -> usize;
 
-    /// Detects whether collection is empty.
+    /// Detects whether a collection is empty.
     #[inline]
     fn is_empty(&self) -> bool {
         self.len() == 0
@@ -76,11 +76,17 @@ pub trait KeyedCollection: Collection<Item = (Self::Key, Self::Value)> {
     where
         Self: 'a;
 
-    /// Checks whether a given key is contained in the map.
+    /// Checks whether a given key is contained in the collection.
     fn contains_key(&self, key: &Self::Key) -> bool;
 
-    /// Gets mutable element of the collection.
+    /// Gets a value of the collection.
+    fn get(&self, key: &Self::Key) -> Option<&Self::Value>;
+
+    /// Gets a mutable value of the collection.
     fn get_mut(&mut self, key: &Self::Key) -> Option<&mut Self::Value>;
+
+    /// Returns iterator over keys and values.
+    fn iter(&self) -> impl Iterator<Item = (&Self::Key, &Self::Value)>;
 
     /// Returns iterator over keys and mutable values.
     fn iter_mut(&mut self) -> impl Iterator<Item = (&Self::Key, &mut Self::Value)>;
@@ -92,7 +98,7 @@ pub trait KeyedCollection: Collection<Item = (Self::Key, Self::Value)> {
     /// the key was already present in the collection.
     fn insert(&mut self, key: Self::Key, value: Self::Value) -> Option<Self::Value>;
 
-    /// Removes a value stored under a given key, returning the owned value, if
+    /// Removes a value stored under a given key, returning an owned value if
     /// it was in the collection.
     fn remove(&mut self, key: &Self::Key) -> Option<Self::Value>;
 
@@ -260,8 +266,16 @@ impl<K: Eq + Hash, V> KeyedCollection for HashMap<K, V> {
         HashMap::contains_key(self, key)
     }
 
+    fn get(&self, key: &Self::Key) -> Option<&Self::Value> {
+        HashMap::get(self, key)
+    }
+
     fn get_mut(&mut self, key: &Self::Key) -> Option<&mut Self::Value> {
         HashMap::get_mut(self, key)
+    }
+
+    fn iter(&self) -> impl Iterator<Item = (&Self::Key, &Self::Value)> {
+        HashMap::iter(self)
     }
 
     fn iter_mut(&mut self) -> impl Iterator<Item = (&Self::Key, &mut Self::Value)> {
@@ -319,8 +333,16 @@ impl<K: Ord + Hash, V> KeyedCollection for BTreeMap<K, V> {
         BTreeMap::contains_key(self, key)
     }
 
+    fn get(&self, key: &Self::Key) -> Option<&Self::Value> {
+        BTreeMap::get(self, key)
+    }
+
     fn get_mut(&mut self, key: &Self::Key) -> Option<&mut Self::Value> {
         BTreeMap::get_mut(self, key)
+    }
+
+    fn iter(&self) -> impl Iterator<Item = (&Self::Key, &Self::Value)> {
+        BTreeMap::iter(self)
     }
 
     fn iter_mut(&mut self) -> impl Iterator<Item = (&Self::Key, &mut Self::Value)> {
