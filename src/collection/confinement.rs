@@ -799,6 +799,23 @@ where
 }
 
 impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C, MIN_LEN, MAX_LEN> {
+    fn does_fit_confinement(col: &C) -> Result<(), Error> {
+        let len = col.len();
+        if len < MIN_LEN {
+            return Err(Error::Undersize {
+                len,
+                min_len: MIN_LEN,
+            });
+        }
+        if len > MAX_LEN {
+            return Err(Error::Oversize {
+                len,
+                max_len: MAX_LEN,
+            });
+        }
+        Ok(())
+    }
+
     /// Constructs confinement over collection which was already size-checked.
     ///
     /// # Panics
@@ -818,19 +835,7 @@ impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C, MIN_
     // We can't use `impl TryFrom` due to the conflict with core library blanked
     // implementation
     pub fn try_from(col: C) -> Result<Self, Error> {
-        let len = col.len();
-        if len < MIN_LEN {
-            return Err(Error::Undersize {
-                len,
-                min_len: MIN_LEN,
-            });
-        }
-        if len > MAX_LEN {
-            return Err(Error::Oversize {
-                len,
-                max_len: MAX_LEN,
-            });
-        }
+        Self::does_fit_confinement(&col)?;
         Ok(Self(col))
     }
 
@@ -928,6 +933,21 @@ impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C, MIN_
     /// Releases underlying collection from the confinement.
     pub fn release(self) -> C {
         self.0
+    }
+
+    /// Allows mutation of the confinement, checking that the mutation does not
+    /// break confinement requirements.
+    pub fn with_mut(mut self, f: impl FnOnce(&mut Self)) -> Result<Self, Error> {
+        f(&mut self);
+        Self::does_fit_confinement(&self)?;
+        Ok(self)
+    }
+
+    /// Allows mutation of the confinement, checking that the mutation does not
+    /// break confinement requirements.
+    pub fn as_mut_checked(&mut self, f: impl FnOnce(&mut Self)) {
+        f(self);
+        Self::does_fit_confinement(self).expect("confinement broken");
     }
 }
 
