@@ -14,7 +14,9 @@
 // along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
-use core::error::Error;
+// TODO: (v0.5) with MSRV bump use error in core and remove `feature="std"` gate
+//       on the module
+use std::error::Error;
 use core::convert::Infallible;
 use core::fmt::{Display, self, Formatter};
 

@@ -67,9 +67,11 @@ pub mod strategy;
 mod collection;
 pub use collection::*;
 
+#[cfg(feature = "std")]
 mod error;
 mod traits;
 
+#[cfg(feature = "std")]
 pub use error::{IntoMultiError, MultiError};
 pub use traits::*;
 
