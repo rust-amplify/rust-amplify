@@ -47,13 +47,13 @@ pub trait Collection: FromIterator<Self::Item> + Extend<Self::Item> {
     /// Item type contained within the collection.
     type Item;
 
-    /// Creates new collection with certain capacity.
+    /// Creates a new collection with certain capacity.
     fn with_capacity(capacity: usize) -> Self;
 
     /// Returns the length of a collection.
     fn len(&self) -> usize;
 
-    /// Detects whether collection is empty.
+    /// Detects whether a collection is empty.
     #[inline]
     fn is_empty(&self) -> bool {
         self.len() == 0
@@ -110,11 +110,20 @@ pub trait KeyedCollection: Collection<Item = (Self::Key, Self::Value)> {
     where
         Self: 'a;
 
-    /// Checks whether a given key is contained in the map.
+    /// Checks whether a given key is contained in the collection.
     fn contains_key(&self, key: &Self::Key) -> bool;
 
-    /// Gets mutable element of the collection.
+    /// Gets a value of the collection.
+    fn get(&self, key: &Self::Key) -> Option<&Self::Value>;
+
+    /// Gets a mutable value of the collection.
     fn get_mut(&mut self, key: &Self::Key) -> Option<&mut Self::Value>;
+
+    /// Returns iterator over keys and values.
+    fn iter(&self) -> impl Iterator<Item = (&Self::Key, &Self::Value)>;
+
+    /// Returns iterator over keys and mutable values.
+    fn iter_mut(&mut self) -> impl Iterator<Item = (&Self::Key, &mut Self::Value)>;
 
     /// Constructs iterator over mutable values.
     fn values_mut(&mut self) -> impl Iterator<Item = &mut Self::Value>;
@@ -123,13 +132,20 @@ pub trait KeyedCollection: Collection<Item = (Self::Key, Self::Value)> {
     /// the key was already present in the collection.
     fn insert(&mut self, key: Self::Key, value: Self::Value) -> Option<Self::Value>;
 
-    /// Removes a value stored under a given key, returning the owned value, if
+    /// Removes a value stored under a given key, returning an owned value if
     /// it was in the collection.
     fn remove(&mut self, key: &Self::Key) -> Option<Self::Value>;
 
     /// Gets the given key's corresponding entry in the map for in-place
     /// manipulation.
     fn entry(&mut self, key: Self::Key) -> Self::Entry<'_>;
+
+    /// Retains only the elements specified by the predicate.
+    ///
+    /// In other words, remove all pairs `(k, v)` for which `f(&k, &mut v)`
+    /// returns `false`. The elements are visited in unsorted (and
+    /// unspecified) order.
+    fn retain(&mut self, f: impl FnMut(&Self::Key, &mut Self::Value) -> bool);
 }
 
 // Impls for main collection types
@@ -358,8 +374,20 @@ impl<K: Eq + Hash, V> KeyedCollection for HashMap<K, V> {
         HashMap::contains_key(self, key)
     }
 
+    fn get(&self, key: &Self::Key) -> Option<&Self::Value> {
+        HashMap::get(self, key)
+    }
+
     fn get_mut(&mut self, key: &Self::Key) -> Option<&mut Self::Value> {
         HashMap::get_mut(self, key)
+    }
+
+    fn iter(&self) -> impl Iterator<Item = (&Self::Key, &Self::Value)> {
+        HashMap::iter(self)
+    }
+
+    fn iter_mut(&mut self) -> impl Iterator<Item = (&Self::Key, &mut Self::Value)> {
+        HashMap::iter_mut(self)
     }
 
     fn values_mut(&mut self) -> impl Iterator<Item = &mut Self::Value> {
@@ -376,6 +404,10 @@ impl<K: Eq + Hash, V> KeyedCollection for HashMap<K, V> {
 
     fn entry(&mut self, key: Self::Key) -> Self::Entry<'_> {
         HashMap::entry(self, key)
+    }
+
+    fn retain(&mut self, f: impl FnMut(&K, &mut V) -> bool) {
+        HashMap::retain(self, f)
     }
 }
 
@@ -413,8 +445,20 @@ impl<K: Ord + Hash, V> KeyedCollection for BTreeMap<K, V> {
         BTreeMap::contains_key(self, key)
     }
 
+    fn get(&self, key: &Self::Key) -> Option<&Self::Value> {
+        BTreeMap::get(self, key)
+    }
+
     fn get_mut(&mut self, key: &Self::Key) -> Option<&mut Self::Value> {
         BTreeMap::get_mut(self, key)
+    }
+
+    fn iter(&self) -> impl Iterator<Item = (&Self::Key, &Self::Value)> {
+        BTreeMap::iter(self)
+    }
+
+    fn iter_mut(&mut self) -> impl Iterator<Item = (&Self::Key, &mut Self::Value)> {
+        BTreeMap::iter_mut(self)
     }
 
     fn values_mut(&mut self) -> impl Iterator<Item = &mut Self::Value> {
@@ -431,6 +475,10 @@ impl<K: Ord + Hash, V> KeyedCollection for BTreeMap<K, V> {
 
     fn entry(&mut self, key: Self::Key) -> Self::Entry<'_> {
         BTreeMap::entry(self, key)
+    }
+
+    fn retain(&mut self, f: impl FnMut(&K, &mut V) -> bool) {
+        BTreeMap::retain(self, f)
     }
 }
 
@@ -821,6 +869,23 @@ where
 }
 
 impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C, MIN_LEN, MAX_LEN> {
+    fn does_fit_confinement(col: &C) -> Result<(), Error> {
+        let len = col.len();
+        if len < MIN_LEN {
+            return Err(Error::Undersize {
+                len,
+                min_len: MIN_LEN,
+            });
+        }
+        if len > MAX_LEN {
+            return Err(Error::Oversize {
+                len,
+                max_len: MAX_LEN,
+            });
+        }
+        Ok(())
+    }
+
     /// Constructs confinement over collection which was already size-checked.
     ///
     /// # Panics
@@ -840,19 +905,7 @@ impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C, MIN_
     // We can't use `impl TryFrom` due to the conflict with core library blanked
     // implementation
     pub fn try_from(col: C) -> Result<Self, Error> {
-        let len = col.len();
-        if len < MIN_LEN {
-            return Err(Error::Undersize {
-                len,
-                min_len: MIN_LEN,
-            });
-        }
-        if len > MAX_LEN {
-            return Err(Error::Oversize {
-                len,
-                max_len: MAX_LEN,
-            });
-        }
+        Self::does_fit_confinement(&col)?;
         Ok(Self(col))
     }
 
@@ -922,6 +975,21 @@ impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C, MIN_
     /// Releases underlying collection from the confinement.
     pub fn release(self) -> C {
         self.0
+    }
+
+    /// Allows mutation of the confinement, checking that the mutation does not
+    /// break confinement requirements.
+    pub fn with_mut(mut self, f: impl FnOnce(&mut Self)) -> Result<Self, Error> {
+        f(&mut self);
+        Self::does_fit_confinement(&self)?;
+        Ok(self)
+    }
+
+    /// Allows mutation of the confinement, checking that the mutation does not
+    /// break confinement requirements.
+    pub fn as_mut_checked(&mut self, f: impl FnOnce(&mut Self)) {
+        f(self);
+        Self::does_fit_confinement(self).expect("confinement broken");
     }
 }
 
@@ -1175,6 +1243,53 @@ impl<C: KeyedCollection, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C,
             });
         }
         Ok(self.0.entry(key))
+    }
+
+    /// Retains only the elements specified by the predicate.
+    ///
+    /// In other words, remove all pairs `(k, v)` for which `f(&k, &mut v)`
+    /// returns `false`. The elements are visited in unsorted (and
+    /// unspecified) order.
+    ///
+    /// # Errors
+    ///
+    /// Errors if the minimum confinement is not met after the retain operation.
+    pub fn try_retain(
+        &mut self,
+        f: impl FnMut(&C::Key, &mut C::Value) -> bool,
+    ) -> Result<(), Error> {
+        self.0.retain(f);
+        if self.0.len() < MIN_LEN {
+            return Err(Error::Undersize {
+                len: self.0.len(),
+                min_len: MIN_LEN,
+            });
+        }
+        Ok(())
+    }
+}
+
+impl<C: KeyedCollection, const MAX_LEN: usize> Confined<C, ZERO, MAX_LEN> {
+    /// Retains only the elements specified by the predicate.
+    ///
+    /// In other words, remove all pairs `(k, v)` for which `f(&k, &mut v)`
+    /// returns `false`. The elements are visited in unsorted (and
+    /// unspecified) order.
+    pub fn retain(&mut self, f: impl FnMut(&C::Key, &mut C::Value) -> bool) {
+        self.0.retain(f)
+    }
+}
+
+impl<C: KeyedCollection, const MAX_LEN: usize> Confined<C, ONE, MAX_LEN>
+where
+    C: Default,
+{
+    /// Constructs a confinement with a collection made of a single required
+    /// key-value pair.
+    pub fn with_key_value(key: C::Key, value: C::Value) -> Self {
+        let mut c = C::default();
+        c.insert(key, value);
+        Self(c)
     }
 }
 
