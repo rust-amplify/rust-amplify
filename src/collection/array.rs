@@ -197,7 +197,19 @@ impl<const LEN: usize, const REVERSE_STR: bool> Array<u8, LEN, REVERSE_STR> {
     ///
     /// Panics if the slice length doesn't match `LEN` constant generic.
     #[inline]
+    #[deprecated(since = "4.9.0", note = "use `from_slice_checked` instead")]
     pub fn from_slice_unsafe(slice: impl AsRef<[u8]>) -> Self {
+        Self::from_slice_checked(slice)
+    }
+
+    /// Constructs a byte array from the slice. Expects the slice length
+    /// doesn't match `LEN` constant generic.
+    ///
+    /// # Safety
+    ///
+    /// Panics if the slice length doesn't match `LEN` constant generic.
+    #[inline]
+    pub fn from_slice_checked(slice: impl AsRef<[u8]>) -> Self {
         Self::copy_from_slice(slice).expect("slice length not matching type requirements")
     }
 
@@ -733,7 +745,20 @@ pub trait ByteArray<const LEN: usize>: Sized {
     /// # Safety
     ///
     /// Panics if the slice length doesn't match `LEN` constant generic.
-    fn from_slice_unsafe(slice: impl AsRef<[u8]>) -> Self;
+    #[deprecated(since = "4.9.0", note = "use from_slice_unsafe instead")]
+    fn from_slice_unsafe(slice: impl AsRef<[u8]>) -> Self {
+        Self::from_slice_checked(slice)
+    }
+
+    /// Constructs a byte array from the slice. Expects the slice length
+    /// doesn't match `LEN` constant generic.
+    ///
+    /// # Safety
+    ///
+    /// Panics if the slice length doesn't match `LEN` constant generic.
+    fn from_slice_checked(slice: impl AsRef<[u8]>) -> Self {
+        Self::from_slice(slice).expect("slice length not matching type requirements")
+    }
 
     /// Returns a byte array representation stored in the wrapped type.
     fn to_byte_array(&self) -> [u8; LEN];
@@ -749,10 +774,6 @@ where
 
     fn from_slice(slice: impl AsRef<[u8]>) -> Result<Self, FromSliceError> {
         Array::try_from(slice.as_ref()).map(Self::from_inner)
-    }
-
-    fn from_slice_unsafe(slice: impl AsRef<[u8]>) -> Self {
-        Self::from_slice(slice).expect("slice length not matching type requirements")
     }
 
     fn to_byte_array(&self) -> [u8; LEN] {
