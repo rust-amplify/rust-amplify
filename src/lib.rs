@@ -35,6 +35,7 @@ pub use amplify_derive::{Wrapper, WrapperMut, Display, AsAny, From, Getters, Err
 extern crate serde_crate as serde;
 
 extern crate amplify_num;
+
 #[cfg(any(test, feature = "hex"))]
 pub use num::hex;
 
@@ -66,14 +67,17 @@ pub mod strategy;
 mod collection;
 pub use collection::*;
 
+mod error;
 mod traits;
+
+pub use error::{IntoMultiError, MultiError};
 pub use traits::*;
 
 pub mod num {
     //! Custom-sized numeric types
     //!
-    //! Implementation of a various integer types with custom bit dimension.
-    //! These includes:
+    //! Implementation of various integer types with custom bit dimension.
+    //! These include:
     //! * large signed and unsigned integers, named *gib int types* (256, 512,
     //!   1024-bit)
     //! * custom sub-8 bit unsigned integers, named *small int types (5-, 6-,
