@@ -18,12 +18,12 @@ mod wrapper;
 mod as_any;
 mod dumb;
 mod join_split;
-#[cfg(feature = "c_raw")]
+#[cfg(all(feature = "c_raw", not(target_arch = "wasm32")))]
 mod raw_str;
 
 pub use as_any::AsAny;
 pub use join_split::JoinSplit;
 pub use wrapper::{Wrapper, WrapperMut};
 pub use dumb::Dumb;
-#[cfg(feature = "c_raw")]
+#[cfg(all(feature = "c_raw", not(target_arch = "wasm32")))]
 pub use raw_str::{TryFromRawStr, TryAsStr, TryIntoRawStr, TryIntoString};
