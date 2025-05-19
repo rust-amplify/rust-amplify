@@ -22,17 +22,18 @@ use core::hash::Hash;
 use core::ops::{
     Deref, Index, IndexMut, Range, RangeFrom, RangeFull, RangeInclusive, RangeTo, RangeToInclusive,
 };
+use core::slice;
 use alloc::vec::Vec;
 use alloc::string::String;
 use alloc::borrow::ToOwned;
-use alloc::collections::{btree_map, BTreeMap, BTreeSet, VecDeque};
+use alloc::collections::{vec_deque, btree_map, btree_set, BTreeMap, BTreeSet, VecDeque};
 use alloc::collections::vec_deque::Drain;
 use core::slice::SliceIndex;
 use core::ops::RangeBounds;
 #[cfg(feature = "std")]
 use std::{
     io,
-    collections::{hash_map, HashMap, HashSet},
+    collections::{hash_map, hash_set, HashMap, HashSet},
 };
 use amplify_num::hex;
 use amplify_num::hex::{FromHex, ToHex};
@@ -58,11 +59,44 @@ pub trait Collection: FromIterator<Self::Item> + Extend<Self::Item> {
         self.len() == 0
     }
 
-    /// Pushes or inserts an element to the collection.
-    fn push(&mut self, elem: Self::Item);
+    /// Adds a new item to the collection. If collection allows inserting
+    /// elements at different positions, this should append item as the last
+    /// to the end of the collection.
+    fn add(&mut self, item: Self::Item);
 
     /// Removes all elements from the collection.
     fn clear(&mut self);
+}
+
+pub trait PlainCollection: Collection {
+    /// Pushes an element to the collection.
+    fn push(&mut self, elem: Self::Item);
+
+    /// Pops an element from the collection.
+    fn pop(&mut self) -> Option<Self::Item>;
+}
+
+pub trait SetCollection: Collection {
+    /// Returns `true` if the set contains a value.
+    fn contains(&self, elem: &Self::Item) -> bool;
+
+    /// Adds a value to the set.
+    ///
+    /// Returns whether the value was newly inserted. That is:
+    ///
+    /// - If the set did not previously contain this value, `true` is returned.
+    /// - If the set already contained this value, `false` is returned, and the
+    ///   set is not modified: original value is not replaced, and the value
+    ///   passed as argument is dropped.
+    fn insert(&mut self, elem: Self::Item) -> bool;
+
+    /// Removes a value from the set. Returns whether the value was
+    /// present in the set.
+    fn remove(&mut self, elem: &Self::Item) -> bool;
+
+    /// Removes and returns the value in the set, if any, that is equal to the
+    /// given one.
+    fn take(&mut self, elem: &Self::Item) -> Option<Self::Item>;
 }
 
 /// Trait implemented by key-value maps which need to support collection
@@ -127,12 +161,22 @@ impl Collection for String {
         self.len()
     }
 
-    fn push(&mut self, elem: Self::Item) {
-        self.push(elem)
+    fn add(&mut self, item: Self::Item) {
+        self.push(item)
     }
 
     fn clear(&mut self) {
         self.clear()
+    }
+}
+
+impl PlainCollection for String {
+    fn push(&mut self, elem: Self::Item) {
+        self.push(elem)
+    }
+
+    fn pop(&mut self) -> Option<Self::Item> {
+        self.pop()
     }
 }
 
@@ -147,12 +191,22 @@ impl Collection for AsciiString {
         self.len()
     }
 
-    fn push(&mut self, elem: Self::Item) {
-        self.push(elem)
+    fn add(&mut self, item: Self::Item) {
+        self.push(item)
     }
 
     fn clear(&mut self) {
         self.clear()
+    }
+}
+
+impl PlainCollection for AsciiString {
+    fn push(&mut self, elem: Self::Item) {
+        self.push(elem)
+    }
+
+    fn pop(&mut self) -> Option<Self::Item> {
+        self.pop()
     }
 }
 
@@ -167,12 +221,22 @@ impl<T> Collection for Vec<T> {
         self.len()
     }
 
-    fn push(&mut self, elem: Self::Item) {
-        self.push(elem)
+    fn add(&mut self, item: Self::Item) {
+        self.push(item)
     }
 
     fn clear(&mut self) {
         self.clear()
+    }
+}
+
+impl<T> PlainCollection for Vec<T> {
+    fn push(&mut self, elem: Self::Item) {
+        self.push(elem)
+    }
+
+    fn pop(&mut self) -> Option<Self::Item> {
+        self.pop()
     }
 }
 
@@ -187,8 +251,8 @@ impl<T> Collection for VecDeque<T> {
         self.len()
     }
 
-    fn push(&mut self, elem: Self::Item) {
-        self.push_back(elem)
+    fn add(&mut self, item: Self::Item) {
+        self.push_back(item)
     }
 
     fn clear(&mut self) {
@@ -208,12 +272,31 @@ impl<T: Eq + Hash> Collection for HashSet<T> {
         self.len()
     }
 
-    fn push(&mut self, elem: Self::Item) {
-        self.insert(elem);
+    fn add(&mut self, item: Self::Item) {
+        self.insert(item);
     }
 
     fn clear(&mut self) {
         self.clear()
+    }
+}
+
+#[cfg(feature = "std")]
+impl<T: Eq + Hash> SetCollection for HashSet<T> {
+    fn contains(&self, elem: &Self::Item) -> bool {
+        self.contains(elem)
+    }
+
+    fn insert(&mut self, elem: Self::Item) -> bool {
+        self.insert(elem)
+    }
+
+    fn remove(&mut self, elem: &Self::Item) -> bool {
+        self.remove(elem)
+    }
+
+    fn take(&mut self, elem: &Self::Item) -> Option<Self::Item> {
+        self.take(elem)
     }
 }
 
@@ -229,12 +312,30 @@ impl<T: Ord> Collection for BTreeSet<T> {
         self.len()
     }
 
-    fn push(&mut self, elem: Self::Item) {
-        self.insert(elem);
+    fn add(&mut self, item: Self::Item) {
+        self.insert(item);
     }
 
     fn clear(&mut self) {
         self.clear()
+    }
+}
+
+impl<T: Ord> SetCollection for BTreeSet<T> {
+    fn contains(&self, elem: &Self::Item) -> bool {
+        self.contains(elem)
+    }
+
+    fn insert(&mut self, elem: Self::Item) -> bool {
+        self.insert(elem)
+    }
+
+    fn remove(&mut self, elem: &Self::Item) -> bool {
+        self.remove(elem)
+    }
+
+    fn take(&mut self, elem: &Self::Item) -> Option<Self::Item> {
+        self.take(elem)
     }
 }
 
@@ -250,8 +351,8 @@ impl<K: Eq + Hash, V> Collection for HashMap<K, V> {
         self.len()
     }
 
-    fn push(&mut self, elem: Self::Item) {
-        HashMap::insert(self, elem.0, elem.1);
+    fn add(&mut self, (key, value): (K, V)) {
+        self.insert(key, value);
     }
 
     fn clear(&mut self) {
@@ -322,8 +423,8 @@ impl<K: Ord + Hash, V> Collection for BTreeMap<K, V> {
         self.len()
     }
 
-    fn push(&mut self, elem: Self::Item) {
-        BTreeMap::insert(self, elem.0, elem.1);
+    fn add(&mut self, (key, value): (K, V)) {
+        self.insert(key, value);
     }
 
     fn clear(&mut self) {
@@ -591,37 +692,6 @@ where
     }
 }
 
-impl<'c, C, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C, MIN_LEN, MAX_LEN>
-where
-    C: Collection + 'c,
-    &'c mut C: IntoIterator<Item = &'c mut <C as Collection>::Item>,
-{
-    /// Returns an iterator that allows modifying each value.
-    ///
-    /// The iterator yields all items from start to end.
-    pub fn iter_mut(&'c mut self) -> <&'c mut C as IntoIterator>::IntoIter {
-        let coll = &mut self.0;
-        coll.into_iter()
-    }
-}
-
-impl<C, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C, MIN_LEN, MAX_LEN>
-where
-    C: KeyedCollection,
-{
-    /// Returns an iterator that allows modifying each value for each key.
-    pub fn values_mut(&mut self) -> impl Iterator<Item = &mut C::Value> {
-        let coll = &mut self.0;
-        coll.values_mut()
-    }
-
-    /// Returns an iterator that allows modifying each value for each key.
-    pub fn keyed_values_mut(&mut self) -> impl Iterator<Item = (&C::Key, &mut C::Value)> {
-        let coll = &mut self.0;
-        coll.iter_mut()
-    }
-}
-
 impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Index<usize>
     for Confined<C, MIN_LEN, MAX_LEN>
 where
@@ -843,11 +913,7 @@ impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C, MIN_
     /// from an iterator. Fails if the number of items in the collection
     /// exceeds one of the confinement bounds.
     pub fn try_from_iter<I: IntoIterator<Item = C::Item>>(iter: I) -> Result<Self, Error> {
-        let mut col = C::with_capacity(MIN_LEN);
-        for item in iter {
-            col.push(item);
-        }
-        Self::try_from(col)
+        Self::try_from(iter.into_iter().collect())
     }
 
     /// Construct a confinement with a collection of elements taken from an
@@ -867,7 +933,7 @@ impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C, MIN_
     }
 
     /// Returns inner collection type
-    #[deprecated(since = "4.7.0", note = "use as_unconfined method")]
+    #[deprecated(since = "4.7.0", note = "use `as_unconfined` method")]
     pub fn as_inner(&self) -> &C {
         &self.0
     }
@@ -878,7 +944,7 @@ impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C, MIN_
     }
 
     /// Clones inner collection type and returns it
-    #[deprecated(since = "4.7.0", note = "use to_unconfined method")]
+    #[deprecated(since = "4.7.0", note = "use `to_unconfined` method")]
     pub fn to_inner(&self) -> C
     where
         C: Clone,
@@ -895,37 +961,13 @@ impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C, MIN_
     }
 
     /// Decomposes into the inner collection type
-    #[deprecated(since = "4.7.0", note = "use release method")]
+    #[deprecated(since = "4.7.0", note = "use `release` method")]
     pub fn into_inner(self) -> C {
         self.0
     }
 
-    /// Attempts to add a single element to the confined collection. Fails if
-    /// the number of elements in the collection already maximal.
-    pub fn push(&mut self, elem: C::Item) -> Result<(), Error> {
-        let len = self.len();
-        if len == MAX_LEN || len + 1 > MAX_LEN {
-            return Err(Error::Oversize {
-                len: len + 1,
-                max_len: MAX_LEN,
-            });
-        }
-        self.0.push(elem);
-        Ok(())
-    }
-
-    /// Attempts to add all elements from an iterator to the confined
-    /// collection. Fails if the number of elements in the collection
-    /// already maximal.
-    pub fn extend<T: IntoIterator<Item = C::Item>>(&mut self, iter: T) -> Result<(), Error> {
-        for elem in iter {
-            self.push(elem)?;
-        }
-        Ok(())
-    }
-
     /// Removes confinement and returns the underlying collection.
-    #[deprecated(since = "4.7.0", note = "use release method")]
+    #[deprecated(since = "4.7.0", note = "use `release` method")]
     pub fn unbox(self) -> C {
         self.0
     }
@@ -951,6 +993,13 @@ impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C, MIN_
     }
 }
 
+impl<C: Collection, const MAX_LEN: usize> Confined<C, ZERO, MAX_LEN> {
+    /// Removes all elements from the confined collection.
+    pub fn clear(&mut self) {
+        self.0.clear()
+    }
+}
+
 impl<C: Collection, const MAX_LEN: usize> Confined<C, ZERO, MAX_LEN>
 where
     C: Default,
@@ -965,10 +1014,19 @@ where
     pub fn with_capacity(capacity: usize) -> Self {
         Self(C::with_capacity(capacity))
     }
+}
 
-    /// Removes all elements from the confined collection.
-    pub fn clear(&mut self) {
-        self.0.clear()
+impl<C: Collection, const MAX_LEN: usize> Confined<C, ONE, MAX_LEN>
+where
+    C: Default,
+{
+    /// Constructs a confinement with a collection made of a single required
+    /// element.
+    #[deprecated(since = "4.7.0", note = "use `single`")]
+    pub fn with(elem: C::Item) -> Self {
+        let mut c = C::default();
+        c.add(elem);
+        Self(c)
     }
 }
 
@@ -981,23 +1039,28 @@ where
     }
 }
 
-impl<C: Collection, const MAX_LEN: usize> Confined<C, ONE, MAX_LEN>
+impl<C: PlainCollection, const MAX_LEN: usize> Confined<C, ZERO, MAX_LEN> {
+    /// Removes the last element from the collection and returns it, or [`None`]
+    /// if the collection is empty.
+    pub fn pop(&mut self) -> Option<C::Item> {
+        self.0.pop()
+    }
+}
+
+impl<C: PlainCollection, const MAX_LEN: usize> Confined<C, ONE, MAX_LEN>
 where
     C: Default,
 {
     /// Constructs a confinement with a collection made of a single required
     /// element.
-    pub fn with(elem: C::Item) -> Self {
+    pub fn single(elem: C::Item) -> Self {
         let mut c = C::default();
         c.push(elem);
         Self(c)
     }
 }
 
-impl<C: Collection, const MIN_LEN: usize> Confined<C, MIN_LEN, U8>
-where
-    C: Default,
-{
+impl<C: Collection, const MIN_LEN: usize> Confined<C, MIN_LEN, U8> {
     /// Returns number of elements in the confined collection as `u8`. The
     /// confinement guarantees that the collection length can't exceed
     /// `u8::MAX`.
@@ -1006,10 +1069,7 @@ where
     }
 }
 
-impl<C: Collection, const MIN_LEN: usize> Confined<C, MIN_LEN, U16>
-where
-    C: Default,
-{
+impl<C: Collection, const MIN_LEN: usize> Confined<C, MIN_LEN, U16> {
     /// Returns number of elements in the confined collection as `u16`. The
     /// confinement guarantees that the collection length can't exceed
     /// `u16::MAX`.
@@ -1018,10 +1078,7 @@ where
     }
 }
 
-impl<C: Collection, const MIN_LEN: usize> Confined<C, MIN_LEN, U24>
-where
-    C: Default,
-{
+impl<C: Collection, const MIN_LEN: usize> Confined<C, MIN_LEN, U24> {
     /// Returns number of elements in the confined collection as `u24`. The
     /// confinement guarantees that the collection length can't exceed
     /// `u24::MAX`.
@@ -1030,10 +1087,7 @@ where
     }
 }
 
-impl<C: Collection, const MIN_LEN: usize> Confined<C, MIN_LEN, U32>
-where
-    C: Default,
-{
+impl<C: Collection, const MIN_LEN: usize> Confined<C, MIN_LEN, U32> {
     /// Returns number of elements in the confined collection as `u32`. The
     /// confinement guarantees that the collection length can't exceed
     /// `u32::MAX`.
@@ -1042,24 +1096,139 @@ where
     }
 }
 
-impl<C: KeyedCollection, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C, MIN_LEN, MAX_LEN> {
-    /// Gets mutable reference to an element of the collection.
-    pub fn get_mut(&mut self, key: &C::Key) -> Option<&mut C::Value> {
-        self.0.get_mut(key)
+impl<C: PlainCollection, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C, MIN_LEN, MAX_LEN> {
+    /// Attempts to push a single element to the confined collection. Fails if
+    /// the number of elements in the collection already maximal.
+    pub fn push(&mut self, elem: C::Item) -> Result<(), Error> {
+        let len = self.len();
+        if len == MAX_LEN {
+            return Err(Error::Oversize {
+                len: len + 1,
+                max_len: MAX_LEN,
+            });
+        }
+        self.0.push(elem);
+        Ok(())
     }
 
-    /// Inserts a new value into the confined collection under a given key.
-    /// Fails if the collection already contains maximum number of elements
-    /// allowed by the confinement.
-    pub fn insert(&mut self, key: C::Key, value: C::Value) -> Result<Option<C::Value>, Error> {
+    /// Attempts to pop a single element from the confined collection. Fails if
+    /// the number of elements in the collection already minimal.
+    ///
+    /// For collections which can be empty please use `pop` method instead.
+    pub fn try_pop(&mut self) -> Result<Option<C::Item>, Error> {
+        if self.is_empty() {
+            return Ok(None);
+        }
         let len = self.len();
-        if len == MAX_LEN || len + 1 > MAX_LEN {
+        if len == MIN_LEN {
+            return Err(Error::Undersize {
+                len: len - 1,
+                min_len: MIN_LEN,
+            });
+        }
+        Ok(self.0.pop())
+    }
+}
+
+impl<C: SetCollection, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C, MIN_LEN, MAX_LEN> {
+    /// Returns `true` if the set contains a value.
+    pub fn contains(&self, elem: &C::Item) -> bool {
+        self.0.contains(elem)
+    }
+
+    fn insert_value(&mut self, elem: C::Item) -> Result<bool, Error> {
+        if self.contains(&elem) {
+            return Ok(false);
+        }
+        let len = self.len();
+        if len == MAX_LEN {
+            return Err(Error::Oversize {
+                len: len + 1,
+                max_len: MAX_LEN,
+            });
+        }
+        let res = self.0.insert(elem);
+        debug_assert!(res);
+        Ok(true)
+    }
+
+    fn remove_value(&mut self, elem: &C::Item) -> Result<bool, Error> {
+        if !self.0.contains(elem) {
+            return Ok(false);
+        }
+        let len = self.len();
+        if self.is_empty() || len <= MIN_LEN {
+            return Err(Error::Undersize {
+                len,
+                min_len: MIN_LEN,
+            });
+        }
+        Ok(self.0.remove(elem))
+    }
+
+    /// Adds a value to the set, replacing the existing element, if any, that is
+    /// equal to the value. Errors if the new set length will exceed the
+    /// confinement requirement. Otherwise, returns the replaced element.
+    pub fn replace(&mut self, value: C::Item) -> Result<Option<C::Item>, Error> {
+        if let Some(old) = self.0.take(&value) {
+            self.0.insert(value);
+            return Ok(Some(old));
+        }
+        self.insert_value(value)?;
+        Ok(None)
+    }
+
+    /// Removes an element from the set. Errors if the new set length will be
+    /// less than the confinement requirement. Returns the removed element
+    /// otherwise.
+    pub fn take(&mut self, elem: &C::Item) -> Result<Option<C::Item>, Error> {
+        if !self.0.contains(elem) {
+            return Ok(None);
+        }
+        let len = self.len();
+        if self.is_empty() || len <= MIN_LEN {
+            return Err(Error::Undersize {
+                len,
+                min_len: MIN_LEN,
+            });
+        }
+        Ok(self.0.take(elem))
+    }
+}
+
+impl<C: KeyedCollection, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C, MIN_LEN, MAX_LEN> {
+    /// Checks whether a given key is contained in the map.
+    pub fn contains_key(&self, key: &C::Key) -> bool {
+        self.0.contains_key(key)
+    }
+
+    fn insert_key_value(
+        &mut self,
+        key: C::Key,
+        value: C::Value,
+    ) -> Result<Option<C::Value>, Error> {
+        let len = self.len();
+        if len == MAX_LEN {
             return Err(Error::Oversize {
                 len: len + 1,
                 max_len: MAX_LEN,
             });
         }
         Ok(self.0.insert(key, value))
+    }
+
+    fn remove_key_value(&mut self, key: &C::Key) -> Result<Option<C::Value>, Error> {
+        if !self.0.contains_key(key) {
+            return Ok(None);
+        }
+        let len = self.len();
+        if self.is_empty() || len <= MIN_LEN {
+            return Err(Error::Undersize {
+                len,
+                min_len: MIN_LEN,
+            });
+        }
+        Ok(self.0.remove(key))
     }
 
     /// Gets the given key's corresponding entry in the map for in-place
@@ -1145,15 +1314,43 @@ impl<const MIN_LEN: usize, const MAX_LEN: usize> TryFrom<&str>
     }
 }
 
-impl<const MAX_LEN: usize> Confined<String, ZERO, MAX_LEN> {
-    /// Removes the last character from a string and returns it, or [`None`] if
-    /// it is empty.
-    pub fn pop(&mut self) -> Option<char> {
-        self.0.pop()
-    }
-}
-
+// TODO: Implement Pattern analogs for ConfinedString
 impl<const MIN_LEN: usize, const MAX_LEN: usize> Confined<String, MIN_LEN, MAX_LEN> {
+    // TODO: Add constructors:
+    // - from_utf8
+    // - from_utf8_lossy
+    // - from_utf16
+    // - from_utf16_lossy
+    // - from_utf8_unchecked
+
+    // TODO: Add consuming methods:
+    // - into_bytes
+    // - into_boxed_str
+    // - leak
+
+    // TODO: Add mutable methods:
+    // - retain
+    // - push_str
+    // - reserve
+    // - reserve_exact
+    // - shrink_to_fit
+    // - shrink_to
+    // - truncate
+    // - remove_matches
+    // - insert_str
+    // - split_off
+    // - drain
+    // - replace_range
+
+    /// Attempts to add all chars from an iterator to the confined string. Fails
+    /// if the length of the string/ will exceed the maximum.
+    pub fn extend<I: IntoIterator<Item = char>>(&mut self, iter: I) -> Result<(), Error> {
+        for elem in iter {
+            self.push(elem)?;
+        }
+        Ok(())
+    }
+
     /// Removes a single character from the confined string, unless the string
     /// doesn't shorten more than the confinement requirement. Errors
     /// otherwise.
@@ -1172,15 +1369,24 @@ impl<const MIN_LEN: usize, const MAX_LEN: usize> Confined<String, MIN_LEN, MAX_L
     }
 }
 
-impl<const MAX_LEN: usize> Confined<AsciiString, ZERO, MAX_LEN> {
-    /// Removes the last character from a string and returns it, or [`None`] if
-    /// it is empty.
-    pub fn pop(&mut self) -> Option<AsciiChar> {
-        self.0.pop()
-    }
-}
-
 impl<const MIN_LEN: usize, const MAX_LEN: usize> Confined<AsciiString, MIN_LEN, MAX_LEN> {
+    // TODO: Add mutable methods:
+    // - retain
+    // - push_str
+    // - reserve
+    // - reserve_exact
+    // - shrink_to_fit
+    // - truncate
+
+    /// Attempts to add all chars from an iterator to the confined string. Fails
+    /// if the length of the string will exceed the maximum.
+    pub fn extend<I: IntoIterator<Item = AsciiChar>>(&mut self, iter: I) -> Result<(), Error> {
+        for elem in iter {
+            self.push(elem)?;
+        }
+        Ok(())
+    }
+
     /// Removes a single character from the confined string, unless the string
     /// doesn't shorten more than the confinement requirement. Errors
     /// otherwise.
@@ -1200,6 +1406,43 @@ impl<const MIN_LEN: usize, const MAX_LEN: usize> Confined<AsciiString, MIN_LEN, 
 }
 
 impl<T, const MIN_LEN: usize, const MAX_LEN: usize> Confined<Vec<T>, MIN_LEN, MAX_LEN> {
+    // TODO: Add consuming methods
+    // - into_boxed_slice
+    // - leak
+
+    // TODO: Add mutable methods
+    // - retain
+    // - reserve
+    // - reserve_exact
+    // - shrink_to_fit
+    // - shrink_to
+    // - truncate
+    // - as_mut_slice
+    // - swap_remove
+    // - retain_mut
+    // - dedup
+    // - dedup_by
+    // - dedup_by_key
+    // - pop_if
+    // - append
+    // - drain
+    // - split_off
+    // - resize
+    // - resize_with
+    // - extend_with
+    // - extend_from_slice
+    // - splice
+
+    /// Attempts to add all elements from an iterator to the confined
+    /// collection. Fails if the number of elements in the collection
+    /// will exceed the maximum.
+    pub fn extend<I: IntoIterator<Item = T>>(&mut self, iter: I) -> Result<(), Error> {
+        for elem in iter {
+            self.push(elem)?;
+        }
+        Ok(())
+    }
+
     /// Constructs confinement out of slice of items. Does allocation.
     ///
     /// # Panics
@@ -1253,18 +1496,7 @@ impl<T, const MIN_LEN: usize, const MAX_LEN: usize> Confined<Vec<T>, MIN_LEN, MA
     {
         self.0.get_mut(index)
     }
-}
 
-impl<T, const MAX_LEN: usize> Confined<Vec<T>, ZERO, MAX_LEN> {
-    /// Removes the last element from a vector and returns it, or [`None`] if it
-    /// is empty.
-    #[inline]
-    pub fn pop(&mut self) -> Option<T> {
-        self.0.pop()
-    }
-}
-
-impl<T, const MIN_LEN: usize, const MAX_LEN: usize> Confined<Vec<T>, MIN_LEN, MAX_LEN> {
     /// Removes an element from the vector at a given index. Errors if the index
     /// exceeds the number of elements in the vector, of if the new vector
     /// length will be less than the confinement requirement. Returns the
@@ -1283,15 +1515,69 @@ impl<T, const MIN_LEN: usize, const MAX_LEN: usize> Confined<Vec<T>, MIN_LEN, MA
         Ok(self.0.remove(index))
     }
 
-    /// Returns an iterator over the slice.
+    /// Returns an iterator over the vector values.
     ///
     /// The iterator yields all items from start to end.
-    pub fn iter(&self) -> core::slice::Iter<T> {
+    pub fn iter(&self) -> slice::Iter<T> {
         self.0.iter()
+    }
+
+    /// Returns an iterator that allows modifying each value.
+    ///
+    /// The iterator yields all items from start to end.
+    pub fn iter_mut(&mut self) -> slice::IterMut<T> {
+        self.0.iter_mut()
     }
 }
 
 impl<T, const MIN_LEN: usize, const MAX_LEN: usize> Confined<VecDeque<T>, MIN_LEN, MAX_LEN> {
+    // TODO: Add mutable methods
+    // - retain
+    // - swap
+    // - reserve
+    // - resize
+    // - reserve_exact
+    // - shrink_to_fit
+    // - shrink_to
+    // - truncate
+    // - range_mut
+    // - drain
+    // - front_mut
+    // - back_mut
+    // - swap_remove_front
+    // - swap_remove_back
+    // - split_off
+    // - append
+    // - retain_mut
+    // - resize_with
+    // - make_contiguous
+    // - rotate_left
+    // - rotate_right
+
+    /// Attempts to add all elements from an iterator to the end of the confined
+    /// vecdeque. Fails if the number of elements in the collection will exceed
+    /// the maximum.
+    pub fn extend<I: IntoIterator<Item = T>>(&mut self, iter: I) -> Result<(), Error> {
+        for elem in iter {
+            self.push_back(elem)?;
+        }
+        Ok(())
+    }
+
+    /// Returns an iterator over the vecdeque values.
+    ///
+    /// The iterator yields all items from start to end.
+    pub fn iter(&self) -> vec_deque::Iter<T> {
+        self.0.iter()
+    }
+
+    /// Returns an iterator that allows modifying each value.
+    ///
+    /// The iterator yields all items from start to end.
+    pub fn iter_mut(&mut self) -> vec_deque::IterMut<T> {
+        self.0.iter_mut()
+    }
+
     /// Removes the first element and returns it, or `None` if the deque is
     /// empty.
     pub fn pop_front(&mut self) -> Option<T> {
@@ -1303,14 +1589,12 @@ impl<T, const MIN_LEN: usize, const MAX_LEN: usize> Confined<VecDeque<T>, MIN_LE
     pub fn pop_back(&mut self) -> Option<T> {
         self.0.pop_back()
     }
-}
 
-impl<T, const MIN_LEN: usize, const MAX_LEN: usize> Confined<VecDeque<T>, MIN_LEN, MAX_LEN> {
     /// Prepends an element to the deque. Errors if the new collection length
     /// will not fit the confinement requirements.
     pub fn push_front(&mut self, elem: T) -> Result<(), Error> {
         let len = self.len();
-        if len == MAX_LEN || len + 1 > MAX_LEN {
+        if len == MAX_LEN {
             return Err(Error::Oversize {
                 len: len + 1,
                 max_len: MAX_LEN,
@@ -1320,16 +1604,11 @@ impl<T, const MIN_LEN: usize, const MAX_LEN: usize> Confined<VecDeque<T>, MIN_LE
         Ok(())
     }
 
-    #[deprecated(since = "4.7.1", note = "use `push_front`")]
-    pub fn push_from(&mut self, elem: T) -> Result<(), Error> {
-        self.push_front(elem)
-    }
-
     /// Appends an element to the deque. Errors if the new collection length
     /// will not fit the confinement requirements.
     pub fn push_back(&mut self, elem: T) -> Result<(), Error> {
         let len = self.len();
-        if len == MAX_LEN || len + 1 > MAX_LEN {
+        if len == MAX_LEN {
             return Err(Error::Oversize {
                 len: len + 1,
                 max_len: MAX_LEN,
@@ -1389,81 +1668,148 @@ impl<T, const MIN_LEN: usize, const MAX_LEN: usize> Confined<VecDeque<T>, MIN_LE
 }
 
 #[cfg(feature = "std")]
+impl<T: Hash + Eq, const MAX_LEN: usize> Confined<HashSet<T>, ONE, MAX_LEN> {
+    /// Constructs a confinement with a set made of a single required element.
+    pub fn single(elem: T) -> Self {
+        let mut c = HashSet::default();
+        c.insert(elem);
+        Self(c)
+    }
+}
+
+#[cfg(feature = "std")]
 impl<T: Hash + Eq, const MIN_LEN: usize, const MAX_LEN: usize>
     Confined<HashSet<T>, MIN_LEN, MAX_LEN>
 {
-    /// Removes an element from the set. Errors if the index exceeds the number
-    /// of elements in the set, of if the new collection length will be less
-    /// than the confinement requirement. Returns if the element was present
-    /// in the set.
-    pub fn remove(&mut self, elem: &T) -> Result<bool, Error> {
-        if !self.0.contains(elem) {
-            return Ok(false);
+    // TODO: Add HashSet mutable methods:
+    // - retain
+    // - drain
+    // - reserve
+    // - shrink_to_fit
+    // - shrink_to
+
+    #[inline]
+    #[deprecated(since = "4.7.0", note = "use `insert`")]
+    pub fn push(&mut self, elem: T) -> Result<(), Error> {
+        self.insert(elem)?;
+        Ok(())
+    }
+
+    /// Attempts to add all elements from an iterator to the confined
+    /// collection. Fails if the number of elements in the collection
+    /// will exceed the maximum.
+    pub fn extend<I: IntoIterator<Item = T>>(&mut self, iter: I) -> Result<(), Error> {
+        for elem in iter {
+            self.insert(elem)?;
         }
-        let len = self.len();
-        if self.is_empty() || len <= MIN_LEN {
-            return Err(Error::Undersize {
-                len,
-                min_len: MIN_LEN,
-            });
-        }
-        Ok(self.0.remove(elem))
+        Ok(())
+    }
+
+    /// Returns an iterator over the set values.
+    ///
+    /// The iterator yields all items from start to end.
+    pub fn iter(&self) -> hash_set::Iter<T> {
+        self.0.iter()
+    }
+
+    /// Adds a value to the set.
+    ///
+    /// Returns whether the value was newly inserted. That is:
+    /// - If the set did not previously contain this value, true is returned.
+    /// - If the set already contained this value, false is returned, and the
+    ///   set is not modified: original value is not replaced, and the value
+    ///   passed as argument is dropped.
+    ///
+    /// Errors if the set didn't contain the element before and already reached
+    /// maximum size of the confinement.
+    #[inline]
+    pub fn insert(&mut self, elem: T) -> Result<bool, Error> {
+        self.insert_value(elem)
     }
 
     /// Removes an element from the set. Errors if the index exceeds the number
     /// of elements in the set, of if the new collection length will be less
-    /// than the confinement requirement. Returns the removed element
-    /// otherwise.
-    pub fn take(&mut self, elem: &T) -> Result<Option<T>, Error> {
-        if !self.0.contains(elem) {
-            return Ok(None);
-        }
-        let len = self.len();
-        if self.is_empty() || len <= MIN_LEN {
-            return Err(Error::Undersize {
-                len,
-                min_len: MIN_LEN,
-            });
-        }
-        Ok(self.0.take(elem))
+    /// than the confinement requirement. Returns if the element was present
+    /// in the set.
+    #[inline]
+    pub fn remove(&mut self, elem: &T) -> Result<bool, Error> {
+        self.remove_value(elem)
+    }
+}
+
+impl<T: Ord, const MAX_LEN: usize> Confined<BTreeSet<T>, ONE, MAX_LEN> {
+    /// Constructs a confinement with a set made of a single required element.
+    pub fn single(elem: T) -> Self {
+        let mut c = BTreeSet::default();
+        c.insert(elem);
+        Self(c)
     }
 }
 
 impl<T: Ord, const MIN_LEN: usize, const MAX_LEN: usize> Confined<BTreeSet<T>, MIN_LEN, MAX_LEN> {
-    /// Removes an element from the set. Errors if the index exceeds the number
-    /// of elements in the set, of if the new collection length will be less
-    /// than the confinement requirement. Returns if the element was present
-    /// in the set.
-    pub fn remove(&mut self, elem: &T) -> Result<bool, Error> {
-        if !self.0.contains(elem) {
-            return Ok(false);
+    // TODO: Add BTreeSet mutable methods:
+    // - retain
+    // - pop_first
+    // - pop_last
+    // - append
+    // - split_off
+
+    #[inline]
+    #[deprecated(since = "4.7.0", note = "use `insert`")]
+    pub fn push(&mut self, elem: T) -> Result<(), Error> {
+        self.insert(elem)?;
+        Ok(())
+    }
+
+    /// Attempts to add all elements from an iterator to the confined
+    /// collection. Fails if the number of elements in the collection
+    /// will exceed the maximum.
+    pub fn extend<I: IntoIterator<Item = T>>(&mut self, iter: I) -> Result<(), Error> {
+        for elem in iter {
+            self.insert(elem)?;
         }
-        let len = self.len();
-        if self.is_empty() || len <= MIN_LEN {
-            return Err(Error::Undersize {
-                len,
-                min_len: MIN_LEN,
-            });
-        }
-        Ok(self.0.remove(elem))
+        Ok(())
+    }
+
+    /// Returns an iterator overset values.
+    ///
+    /// The iterator yields all items from start to end.
+    pub fn iter(&self) -> btree_set::Iter<T> {
+        self.0.iter()
+    }
+
+    /// Adds a value to the set.
+    ///
+    /// Returns whether the value was newly inserted. That is:
+    /// - If the set did not previously contain this value, true is returned.
+    /// - If the set already contained this value, false is returned, and the
+    ///   set is not modified: original value is not replaced, and the value
+    ///   passed as argument is dropped.
+    ///
+    /// Errors if the set didn't contain the element before and already reached
+    /// maximum size of the confinement.
+    #[inline]
+    pub fn insert(&mut self, elem: T) -> Result<bool, Error> {
+        self.insert_value(elem)
     }
 
     /// Removes an element from the set. Errors if the index exceeds the number
     /// of elements in the set, of if the new collection length will be less
-    /// than the confinement requirement. Returns the removed element
-    /// otherwise.
-    pub fn take(&mut self, elem: &T) -> Result<Option<T>, Error> {
-        if !self.0.contains(elem) {
-            return Ok(None);
-        }
-        let len = self.len();
-        if self.is_empty() || len - 1 <= MIN_LEN {
-            return Err(Error::Undersize {
-                len,
-                min_len: MIN_LEN,
-            });
-        }
-        Ok(self.0.take(elem))
+    /// than the confinement requirement. Returns if the element was present
+    /// in the set.
+    #[inline]
+    pub fn remove(&mut self, elem: &T) -> Result<bool, Error> {
+        self.remove_value(elem)
+    }
+}
+
+#[cfg(feature = "std")]
+impl<K: Hash + Eq, V, const MAX_LEN: usize> Confined<HashMap<K, V>, ONE, MAX_LEN> {
+    /// Constructs a new confined map which has exactly one key and value.
+    pub fn single(key: K, value: V) -> Self {
+        let mut c = HashMap::default();
+        c.insert(key, value);
+        Self(c)
     }
 }
 
@@ -1471,22 +1817,75 @@ impl<T: Ord, const MIN_LEN: usize, const MAX_LEN: usize> Confined<BTreeSet<T>, M
 impl<K: Hash + Eq, V, const MIN_LEN: usize, const MAX_LEN: usize>
     Confined<HashMap<K, V>, MIN_LEN, MAX_LEN>
 {
+    // TODO: Add HashMap mutable methods:
+    // - retain
+    // - drain
+    // - reserve
+    // - shrink_to_fit
+    // - shrink_to
+    // - remove_entry
+
+    /// Attempts to add all keys nad values from an iterator to the confined
+    /// map. Fails if the number of elements in the collection will exceed the
+    /// maximum.
+    pub fn extend<I: IntoIterator<Item = (K, V)>>(&mut self, iter: I) -> Result<(), Error> {
+        for (key, val) in iter {
+            self.insert(key, val)?;
+        }
+        Ok(())
+    }
+
+    #[inline]
+    #[deprecated(since = "4.7.0", note = "use `insert`")]
+    pub fn push(&mut self, (key, value): (K, V)) -> Result<(), Error> {
+        self.insert(key, value)?;
+        Ok(())
+    }
+
+    /// Gets mutable reference to an element of the collection.
+    pub fn get_mut(&mut self, key: &K) -> Option<&mut V> {
+        self.0.get_mut(key)
+    }
+
+    /// Returns an iterator that allows modifying each value for each key.
+    pub fn values_mut(&mut self) -> hash_map::ValuesMut<K, V> {
+        self.0.values_mut()
+    }
+
+    /// Returns an iterator over map keys and values.
+    ///
+    /// The iterator yields all items from start to end.
+    pub fn iter(&self) -> hash_map::Iter<K, V> {
+        self.0.iter()
+    }
+
+    /// Returns an iterator that allows modifying each value for each key.
+    pub fn iter_mut(&mut self) -> hash_map::IterMut<K, V> {
+        self.0.iter_mut()
+    }
+
+    #[inline]
+    #[deprecated(
+        since = "4.7.0",
+        note = "use `iter_mut` or `for .. in &mut ..` construction"
+    )]
+    pub fn keyed_values_mut(&mut self) -> impl Iterator<Item = (&K, &mut V)> {
+        self.iter_mut()
+    }
+
+    /// Inserts a new value into the confined collection under a given key.
+    /// Fails if the collection already contains maximum number of elements
+    /// allowed by the confinement.
+    pub fn insert(&mut self, key: K, value: V) -> Result<Option<V>, Error> {
+        self.insert_key_value(key, value)
+    }
+
     /// Removes an element from the map. Errors if the index exceeds the number
     /// of elements in the map, of if the new collection length will be less
     /// than the confinement requirement. Returns the removed value
     /// otherwise.
     pub fn remove(&mut self, key: &K) -> Result<Option<V>, Error> {
-        if !self.0.contains_key(key) {
-            return Ok(None);
-        }
-        let len = self.len();
-        if self.is_empty() || len <= MIN_LEN {
-            return Err(Error::Undersize {
-                len,
-                min_len: MIN_LEN,
-            });
-        }
-        Ok(self.0.remove(key))
+        self.remove_key_value(key)
     }
 
     /// Creates a consuming iterator visiting all the keys in arbitrary order.
@@ -1504,25 +1903,89 @@ impl<K: Hash + Eq, V, const MIN_LEN: usize, const MAX_LEN: usize>
     }
 }
 
+impl<K: Ord + Hash, V, const MAX_LEN: usize> Confined<BTreeMap<K, V>, ONE, MAX_LEN> {
+    /// Constructs a new confined map which has exactly one key and value.
+    pub fn single(key: K, value: V) -> Self {
+        let mut c = BTreeMap::default();
+        c.insert(key, value);
+        Self(c)
+    }
+}
+
 impl<K: Ord + Hash, V, const MIN_LEN: usize, const MAX_LEN: usize>
     Confined<BTreeMap<K, V>, MIN_LEN, MAX_LEN>
 {
+    // TODO: Add BTreeMap mutable methods:
+    // - retain
+    // - pop_first
+    // - pop_last
+    // - remove_entry
+    // - append
+    // - range_mut
+    // - split_off
+
+    /// Attempts to add all keys nad values from an iterator to the confined
+    /// map. Fails if the number of elements in the collection will exceed the
+    /// maximum.
+    pub fn extend<I: IntoIterator<Item = (K, V)>>(&mut self, iter: I) -> Result<(), Error> {
+        for (key, val) in iter {
+            self.insert(key, val)?;
+        }
+        Ok(())
+    }
+
+    #[inline]
+    #[deprecated(since = "4.7.0", note = "use `insert`")]
+    pub fn push(&mut self, (key, value): (K, V)) -> Result<(), Error> {
+        self.insert(key, value)?;
+        Ok(())
+    }
+
+    /// Gets mutable reference to an element of
+    /// the collection.
+    pub fn get_mut(&mut self, key: &K) -> Option<&mut V> {
+        self.0.get_mut(key)
+    }
+
+    /// Returns an iterator that allows modifying each value for each key.
+    pub fn values_mut(&mut self) -> btree_map::ValuesMut<K, V> {
+        self.0.values_mut()
+    }
+
+    /// Returns an iterator over the map keys and values.
+    ///
+    /// The iterator yields all items from start to end.
+    pub fn iter(&self) -> btree_map::Iter<K, V> {
+        self.0.iter()
+    }
+
+    /// Returns an iterator that allows modifying each value for each key.
+    pub fn iter_mut(&mut self) -> btree_map::IterMut<K, V> {
+        self.0.iter_mut()
+    }
+
+    #[inline]
+    #[deprecated(
+        since = "4.7.0",
+        note = "use `iter_mut` or `for .. in &mut ..` construction"
+    )]
+    pub fn keyed_values_mut(&mut self) -> impl Iterator<Item = (&K, &mut V)> {
+        self.iter_mut()
+    }
+
+    /// Inserts a new value into the confined collection under a given key.
+    /// Fails if the collection already contains maximum number of elements
+    /// allowed by the confinement.
+    pub fn insert(&mut self, key: K, value: V) -> Result<Option<V>, Error> {
+        self.insert_key_value(key, value)
+    }
+
     /// Removes an element from the map. Errors if the index exceeds the number
     /// of elements in the map, of if the new collection length will be less
     /// than the confinement requirement. Returns the removed value
     /// otherwise.
     pub fn remove(&mut self, key: &K) -> Result<Option<V>, Error> {
-        if !self.0.contains_key(key) {
-            return Ok(None);
-        }
-        let len = self.len();
-        if self.is_empty() || len <= MIN_LEN {
-            return Err(Error::Undersize {
-                len,
-                min_len: MIN_LEN,
-            });
-        }
-        Ok(self.0.remove(key))
+        self.remove_key_value(key)
     }
 
     /// Creates a consuming iterator visiting all the keys in arbitrary order.
@@ -1537,6 +2000,18 @@ impl<K: Ord + Hash, V, const MIN_LEN: usize, const MAX_LEN: usize>
     /// The iterator element type is `V`.
     pub fn into_values(self) -> btree_map::IntoValues<K, V> {
         self.0.into_values()
+    }
+
+    /// Returns the first entry in the map for in-place manipulation.
+    /// The key of this entry is the minimum key in the map.
+    pub fn first_entry(&mut self) -> Option<btree_map::OccupiedEntry<'_, K, V>> {
+        self.0.first_entry()
+    }
+
+    /// Returns the last entry in the map for in-place manipulation.
+    /// The key of this entry is the maximum key in the map.
+    pub fn last_entry(&mut self) -> Option<btree_map::OccupiedEntry<'_, K, V>> {
+        self.0.last_entry()
     }
 }
 
@@ -2128,9 +2603,9 @@ mod test {
         assert!(bmap.is_empty());
         for index in 1..=255 {
             vec.push(5u8).unwrap();
-            deque.push(5u8).unwrap();
-            set.push(index).unwrap();
-            bset.push(5u8).unwrap();
+            deque.push_front(5u8).unwrap();
+            set.insert(index).unwrap();
+            bset.insert(5u8).unwrap();
             map.insert(5u8, 'a').unwrap();
             bmap.insert(index, 'a').unwrap();
         }
@@ -2157,7 +2632,7 @@ mod test {
     #[test]
     #[should_panic(expected = "Undersize")]
     fn cant_go_below_min() {
-        let mut s = NonEmptyString::<U8>::with('a');
+        let mut s = NonEmptyString::<U8>::single('a');
         s.remove(0).unwrap();
     }
 
@@ -2207,7 +2682,7 @@ mod test {
             *item = "two";
         }
         assert_eq!(coll.get(&1), Some(&"two"));
-        for (_index, item) in coll.keyed_values_mut() {
+        for (_index, item) in coll.iter_mut() {
             *item = "three";
         }
         assert_eq!(coll.get(&1), Some(&"three"));
