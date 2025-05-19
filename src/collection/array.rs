@@ -172,7 +172,7 @@ impl<const LEN: usize, const REVERSE_STR: bool> Array<u8, LEN, REVERSE_STR> {
     pub fn random() -> Self {
         use rand::RngCore;
         let mut entropy = [0u8; LEN];
-        rand::thread_rng().fill_bytes(&mut entropy);
+        rand::rng().fill_bytes(&mut entropy);
         Array::from_inner(entropy)
     }
 

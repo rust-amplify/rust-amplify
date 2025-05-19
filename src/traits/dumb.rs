@@ -29,7 +29,7 @@ impl Dumb for u8 {
     #[cfg(feature = "rand")]
     fn dumb() -> Self {
         use rand::RngCore;
-        rand::thread_rng().next_u32().to_be_bytes()[0]
+        rand::rng().next_u32().to_be_bytes()[0]
     }
 
     #[cfg(not(feature = "rand"))]
