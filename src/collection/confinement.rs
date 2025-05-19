@@ -105,6 +105,13 @@ pub trait KeyedCollection: Collection<Item = (Self::Key, Self::Value)> {
     /// Gets the given key's corresponding entry in the map for in-place
     /// manipulation.
     fn entry(&mut self, key: Self::Key) -> Self::Entry<'_>;
+
+    /// Retains only the elements specified by the predicate.
+    ///
+    /// In other words, remove all pairs `(k, v)` for which `f(&k, &mut v)`
+    /// returns `false`. The elements are visited in unsorted (and
+    /// unspecified) order.
+    fn retain(&mut self, f: impl FnMut(&Self::Key, &mut Self::Value) -> bool);
 }
 
 // Impls for main collection types
@@ -297,6 +304,10 @@ impl<K: Eq + Hash, V> KeyedCollection for HashMap<K, V> {
     fn entry(&mut self, key: Self::Key) -> Self::Entry<'_> {
         HashMap::entry(self, key)
     }
+
+    fn retain(&mut self, f: impl FnMut(&K, &mut V) -> bool) {
+        HashMap::retain(self, f)
+    }
 }
 
 impl<K: Ord + Hash, V> Collection for BTreeMap<K, V> {
@@ -363,6 +374,10 @@ impl<K: Ord + Hash, V> KeyedCollection for BTreeMap<K, V> {
 
     fn entry(&mut self, key: Self::Key) -> Self::Entry<'_> {
         BTreeMap::entry(self, key)
+    }
+
+    fn retain(&mut self, f: impl FnMut(&K, &mut V) -> bool) {
+        BTreeMap::retain(self, f)
     }
 }
 
@@ -1039,6 +1054,40 @@ impl<C: KeyedCollection, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C,
             });
         }
         Ok(self.0.entry(key))
+    }
+
+    /// Retains only the elements specified by the predicate.
+    ///
+    /// In other words, remove all pairs `(k, v)` for which `f(&k, &mut v)`
+    /// returns `false`. The elements are visited in unsorted (and
+    /// unspecified) order.
+    ///
+    /// # Errors
+    ///
+    /// Errors if the minimum confinement is not met after the retain operation.
+    pub fn try_retain(
+        &mut self,
+        f: impl FnMut(&C::Key, &mut C::Value) -> bool,
+    ) -> Result<(), Error> {
+        self.0.retain(f);
+        if self.0.len() < MIN_LEN {
+            return Err(Error::Undersize {
+                len: self.0.len(),
+                min_len: MIN_LEN,
+            });
+        }
+        Ok(())
+    }
+}
+
+impl<C: KeyedCollection, const MAX_LEN: usize> Confined<C, ZERO, MAX_LEN> {
+    /// Retains only the elements specified by the predicate.
+    ///
+    /// In other words, remove all pairs `(k, v)` for which `f(&k, &mut v)`
+    /// returns `false`. The elements are visited in unsorted (and
+    /// unspecified) order.
+    pub fn retain(&mut self, f: impl FnMut(&C::Key, &mut C::Value) -> bool) {
+        self.0.retain(f)
     }
 }
 
