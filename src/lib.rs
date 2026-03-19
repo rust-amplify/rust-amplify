@@ -68,6 +68,9 @@ mod collection;
 pub use collection::*;
 
 #[cfg(feature = "std")]
+mod cursor_deque;
+pub use cursor_deque::CursorDeque;
+#[cfg(feature = "std")]
 mod error;
 mod traits;
 
