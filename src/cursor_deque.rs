@@ -1,8 +1,8 @@
 // Rust language amplification library providing multiple generic trait
 // implementations, type wrappers, derive macros and other language enhancements
 //
-// Written in 2019-2026 by
-//     Dr. Maxim Orlovsky <orlovsky@ubideco.org>
+// Written in 2026 by Jinui agentic AI, supervised by
+// Dr. Maxim Orlovsky <orlovsky@ubideco.org>
 //
 // To the extent possible under law, the author(s) have dedicated all
 // copyright and related and neighboring rights to this software to
@@ -18,11 +18,13 @@ use core::fmt::{self, Debug, Formatter};
 use std::collections::VecDeque;
 use std::io::{self, BufRead, Read, Seek, SeekFrom, Write};
 
+use crate::traits::{AsDequeMut, AsDequeRef};
+
 /// A `CursorDeque` wraps an in-memory buffer and provides it with a
 /// [`Seek`] implementation.
 ///
 /// `CursorDeque`s are used with in-memory buffers, anything that implements
-/// `AsRef<VecDeque<u8>>`, to allow them to implement [`Read`] and/or [`Write`],
+/// [`AsDequeRef<u8>`], to allow them to implement [`Read`] and/or [`Write`],
 /// allowing these buffers to be used anywhere you might use a reader or writer
 /// that would otherwise need a standard file or network socket.
 ///
@@ -151,65 +153,21 @@ impl<T: Debug> Debug for CursorDeque<T> {
     }
 }
 
-impl Seek for CursorDeque<VecDeque<u8>> {
+impl<T: AsDequeRef<u8>> Seek for CursorDeque<T> {
     fn seek(&mut self, style: SeekFrom) -> io::Result<u64> {
-        cursor_seek(&mut self.pos, self.inner.len() as u64, style)
+        cursor_seek(&mut self.pos, self.inner.as_deque_ref().len() as u64, style)
     }
 }
 
-impl Read for CursorDeque<VecDeque<u8>> {
+impl<T: AsDequeRef<u8>> Read for CursorDeque<T> {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
-        cursor_read(&mut self.pos, &self.inner, buf)
+        cursor_read(&mut self.pos, self.inner.as_deque_ref(), buf)
     }
 }
 
-impl BufRead for CursorDeque<VecDeque<u8>> {
+impl<T: AsDequeRef<u8>> BufRead for CursorDeque<T> {
     fn fill_buf(&mut self) -> io::Result<&[u8]> {
-        cursor_fill_buf(self.pos, &self.inner)
-    }
-
-    fn consume(&mut self, amt: usize) {
-        self.pos += amt as u64;
-    }
-}
-
-impl Seek for CursorDeque<&VecDeque<u8>> {
-    fn seek(&mut self, style: SeekFrom) -> io::Result<u64> {
-        cursor_seek(&mut self.pos, self.inner.len() as u64, style)
-    }
-}
-
-impl Read for CursorDeque<&VecDeque<u8>> {
-    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
-        cursor_read(&mut self.pos, self.inner, buf)
-    }
-}
-
-impl BufRead for CursorDeque<&VecDeque<u8>> {
-    fn fill_buf(&mut self) -> io::Result<&[u8]> {
-        cursor_fill_buf(self.pos, self.inner)
-    }
-
-    fn consume(&mut self, amt: usize) {
-        self.pos += amt as u64;
-    }
-}
-
-impl Seek for CursorDeque<&mut VecDeque<u8>> {
-    fn seek(&mut self, style: SeekFrom) -> io::Result<u64> {
-        cursor_seek(&mut self.pos, self.inner.len() as u64, style)
-    }
-}
-
-impl Read for CursorDeque<&mut VecDeque<u8>> {
-    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
-        cursor_read(&mut self.pos, self.inner, buf)
-    }
-}
-
-impl BufRead for CursorDeque<&mut VecDeque<u8>> {
-    fn fill_buf(&mut self) -> io::Result<&[u8]> {
-        cursor_fill_buf(self.pos, self.inner)
+        cursor_fill_buf(self.pos, self.inner.as_deque_ref())
     }
 
     fn consume(&mut self, amt: usize) {
@@ -240,29 +198,9 @@ fn vecdeque_write(pos: &mut u64, inner: &mut VecDeque<u8>, buf: &[u8]) -> io::Re
     Ok(buf.len())
 }
 
-impl Write for CursorDeque<&mut VecDeque<u8>> {
+impl<T: AsDequeMut<u8>> Write for CursorDeque<T> {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        vecdeque_write(&mut self.pos, self.inner, buf)
-    }
-
-    fn flush(&mut self) -> io::Result<()> {
-        Ok(())
-    }
-}
-
-impl Write for CursorDeque<VecDeque<u8>> {
-    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        vecdeque_write(&mut self.pos, &mut self.inner, buf)
-    }
-
-    fn flush(&mut self) -> io::Result<()> {
-        Ok(())
-    }
-}
-
-impl Write for CursorDeque<Box<VecDeque<u8>>> {
-    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        vecdeque_write(&mut self.pos, &mut self.inner, buf)
+        vecdeque_write(&mut self.pos, self.inner.as_deque_mut(), buf)
     }
 
     fn flush(&mut self) -> io::Result<()> {
@@ -273,6 +211,113 @@ impl Write for CursorDeque<Box<VecDeque<u8>>> {
 #[cfg(test)]
 mod test {
     use super::*;
+    use std::rc::Rc;
+    use std::sync::Arc;
+
+    #[test]
+    fn test_cursor_deque_smart_pointers() {
+        use std::borrow::Cow;
+        use std::cell::RefCell;
+        use std::sync::{Mutex, RwLock};
+
+        let vd = VecDeque::from(vec![1, 2, 3]);
+        let rc = Rc::new(vd.clone());
+        let arc = Arc::new(vd.clone());
+        let refcell = RefCell::new(vd.clone());
+        let mutex = Mutex::new(vd.clone());
+        let rwlock = RwLock::new(vd.clone());
+        let cow = Cow::Borrowed(&vd);
+
+        let mut rc_cursor = CursorDeque::new(rc);
+        let mut buf = [0u8; 3];
+        rc_cursor.read_exact(&mut buf).unwrap();
+        assert_eq!(buf, [1, 2, 3]);
+
+        let mut arc_cursor = CursorDeque::new(arc);
+        arc_cursor.read_exact(&mut buf).unwrap();
+        assert_eq!(buf, [1, 2, 3]);
+
+        let mut cow_cursor = CursorDeque::new(cow);
+        cow_cursor.read_exact(&mut buf).unwrap();
+        assert_eq!(buf, [1, 2, 3]);
+
+        {
+            let mut ref_cursor = CursorDeque::new(refcell.borrow());
+            ref_cursor.read_exact(&mut buf).unwrap();
+            assert_eq!(buf, [1, 2, 3]);
+        }
+
+        {
+            let mut ref_mut_cursor = CursorDeque::new(refcell.borrow_mut());
+            ref_mut_cursor.write_all(&[4, 5, 6]).unwrap();
+        }
+        assert_eq!(Vec::from(refcell.borrow().clone()), vec![4, 5, 6]);
+
+        {
+            let mut mutex_cursor = CursorDeque::new(mutex.lock().unwrap());
+            mutex_cursor.write_all(&[4, 5, 6]).unwrap();
+            mutex_cursor.set_position(0);
+            mutex_cursor.read_exact(&mut buf).unwrap();
+            assert_eq!(buf, [4, 5, 6]);
+        }
+
+        {
+            let mut rw_read_cursor = CursorDeque::new(rwlock.read().unwrap());
+            rw_read_cursor.read_exact(&mut buf).unwrap();
+            assert_eq!(buf, [1, 2, 3]);
+        }
+
+        {
+            let mut rw_write_cursor = CursorDeque::new(rwlock.write().unwrap());
+            rw_write_cursor.write_all(&[7, 8, 9]).unwrap();
+        }
+        assert_eq!(Vec::from(rwlock.read().unwrap().clone()), vec![7, 8, 9]);
+    }
+
+    #[test]
+    fn test_cursor_deque_comprehensive() {
+        use std::cell::RefCell;
+        use std::sync::Mutex;
+
+        // Test Rc/Arc with writing
+        let rc = Rc::new(VecDeque::from(vec![1u8, 2, 3]));
+        let mut cursor = CursorDeque::new(rc.clone());
+        cursor.write_all(&[4, 5, 6]).unwrap();
+        // Since we had another clone (rc), make_mut should have cloned the data
+        assert_eq!(Vec::from((*rc).clone()), vec![1, 2, 3]);
+        assert_eq!(Vec::from((*cursor.into_inner()).clone()), vec![4, 5, 6]);
+
+        let arc = Arc::new(VecDeque::from(vec![1u8, 2, 3]));
+        let mut cursor = CursorDeque::new(arc);
+        cursor.write_all(&[7, 8, 9]).unwrap();
+        assert_eq!(Vec::from((*cursor.into_inner()).clone()), vec![7, 8, 9]);
+
+        // Test nested references
+        let vd = VecDeque::from(vec![1u8, 2, 3]);
+        let rc = Rc::new(vd);
+        {
+            let mut cursor = CursorDeque::new(&rc);
+            let mut buf = [0u8; 3];
+            cursor.read_exact(&mut buf).unwrap();
+            assert_eq!(buf, [1, 2, 3]);
+        }
+
+        // Test Arc<Mutex<VecDeque>>
+        let mutex = Arc::new(Mutex::new(VecDeque::from(vec![1u8, 2, 3])));
+        {
+            let mut cursor = CursorDeque::new(mutex.lock().unwrap());
+            cursor.write_all(&[10, 11, 12]).unwrap();
+        }
+        assert_eq!(Vec::from(mutex.lock().unwrap().clone()), vec![10, 11, 12]);
+
+        // Test RefCell
+        let refcell = RefCell::new(VecDeque::from(vec![1u8, 2, 3]));
+        {
+            let mut cursor = CursorDeque::new(refcell.borrow_mut());
+            cursor.write_all(&[13, 14, 15]).unwrap();
+        }
+        assert_eq!(Vec::from(refcell.borrow().clone()), vec![13, 14, 15]);
+    }
 
     #[test]
     fn test_cursor_deque_read() {
