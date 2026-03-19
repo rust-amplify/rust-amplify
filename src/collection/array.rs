@@ -154,14 +154,14 @@ impl<T, const LEN: usize, const REVERSE_STR: bool> Array<T, LEN, REVERSE_STR> {
     /// Returns an iterator over the array items.
     ///
     /// The iterator yields all items from start to end.
-    pub fn iter(&self) -> slice::Iter<T> {
+    pub fn iter(&self) -> slice::Iter<'_, T> {
         self.0.iter()
     }
 
     /// Returns an iterator that allows modifying each value.
     ///
     /// The iterator yields all items from start to end.
-    pub fn iter_mut(&mut self) -> slice::IterMut<T> {
+    pub fn iter_mut(&mut self) -> slice::IterMut<'_, T> {
         self.0.iter_mut()
     }
 }

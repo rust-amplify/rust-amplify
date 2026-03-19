@@ -30,12 +30,12 @@ use crate::traits::{AsDequeMut, AsDequeRef};
 ///
 /// This is similar to [`io::Cursor`], but works with [`VecDeque`].
 #[derive(Clone, Default, PartialEq, Eq)]
-pub struct CursorDeque<T> {
+pub struct CursorDeque<T: AsDequeRef<u8>> {
     inner: T,
     pos: u64,
 }
 
-impl<T> CursorDeque<T> {
+impl<T: AsDequeRef<u8>> CursorDeque<T> {
     /// Creates a new cursor wrapping the provided underlying in-memory buffer.
     ///
     /// Cursor initial position is 0.
@@ -69,6 +69,11 @@ impl<T> CursorDeque<T> {
     /// Sets the position of this cursor.
     pub fn set_position(&mut self, pos: u64) {
         self.pos = pos;
+    }
+
+    /// Checks if the underlying `VecDeque` is empty.
+    pub fn is_empty(&self) -> bool {
+        self.inner.as_deque_ref().is_empty()
     }
 }
 
@@ -144,7 +149,7 @@ fn cursor_fill_buf(pos: u64, inner: &VecDeque<u8>) -> io::Result<&[u8]> {
     }
 }
 
-impl<T: Debug> Debug for CursorDeque<T> {
+impl<T: AsDequeRef<u8> + Debug> Debug for CursorDeque<T> {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         f.debug_struct("CursorDeque")
             .field("inner", &self.inner)

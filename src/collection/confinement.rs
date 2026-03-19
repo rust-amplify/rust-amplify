@@ -1286,7 +1286,7 @@ impl<T, const MIN_LEN: usize, const MAX_LEN: usize> Confined<Vec<T>, MIN_LEN, MA
     /// Returns an iterator over the slice.
     ///
     /// The iterator yields all items from start to end.
-    pub fn iter(&self) -> core::slice::Iter<T> {
+    pub fn iter(&self) -> core::slice::Iter<'_, T> {
         self.0.iter()
     }
 }
