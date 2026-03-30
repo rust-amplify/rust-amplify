@@ -1064,8 +1064,14 @@ impl<C: KeyedCollection, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C,
     }
 
     /// Inserts a new value into the confined collection under a given key.
-    /// Fails when inserting a new key would exceed MAX_LEN.
-    /// Replacing an existing key's value always succeeds.
+    ///
+    /// If the key is already present, the value is overwritten and the previous
+    /// value is returned. This succeeds even when the collection is at capacity.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::Oversize`] when the key is not already present and the
+    /// collection has reached `MAX_LEN`.
     pub fn insert(&mut self, key: C::Key, value: C::Value) -> Result<Option<C::Value>, Error> {
         if !self.0.contains_key(&key) {
             self.check_oversize()?;
