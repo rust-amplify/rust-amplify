@@ -384,6 +384,27 @@ impl<K: Ord + Hash, V> KeyedCollection for BTreeMap<K, V> {
 }
 
 #[cfg(feature = "indexmap")]
+impl<T: Eq + Hash> Collection for indexmap::IndexSet<T> {
+    type Item = T;
+
+    fn with_capacity(capacity: usize) -> Self {
+        Self::with_capacity(capacity)
+    }
+
+    fn len(&self) -> usize {
+        self.len()
+    }
+
+    fn push(&mut self, elem: Self::Item) {
+        indexmap::IndexSet::insert(self, elem);
+    }
+
+    fn clear(&mut self) {
+        self.clear()
+    }
+}
+
+#[cfg(feature = "indexmap")]
 impl<K: Eq + Hash, V> Collection for indexmap::IndexMap<K, V> {
     type Item = (K, V);
 
@@ -1131,6 +1152,45 @@ where
     }
 }
 
+#[cfg(feature = "indexmap")]
+impl<T: Eq + Hash, const MIN_LEN: usize, const MAX_LEN: usize>
+    Confined<indexmap::IndexSet<T>, MIN_LEN, MAX_LEN>
+{
+    /// Removes a value from the set, returning whether the value was at the
+    /// set previously.
+    ///
+    /// # Errors
+    ///
+    /// Errors if the minimum confinement is not met after the removal.
+    pub fn remove(&mut self, elem: &T) -> Result<bool, Error> {
+        let len = self.0.len();
+        if len == MIN_LEN || len - 1 < MIN_LEN {
+            return Err(Error::Undersize {
+                len: len - 1,
+                min_len: MIN_LEN,
+            });
+        }
+        Ok(self.0.shift_remove(elem))
+    }
+
+    /// Removes and returns the value in the set, if any, that is equal to the
+    /// given one.
+    ///
+    /// # Errors
+    ///
+    /// Errors if the minimum confinement is not met after the removal.
+    pub fn take(&mut self, elem: &T) -> Result<Option<T>, Error> {
+        let len = self.0.len();
+        if len == MIN_LEN || len - 1 < MIN_LEN {
+            return Err(Error::Undersize {
+                len: len - 1,
+                min_len: MIN_LEN,
+            });
+        }
+        Ok(self.0.shift_take(elem))
+    }
+}
+
 impl<C: KeyedCollection, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C, MIN_LEN, MAX_LEN> {
     /// Gets mutable reference to an element of the collection.
     pub fn get_mut(&mut self, key: &C::Key) -> Option<&mut C::Value> {
@@ -1842,6 +1902,26 @@ pub type ConfinedOrdMap<K, V, const MIN: usize = 0, const MAX: usize = U64> =
 /// [`BTreeMap`] which contains at least a single item.
 pub type NonEmptyOrdMap<K, V, const MAX: usize = U64> = Confined<BTreeMap<K, V>, ONE, MAX>;
 
+/// [`indexmap::IndexSet`] with maximum 255 items of type `T`.
+#[cfg(feature = "indexmap")]
+pub type TinyIndexSet<T> = Confined<indexmap::IndexSet<T>, ZERO, U8>;
+/// [`indexmap::IndexSet`] with maximum 2^16-1 items of type `T`.
+#[cfg(feature = "indexmap")]
+pub type SmallIndexSet<T> = Confined<indexmap::IndexSet<T>, ZERO, U16>;
+/// [`indexmap::IndexSet`] with maximum 2^24-1 items of type `T`.
+#[cfg(feature = "indexmap")]
+pub type MediumIndexSet<T> = Confined<indexmap::IndexSet<T>, ZERO, U24>;
+/// [`indexmap::IndexSet`] with maximum 2^32-1 items of type `T`.
+#[cfg(feature = "indexmap")]
+pub type LargeIndexSet<T> = Confined<indexmap::IndexSet<T>, ZERO, U32>;
+#[cfg(feature = "indexmap")]
+/// Confined [`indexmap::IndexSet`].
+pub type ConfinedIndexSet<T, const MIN: usize = 0, const MAX: usize = U64> =
+    Confined<indexmap::IndexSet<T>, MIN, MAX>;
+/// [`indexmap::IndexSet`] which contains at least a single item.
+#[cfg(feature = "indexmap")]
+pub type NonEmptyIndexSet<T, const MAX: usize = U64> = Confined<indexmap::IndexSet<T>, ONE, MAX>;
+
 /// [`indexmap::IndexMap`] with maximum 255 items.
 #[cfg(feature = "indexmap")]
 pub type TinyIndexMap<K, V> = Confined<indexmap::IndexMap<K, V>, ZERO, U8>;
@@ -2287,6 +2367,48 @@ macro_rules! medium_imap {
     }
 }
 
+/// Helper macro to construct confined [`indexmap::IndexSet`] of a
+/// [`TinyIndexSet`] type
+#[macro_export]
+#[cfg(feature = "indexmap")]
+macro_rules! tiny_iset {
+    () => {
+        $crate::confinement::TinyIndexSet::new()
+    };
+    ($($x:expr),+ $(,)?) => (
+        $crate::confinement::TinyIndexSet::try_from($crate::confinement::indexmap::IndexSet::from_iter([$($x,)+]))
+            .expect("inline tiny_iset literal contains invalid number of items")
+    )
+}
+
+/// Helper macro to construct confined [`indexmap::IndexSet`] of a
+/// [`SmallIndexSet`] type
+#[macro_export]
+#[cfg(feature = "indexmap")]
+macro_rules! small_iset {
+    () => {
+        $crate::confinement::SmallIndexSet::new()
+    };
+    ($($x:expr),+ $(,)?) => (
+        $crate::confinement::SmallIndexSet::try_from($crate::confinement::indexmap::IndexSet::from_iter([$($x,)+]))
+            .expect("inline small_iset literal contains invalid number of items")
+    )
+}
+
+/// Helper macro to construct confined [`indexmap::IndexSet`] of a
+/// [`MediumIndexSet`] type
+#[macro_export]
+#[cfg(feature = "indexmap")]
+macro_rules! medium_iset {
+    () => {
+        $crate::confinement::MediumIndexSet::new()
+    };
+    ($($x:expr),+ $(,)?) => (
+        $crate::confinement::MediumIndexSet::try_from($crate::confinement::indexmap::IndexSet::from_iter([$($x,)+]))
+            .expect("inline medium_iset literal contains invalid number of items")
+    )
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
@@ -2308,12 +2430,20 @@ mod test {
         let mut bset = TinyOrdSet::new();
         let mut map = TinyHashMap::new();
         let mut bmap = TinyOrdMap::new();
+        #[cfg(feature = "indexmap")]
+        let mut imap = TinyIndexMap::new();
+        #[cfg(feature = "indexmap")]
+        let mut iset = TinyIndexSet::new();
         assert!(vec.is_empty());
         assert!(deque.is_empty());
         assert!(set.is_empty());
         assert!(bset.is_empty());
         assert!(map.is_empty());
         assert!(bmap.is_empty());
+        #[cfg(feature = "indexmap")]
+        assert!(imap.is_empty());
+        #[cfg(feature = "indexmap")]
+        assert!(iset.is_empty());
         for index in 1..=255 {
             vec.push(5u8).unwrap();
             deque.push(5u8).unwrap();
@@ -2321,6 +2451,10 @@ mod test {
             bset.push(5u8).unwrap();
             map.insert(5u8, 'a').unwrap();
             bmap.insert(index, 'a').unwrap();
+            #[cfg(feature = "indexmap")]
+            imap.insert(index, 'a').unwrap();
+            #[cfg(feature = "indexmap")]
+            iset.push(index).unwrap();
         }
         assert_eq!(vec.len_u8(), u8::MAX);
         assert_eq!(deque.len_u8(), u8::MAX);
@@ -2328,6 +2462,10 @@ mod test {
         assert_eq!(bset.len_u8(), 1);
         assert_eq!(map.len_u8(), 1);
         assert_eq!(bmap.len_u8(), u8::MAX);
+        #[cfg(feature = "indexmap")]
+        assert_eq!(imap.len_u8(), u8::MAX);
+        #[cfg(feature = "indexmap")]
+        assert_eq!(iset.len_u8(), u8::MAX);
 
         vec.clear();
         assert!(vec.is_empty());
@@ -2386,6 +2524,17 @@ mod test {
         small_bset!("a", "b", "c");
         small_map!("a" => 1, "b" => 2, "c" => 3);
         small_bmap!("a" => 1, "b" => 2, "c" => 3);
+
+        #[cfg(feature = "indexmap")]
+        {
+            tiny_imap!() as TinyIndexMap<&str, u8>;
+            tiny_imap!("a" => 1, "b" => 2, "c" => 3);
+            small_imap!("a" => 1, "b" => 2, "c" => 3);
+
+            tiny_iset!() as TinyIndexSet<&str>;
+            tiny_iset!("a", "b", "c");
+            small_iset!("a", "b", "c");
+        }
     }
 
     #[test]
