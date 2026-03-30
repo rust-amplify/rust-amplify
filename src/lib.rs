@@ -32,7 +32,7 @@ pub use amplify_derive::{Wrapper, WrapperMut, Display, AsAny, From, Getters, Err
 
 #[cfg(feature = "serde")]
 #[macro_use]
-extern crate serde_crate as serde;
+pub extern crate serde;
 
 extern crate amplify_num;
 

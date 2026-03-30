@@ -33,7 +33,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        feature: [ serde, std, alloc, stringly_conversions, rand, c_raw, proc_attr, hex, apfloat ]
+        feature: [ serde, std, alloc, stringly_conversions, rand, smallvec, indexmap, c_raw, proc_attr, hex, apfloat ]
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable

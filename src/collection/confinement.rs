@@ -19,9 +19,7 @@ use core::borrow::{Borrow, BorrowMut};
 use core::fmt::{self, Display, Formatter, LowerHex, UpperHex};
 use core::str::FromStr;
 use core::hash::Hash;
-use core::ops::{
-    Deref, Index, IndexMut, Range, RangeFrom, RangeFull, RangeInclusive, RangeTo, RangeToInclusive,
-};
+use core::ops::{Deref, Index, IndexMut};
 use alloc::vec::Vec;
 use alloc::string::String;
 use alloc::borrow::ToOwned;
@@ -31,16 +29,20 @@ use core::slice::SliceIndex;
 use core::ops::RangeBounds;
 #[cfg(feature = "std")]
 use std::{
-    io,
     collections::{hash_map, HashMap, HashSet},
+    io,
 };
+#[cfg(feature = "indexmap")]
+pub use indexmap;
+#[cfg(feature = "smallvec")]
+pub use smallvec;
 use amplify_num::hex;
 use amplify_num::hex::{FromHex, ToHex};
 use ascii::{AsAsciiStrError, AsciiChar, AsciiString};
 
 use crate::num::u24;
 
-/// Trait implemented by a collection types which need to support collection
+/// Trait implemented by collection types which need to support collection
 /// confinement.
 pub trait Collection: FromIterator<Self::Item> + Extend<Self::Item> {
     /// Item type contained within the collection.
@@ -120,19 +122,19 @@ impl Collection for String {
     type Item = char;
 
     fn with_capacity(capacity: usize) -> Self {
-        Self::with_capacity(capacity)
+        String::with_capacity(capacity)
     }
 
     fn len(&self) -> usize {
-        self.len()
+        String::len(self)
     }
 
     fn push(&mut self, elem: Self::Item) {
-        self.push(elem)
+        String::push(self, elem)
     }
 
     fn clear(&mut self) {
-        self.clear()
+        String::clear(self)
     }
 }
 
@@ -140,19 +142,19 @@ impl Collection for AsciiString {
     type Item = AsciiChar;
 
     fn with_capacity(capacity: usize) -> Self {
-        Self::with_capacity(capacity)
+        AsciiString::with_capacity(capacity)
     }
 
     fn len(&self) -> usize {
-        self.len()
+        AsciiString::len(self)
     }
 
     fn push(&mut self, elem: Self::Item) {
-        self.push(elem)
+        AsciiString::push(self, elem)
     }
 
     fn clear(&mut self) {
-        self.clear()
+        AsciiString::clear(self)
     }
 }
 
@@ -160,19 +162,19 @@ impl<T> Collection for Vec<T> {
     type Item = T;
 
     fn with_capacity(capacity: usize) -> Self {
-        Self::with_capacity(capacity)
+        Vec::with_capacity(capacity)
     }
 
     fn len(&self) -> usize {
-        self.len()
+        Vec::len(self)
     }
 
     fn push(&mut self, elem: Self::Item) {
-        self.push(elem)
+        Vec::push(self, elem)
     }
 
     fn clear(&mut self) {
-        self.clear()
+        Vec::clear(self)
     }
 }
 
@@ -180,19 +182,19 @@ impl<T> Collection for VecDeque<T> {
     type Item = T;
 
     fn with_capacity(capacity: usize) -> Self {
-        Self::with_capacity(capacity)
+        VecDeque::with_capacity(capacity)
     }
 
     fn len(&self) -> usize {
-        self.len()
+        VecDeque::len(self)
     }
 
     fn push(&mut self, elem: Self::Item) {
-        self.push_back(elem)
+        VecDeque::push_back(self, elem)
     }
 
     fn clear(&mut self) {
-        self.clear()
+        VecDeque::clear(self)
     }
 }
 
@@ -201,19 +203,19 @@ impl<T: Eq + Hash> Collection for HashSet<T> {
     type Item = T;
 
     fn with_capacity(capacity: usize) -> Self {
-        Self::with_capacity(capacity)
+        HashSet::with_capacity(capacity)
     }
 
     fn len(&self) -> usize {
-        self.len()
+        HashSet::len(self)
     }
 
     fn push(&mut self, elem: Self::Item) {
-        self.insert(elem);
+        HashSet::insert(self, elem);
     }
 
     fn clear(&mut self) {
-        self.clear()
+        HashSet::clear(self)
     }
 }
 
@@ -226,15 +228,15 @@ impl<T: Ord> Collection for BTreeSet<T> {
     }
 
     fn len(&self) -> usize {
-        self.len()
+        BTreeSet::len(self)
     }
 
     fn push(&mut self, elem: Self::Item) {
-        self.insert(elem);
+        BTreeSet::insert(self, elem);
     }
 
     fn clear(&mut self) {
-        self.clear()
+        BTreeSet::clear(self)
     }
 }
 
@@ -243,11 +245,11 @@ impl<K: Eq + Hash, V> Collection for HashMap<K, V> {
     type Item = (K, V);
 
     fn with_capacity(capacity: usize) -> Self {
-        Self::with_capacity(capacity)
+        HashMap::with_capacity(capacity)
     }
 
     fn len(&self) -> usize {
-        self.len()
+        HashMap::len(self)
     }
 
     fn push(&mut self, elem: Self::Item) {
@@ -255,7 +257,7 @@ impl<K: Eq + Hash, V> Collection for HashMap<K, V> {
     }
 
     fn clear(&mut self) {
-        self.clear()
+        HashMap::clear(self)
     }
 }
 
@@ -319,7 +321,7 @@ impl<K: Ord + Hash, V> Collection for BTreeMap<K, V> {
     }
 
     fn len(&self) -> usize {
-        self.len()
+        BTreeMap::len(self)
     }
 
     fn push(&mut self, elem: Self::Item) {
@@ -327,7 +329,7 @@ impl<K: Ord + Hash, V> Collection for BTreeMap<K, V> {
     }
 
     fn clear(&mut self) {
-        self.clear()
+        BTreeMap::clear(self)
     }
 }
 
@@ -381,12 +383,126 @@ impl<K: Ord + Hash, V> KeyedCollection for BTreeMap<K, V> {
     }
 }
 
+#[cfg(feature = "indexmap")]
+impl<T: Eq + Hash> Collection for indexmap::IndexSet<T> {
+    type Item = T;
+
+    fn with_capacity(capacity: usize) -> Self {
+        indexmap::IndexSet::with_capacity(capacity)
+    }
+
+    fn len(&self) -> usize {
+        indexmap::IndexSet::len(self)
+    }
+
+    fn push(&mut self, elem: Self::Item) {
+        indexmap::IndexSet::insert(self, elem);
+    }
+
+    fn clear(&mut self) {
+        indexmap::IndexSet::clear(self)
+    }
+}
+
+#[cfg(feature = "indexmap")]
+impl<K: Eq + Hash, V> Collection for indexmap::IndexMap<K, V> {
+    type Item = (K, V);
+
+    fn with_capacity(capacity: usize) -> Self {
+        indexmap::IndexMap::with_capacity(capacity)
+    }
+
+    fn len(&self) -> usize {
+        indexmap::IndexMap::len(self)
+    }
+
+    fn push(&mut self, elem: Self::Item) {
+        indexmap::IndexMap::insert(self, elem.0, elem.1);
+    }
+
+    fn clear(&mut self) {
+        indexmap::IndexMap::clear(self)
+    }
+}
+
+#[cfg(feature = "indexmap")]
+impl<K: Eq + Hash, V> KeyedCollection for indexmap::IndexMap<K, V> {
+    type Key = K;
+    type Value = V;
+    type Entry<'a>
+        = indexmap::map::Entry<'a, K, V>
+    where
+        K: 'a,
+        V: 'a;
+
+    fn contains_key(&self, key: &Self::Key) -> bool {
+        indexmap::IndexMap::contains_key(self, key)
+    }
+
+    fn get(&self, key: &Self::Key) -> Option<&Self::Value> {
+        indexmap::IndexMap::get(self, key)
+    }
+
+    fn get_mut(&mut self, key: &Self::Key) -> Option<&mut Self::Value> {
+        indexmap::IndexMap::get_mut(self, key)
+    }
+
+    fn iter(&self) -> impl Iterator<Item = (&Self::Key, &Self::Value)> {
+        indexmap::IndexMap::iter(self)
+    }
+
+    fn iter_mut(&mut self) -> impl Iterator<Item = (&Self::Key, &mut Self::Value)> {
+        indexmap::IndexMap::iter_mut(self)
+    }
+
+    fn values_mut(&mut self) -> impl Iterator<Item = &mut Self::Value> {
+        indexmap::IndexMap::values_mut(self)
+    }
+
+    fn insert(&mut self, key: Self::Key, value: Self::Value) -> Option<Self::Value> {
+        indexmap::IndexMap::insert(self, key, value)
+    }
+
+    fn remove(&mut self, key: &Self::Key) -> Option<Self::Value> {
+        indexmap::IndexMap::shift_remove(self, key)
+    }
+
+    fn entry(&mut self, key: Self::Key) -> Self::Entry<'_> {
+        indexmap::IndexMap::entry(self, key)
+    }
+
+    fn retain(&mut self, f: impl FnMut(&K, &mut V) -> bool) {
+        indexmap::IndexMap::retain(self, f)
+    }
+}
+
+#[cfg(feature = "smallvec")]
+impl<A: smallvec::Array> Collection for smallvec::SmallVec<A> {
+    type Item = A::Item;
+
+    fn with_capacity(capacity: usize) -> Self {
+        smallvec::SmallVec::with_capacity(capacity)
+    }
+
+    fn len(&self) -> usize {
+        smallvec::SmallVec::len(self)
+    }
+
+    fn push(&mut self, elem: Self::Item) {
+        smallvec::SmallVec::push(self, elem);
+    }
+
+    fn clear(&mut self) {
+        smallvec::SmallVec::clear(self)
+    }
+}
+
 // Errors
 
 /// Errors when confinement constraints were not met.
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 pub enum Error {
-    /// Operation results in collection reduced below the required minimum
+    /// Operation results in a collection reduced below the required minimum
     /// number of elements.
     Undersize {
         /** Current collection length */
@@ -396,8 +512,8 @@ pub enum Error {
         min_len: usize,
     },
 
-    /// Operation results in collection growth above the required maximum number
-    /// of elements.
+    /// Operation results in a collection growth above the required maximum
+    /// number of elements.
     Oversize {
         /** Current collection length */
         len: usize,
@@ -498,7 +614,7 @@ pub const U64: usize = u64::MAX as usize;
 #[cfg_attr(
     feature = "serde",
     derive(Serialize, Deserialize),
-    serde(crate = "serde_crate")
+    serde(crate = "serde")
 )]
 pub struct Confined<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize>(C);
 
@@ -622,156 +738,26 @@ where
     }
 }
 
-impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Index<usize>
+impl<C: Collection, I, const MIN_LEN: usize, const MAX_LEN: usize> Index<I>
     for Confined<C, MIN_LEN, MAX_LEN>
 where
-    C: Index<usize, Output = C::Item>,
+    C: Index<I>,
 {
-    type Output = C::Item;
+    type Output = C::Output;
 
-    fn index(&self, index: usize) -> &Self::Output {
+    #[inline]
+    fn index(&self, index: I) -> &Self::Output {
         self.0.index(index)
     }
 }
 
-impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> IndexMut<usize>
+impl<C: Collection, I, const MIN_LEN: usize, const MAX_LEN: usize> IndexMut<I>
     for Confined<C, MIN_LEN, MAX_LEN>
 where
-    C: IndexMut<usize, Output = C::Item>,
+    C: IndexMut<I>,
 {
-    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
-        self.0.index_mut(index)
-    }
-}
-
-impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Index<Range<usize>>
-    for Confined<C, MIN_LEN, MAX_LEN>
-where
-    C: Index<Range<usize>, Output = [C::Item]>,
-{
-    type Output = [C::Item];
-
-    fn index(&self, index: Range<usize>) -> &Self::Output {
-        self.0.index(index)
-    }
-}
-
-impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> IndexMut<Range<usize>>
-    for Confined<C, MIN_LEN, MAX_LEN>
-where
-    C: IndexMut<Range<usize>, Output = [C::Item]>,
-{
-    fn index_mut(&mut self, index: Range<usize>) -> &mut Self::Output {
-        self.0.index_mut(index)
-    }
-}
-
-impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Index<RangeTo<usize>>
-    for Confined<C, MIN_LEN, MAX_LEN>
-where
-    C: Index<RangeTo<usize>, Output = [C::Item]>,
-{
-    type Output = [C::Item];
-
-    fn index(&self, index: RangeTo<usize>) -> &Self::Output {
-        self.0.index(index)
-    }
-}
-
-impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> IndexMut<RangeTo<usize>>
-    for Confined<C, MIN_LEN, MAX_LEN>
-where
-    C: IndexMut<RangeTo<usize>, Output = [C::Item]>,
-{
-    fn index_mut(&mut self, index: RangeTo<usize>) -> &mut Self::Output {
-        self.0.index_mut(index)
-    }
-}
-
-impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Index<RangeFrom<usize>>
-    for Confined<C, MIN_LEN, MAX_LEN>
-where
-    C: Index<RangeFrom<usize>, Output = [C::Item]>,
-{
-    type Output = [C::Item];
-
-    fn index(&self, index: RangeFrom<usize>) -> &Self::Output {
-        self.0.index(index)
-    }
-}
-
-impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> IndexMut<RangeFrom<usize>>
-    for Confined<C, MIN_LEN, MAX_LEN>
-where
-    C: IndexMut<RangeFrom<usize>, Output = [C::Item]>,
-{
-    fn index_mut(&mut self, index: RangeFrom<usize>) -> &mut Self::Output {
-        self.0.index_mut(index)
-    }
-}
-
-impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Index<RangeInclusive<usize>>
-    for Confined<C, MIN_LEN, MAX_LEN>
-where
-    C: Index<RangeInclusive<usize>, Output = [C::Item]>,
-{
-    type Output = [C::Item];
-
-    fn index(&self, index: RangeInclusive<usize>) -> &Self::Output {
-        self.0.index(index)
-    }
-}
-
-impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> IndexMut<RangeInclusive<usize>>
-    for Confined<C, MIN_LEN, MAX_LEN>
-where
-    C: IndexMut<RangeInclusive<usize>, Output = [C::Item]>,
-{
-    fn index_mut(&mut self, index: RangeInclusive<usize>) -> &mut Self::Output {
-        self.0.index_mut(index)
-    }
-}
-
-impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Index<RangeToInclusive<usize>>
-    for Confined<C, MIN_LEN, MAX_LEN>
-where
-    C: Index<RangeToInclusive<usize>, Output = [C::Item]>,
-{
-    type Output = [C::Item];
-
-    fn index(&self, index: RangeToInclusive<usize>) -> &Self::Output {
-        self.0.index(index)
-    }
-}
-
-impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> IndexMut<RangeToInclusive<usize>>
-    for Confined<C, MIN_LEN, MAX_LEN>
-where
-    C: IndexMut<RangeToInclusive<usize>, Output = [C::Item]>,
-{
-    fn index_mut(&mut self, index: RangeToInclusive<usize>) -> &mut Self::Output {
-        self.0.index_mut(index)
-    }
-}
-
-impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Index<RangeFull>
-    for Confined<C, MIN_LEN, MAX_LEN>
-where
-    C: Index<RangeFull, Output = [C::Item]>,
-{
-    type Output = [C::Item];
-
-    fn index(&self, index: RangeFull) -> &Self::Output {
-        self.0.index(index)
-    }
-}
-
-impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> IndexMut<RangeFull>
-    for Confined<C, MIN_LEN, MAX_LEN>
-where
-    C: IndexMut<RangeFull, Output = [C::Item]>,
-{
-    fn index_mut(&mut self, index: RangeFull) -> &mut Self::Output {
+    #[inline]
+    fn index_mut(&mut self, index: I) -> &mut Self::Output {
         self.0.index_mut(index)
     }
 }
@@ -812,6 +798,36 @@ impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C, MIN_
                 len,
                 max_len: MAX_LEN,
             });
+        }
+        Ok(())
+    }
+
+    fn check_undersize(&self) -> Result<(), Error> {
+        let len = self.len();
+        if len <= MIN_LEN {
+            return Err(Error::Undersize {
+                len,
+                min_len: MIN_LEN,
+            });
+        }
+        Ok(())
+    }
+
+    fn check_oversize(&self) -> Result<(), Error> {
+        let len = self.len();
+        if len >= MAX_LEN {
+            return Err(Error::Oversize {
+                len,
+                max_len: MAX_LEN,
+            });
+        }
+        Ok(())
+    }
+
+    fn check_boundary(&self, index: usize) -> Result<(), Error> {
+        let len = self.len();
+        if index >= len {
+            return Err(Error::OutOfBoundary { index, len });
         }
         Ok(())
     }
@@ -903,13 +919,7 @@ impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C, MIN_
     /// Attempts to add a single element to the confined collection. Fails if
     /// the number of elements in the collection already maximal.
     pub fn push(&mut self, elem: C::Item) -> Result<(), Error> {
-        let len = self.len();
-        if len == MAX_LEN || len + 1 > MAX_LEN {
-            return Err(Error::Oversize {
-                len: len + 1,
-                max_len: MAX_LEN,
-            });
-        }
+        self.check_oversize()?;
         self.0.push(elem);
         Ok(())
     }
@@ -951,6 +961,13 @@ impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C, MIN_
     }
 }
 
+impl<C: Collection, const MAX_LEN: usize> Confined<C, ZERO, MAX_LEN> {
+    /// Removes all elements from the confined collection.
+    pub fn clear(&mut self) {
+        self.0.clear()
+    }
+}
+
 impl<C: Collection, const MAX_LEN: usize> Confined<C, ZERO, MAX_LEN>
 where
     C: Default,
@@ -964,11 +981,6 @@ where
     /// pre-allocated storage for the `capacity` of elements.
     pub fn with_capacity(capacity: usize) -> Self {
         Self(C::with_capacity(capacity))
-    }
-
-    /// Removes all elements from the confined collection.
-    pub fn clear(&mut self) {
-        self.0.clear()
     }
 }
 
@@ -994,11 +1006,23 @@ where
     }
 }
 
-impl<C: Collection, const MIN_LEN: usize> Confined<C, MIN_LEN, U8>
+impl<C, const MAX_LEN: usize> Confined<C, ONE, MAX_LEN>
 where
-    C: Default,
+    C: Collection + Index<usize, Output = C::Item>,
 {
-    /// Returns number of elements in the confined collection as `u8`. The
+    /// Returns the first element.
+    pub fn first(&self) -> &C::Item {
+        self.0.index(0)
+    }
+
+    /// Returns the last element.
+    pub fn last(&self) -> &C::Item {
+        self.0.index(self.len() - 1)
+    }
+}
+
+impl<C: Collection, const MIN_LEN: usize> Confined<C, MIN_LEN, U8> {
+    /// Returns the number of elements in the confined collection as `u8`. The
     /// confinement guarantees that the collection length can't exceed
     /// `u8::MAX`.
     pub fn len_u8(&self) -> u8 {
@@ -1006,11 +1030,8 @@ where
     }
 }
 
-impl<C: Collection, const MIN_LEN: usize> Confined<C, MIN_LEN, U16>
-where
-    C: Default,
-{
-    /// Returns number of elements in the confined collection as `u16`. The
+impl<C: Collection, const MIN_LEN: usize> Confined<C, MIN_LEN, U16> {
+    /// Returns the number of elements in the confined collection as `u16`. The
     /// confinement guarantees that the collection length can't exceed
     /// `u16::MAX`.
     pub fn len_u16(&self) -> u16 {
@@ -1018,11 +1039,8 @@ where
     }
 }
 
-impl<C: Collection, const MIN_LEN: usize> Confined<C, MIN_LEN, U24>
-where
-    C: Default,
-{
-    /// Returns number of elements in the confined collection as `u24`. The
+impl<C: Collection, const MIN_LEN: usize> Confined<C, MIN_LEN, U24> {
+    /// Returns the number of elements in the confined collection as `u24`. The
     /// confinement guarantees that the collection length can't exceed
     /// `u24::MAX`.
     pub fn len_u24(&self) -> u24 {
@@ -1030,11 +1048,8 @@ where
     }
 }
 
-impl<C: Collection, const MIN_LEN: usize> Confined<C, MIN_LEN, U32>
-where
-    C: Default,
-{
-    /// Returns number of elements in the confined collection as `u32`. The
+impl<C: Collection, const MIN_LEN: usize> Confined<C, MIN_LEN, U32> {
+    /// Returns the number of elements in the confined collection as `u32`. The
     /// confinement guarantees that the collection length can't exceed
     /// `u32::MAX`.
     pub fn len_u32(&self) -> u32 {
@@ -1049,29 +1064,29 @@ impl<C: KeyedCollection, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C,
     }
 
     /// Inserts a new value into the confined collection under a given key.
-    /// Fails if the collection already contains maximum number of elements
-    /// allowed by the confinement.
+    ///
+    /// If the key is already present, the value is overwritten and the previous
+    /// value is returned. This succeeds even when the collection is at
+    /// capacity.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::Oversize`] when the key is not already present and the
+    /// collection has reached `MAX_LEN`.
     pub fn insert(&mut self, key: C::Key, value: C::Value) -> Result<Option<C::Value>, Error> {
-        let len = self.len();
-        if len == MAX_LEN || len + 1 > MAX_LEN {
-            return Err(Error::Oversize {
-                len: len + 1,
-                max_len: MAX_LEN,
-            });
+        if !self.0.contains_key(&key) {
+            self.check_oversize()?;
         }
         Ok(self.0.insert(key, value))
     }
 
+    // TODO: This is strange; it doesn't need to check the bound and error!
     /// Gets the given key's corresponding entry in the map for in-place
     /// manipulation. Errors if the collection entry is vacant and the
     /// collection has already reached maximal size of its confinement.
     pub fn entry(&mut self, key: C::Key) -> Result<C::Entry<'_>, Error> {
-        let len = self.len();
-        if len == MAX_LEN && !self.0.contains_key(&key) {
-            return Err(Error::Oversize {
-                len: len + 1,
-                max_len: MAX_LEN,
-            });
+        if !self.0.contains_key(&key) {
+            self.check_oversize()?;
         }
         Ok(self.0.entry(key))
     }
@@ -1090,9 +1105,10 @@ impl<C: KeyedCollection, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C,
         f: impl FnMut(&C::Key, &mut C::Value) -> bool,
     ) -> Result<(), Error> {
         self.0.retain(f);
-        if self.0.len() < MIN_LEN {
+        let len = self.len();
+        if len < MIN_LEN {
             return Err(Error::Undersize {
-                len: self.0.len(),
+                len,
                 min_len: MIN_LEN,
             });
         }
@@ -1158,16 +1174,14 @@ impl<const MIN_LEN: usize, const MAX_LEN: usize> Confined<String, MIN_LEN, MAX_L
     /// doesn't shorten more than the confinement requirement. Errors
     /// otherwise.
     pub fn remove(&mut self, index: usize) -> Result<char, Error> {
-        let len = self.len();
-        if self.is_empty() || len <= MIN_LEN {
-            return Err(Error::Undersize {
-                len,
-                min_len: MIN_LEN,
+        self.check_boundary(index)?;
+        if !self.0.is_char_boundary(index) {
+            return Err(Error::OutOfBoundary {
+                index,
+                len: self.len(),
             });
         }
-        if index >= len {
-            return Err(Error::OutOfBoundary { index, len });
-        }
+        self.check_undersize()?;
         Ok(self.0.remove(index))
     }
 }
@@ -1185,16 +1199,8 @@ impl<const MIN_LEN: usize, const MAX_LEN: usize> Confined<AsciiString, MIN_LEN, 
     /// doesn't shorten more than the confinement requirement. Errors
     /// otherwise.
     pub fn remove(&mut self, index: usize) -> Result<AsciiChar, Error> {
-        let len = self.len();
-        if self.is_empty() || len <= MIN_LEN {
-            return Err(Error::Undersize {
-                len,
-                min_len: MIN_LEN,
-            });
-        }
-        if index >= len {
-            return Err(Error::OutOfBoundary { index, len });
-        }
+        self.check_boundary(index)?;
+        self.check_undersize()?;
         Ok(self.0.remove(index))
     }
 }
@@ -1270,16 +1276,8 @@ impl<T, const MIN_LEN: usize, const MAX_LEN: usize> Confined<Vec<T>, MIN_LEN, MA
     /// length will be less than the confinement requirement. Returns the
     /// removed element otherwise.
     pub fn remove(&mut self, index: usize) -> Result<T, Error> {
-        let len = self.len();
-        if self.is_empty() || len <= MIN_LEN {
-            return Err(Error::Undersize {
-                len,
-                min_len: MIN_LEN,
-            });
-        }
-        if index >= len {
-            return Err(Error::OutOfBoundary { index, len });
-        }
+        self.check_boundary(index)?;
+        self.check_undersize()?;
         Ok(self.0.remove(index))
     }
 
@@ -1287,6 +1285,88 @@ impl<T, const MIN_LEN: usize, const MAX_LEN: usize> Confined<Vec<T>, MIN_LEN, MA
     ///
     /// The iterator yields all items from start to end.
     pub fn iter(&self) -> core::slice::Iter<'_, T> {
+        self.0.iter()
+    }
+}
+
+#[cfg(feature = "smallvec")]
+impl<A: smallvec::Array, const MIN_LEN: usize, const MAX_LEN: usize>
+    Confined<smallvec::SmallVec<A>, MIN_LEN, MAX_LEN>
+{
+    /// Constructs confinement out of slice of items. Does allocation.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the size of the slice doesn't match the confinement type
+    /// bounds.
+    #[inline]
+    pub fn from_slice_checked(slice: &[A::Item]) -> Self
+    where
+        A::Item: Clone,
+    {
+        assert!(slice.len() >= MIN_LEN && slice.len() <= MAX_LEN);
+        Self(smallvec::SmallVec::from_iter(slice.iter().cloned()))
+    }
+
+    /// Constructs confinement out of slice of items. Does allocation.
+    #[inline]
+    pub fn try_from_slice(slice: &[A::Item]) -> Result<Self, Error>
+    where
+        A::Item: Clone,
+    {
+        Self::try_from(smallvec::SmallVec::from_iter(slice.iter().cloned()))
+    }
+
+    /// Returns slice representation of the vector.
+    #[inline]
+    pub fn as_slice(&self) -> &[A::Item] {
+        &self.0
+    }
+
+    /// Converts into the inner unconfined vector.
+    #[inline]
+    pub fn into_smallvec(self) -> smallvec::SmallVec<A> {
+        self.0
+    }
+
+    /// Gets the mutable element of a vector
+    #[inline]
+    pub fn get_mut<I>(&mut self, index: I) -> Option<&mut I::Output>
+    where
+        I: SliceIndex<[A::Item]>,
+    {
+        self.0.get_mut(index)
+    }
+}
+
+#[cfg(feature = "smallvec")]
+impl<A: smallvec::Array, const MAX_LEN: usize> Confined<smallvec::SmallVec<A>, ZERO, MAX_LEN> {
+    /// Removes the last element from a vector and returns it, or [`None`] if it
+    /// is empty.
+    #[inline]
+    pub fn pop(&mut self) -> Option<A::Item> {
+        self.0.pop()
+    }
+}
+
+#[cfg(feature = "smallvec")]
+impl<A: smallvec::Array, const MIN_LEN: usize, const MAX_LEN: usize>
+    Confined<smallvec::SmallVec<A>, MIN_LEN, MAX_LEN>
+{
+    /// Removes an element from the vector at a given index. Errors if the index
+    /// exceeds the number of elements in the vector, of if the new vector
+    /// length will be less than the confinement requirement. Returns the
+    /// removed element otherwise.
+    pub fn remove(&mut self, index: usize) -> Result<A::Item, Error> {
+        self.check_boundary(index)?;
+        self.check_undersize()?;
+        Ok(self.0.remove(index))
+    }
+
+    /// Returns an iterator over the slice.
+    ///
+    /// The iterator yields all items from start to end.
+    pub fn iter(&self) -> core::slice::Iter<'_, A::Item> {
         self.0.iter()
     }
 }
@@ -1309,13 +1389,7 @@ impl<T, const MIN_LEN: usize, const MAX_LEN: usize> Confined<VecDeque<T>, MIN_LE
     /// Prepends an element to the deque. Errors if the new collection length
     /// will not fit the confinement requirements.
     pub fn push_front(&mut self, elem: T) -> Result<(), Error> {
-        let len = self.len();
-        if len == MAX_LEN || len + 1 > MAX_LEN {
-            return Err(Error::Oversize {
-                len: len + 1,
-                max_len: MAX_LEN,
-            });
-        }
+        self.check_oversize()?;
         self.0.push_front(elem);
         Ok(())
     }
@@ -1328,13 +1402,7 @@ impl<T, const MIN_LEN: usize, const MAX_LEN: usize> Confined<VecDeque<T>, MIN_LE
     /// Appends an element to the deque. Errors if the new collection length
     /// will not fit the confinement requirements.
     pub fn push_back(&mut self, elem: T) -> Result<(), Error> {
-        let len = self.len();
-        if len == MAX_LEN || len + 1 > MAX_LEN {
-            return Err(Error::Oversize {
-                len: len + 1,
-                max_len: MAX_LEN,
-            });
-        }
+        self.check_oversize()?;
         self.0.push_back(elem);
         Ok(())
     }
@@ -1344,16 +1412,8 @@ impl<T, const MIN_LEN: usize, const MAX_LEN: usize> Confined<VecDeque<T>, MIN_LE
     /// length will be less than the confinement requirement. Returns the
     /// removed element otherwise.
     pub fn remove(&mut self, index: usize) -> Result<T, Error> {
-        let len = self.len();
-        if self.is_empty() || len <= MIN_LEN {
-            return Err(Error::Undersize {
-                len,
-                min_len: MIN_LEN,
-            });
-        }
-        if index >= len {
-            return Err(Error::OutOfBoundary { index, len });
-        }
+        self.check_boundary(index)?;
+        self.check_undersize()?;
         Ok(self.0.remove(index).expect("element within the length"))
     }
 
@@ -1400,13 +1460,7 @@ impl<T: Hash + Eq, const MIN_LEN: usize, const MAX_LEN: usize>
         if !self.0.contains(elem) {
             return Ok(false);
         }
-        let len = self.len();
-        if self.is_empty() || len <= MIN_LEN {
-            return Err(Error::Undersize {
-                len,
-                min_len: MIN_LEN,
-            });
-        }
+        self.check_undersize()?;
         Ok(self.0.remove(elem))
     }
 
@@ -1418,13 +1472,7 @@ impl<T: Hash + Eq, const MIN_LEN: usize, const MAX_LEN: usize>
         if !self.0.contains(elem) {
             return Ok(None);
         }
-        let len = self.len();
-        if self.is_empty() || len <= MIN_LEN {
-            return Err(Error::Undersize {
-                len,
-                min_len: MIN_LEN,
-            });
-        }
+        self.check_undersize()?;
         Ok(self.0.take(elem))
     }
 }
@@ -1438,13 +1486,7 @@ impl<T: Ord, const MIN_LEN: usize, const MAX_LEN: usize> Confined<BTreeSet<T>, M
         if !self.0.contains(elem) {
             return Ok(false);
         }
-        let len = self.len();
-        if self.is_empty() || len <= MIN_LEN {
-            return Err(Error::Undersize {
-                len,
-                min_len: MIN_LEN,
-            });
-        }
+        self.check_undersize()?;
         Ok(self.0.remove(elem))
     }
 
@@ -1456,13 +1498,7 @@ impl<T: Ord, const MIN_LEN: usize, const MAX_LEN: usize> Confined<BTreeSet<T>, M
         if !self.0.contains(elem) {
             return Ok(None);
         }
-        let len = self.len();
-        if self.is_empty() || len - 1 <= MIN_LEN {
-            return Err(Error::Undersize {
-                len,
-                min_len: MIN_LEN,
-            });
-        }
+        self.check_undersize()?;
         Ok(self.0.take(elem))
     }
 }
@@ -1479,13 +1515,7 @@ impl<K: Hash + Eq, V, const MIN_LEN: usize, const MAX_LEN: usize>
         if !self.0.contains_key(key) {
             return Ok(None);
         }
-        let len = self.len();
-        if self.is_empty() || len <= MIN_LEN {
-            return Err(Error::Undersize {
-                len,
-                min_len: MIN_LEN,
-            });
-        }
+        self.check_undersize()?;
         Ok(self.0.remove(key))
     }
 
@@ -1515,13 +1545,7 @@ impl<K: Ord + Hash, V, const MIN_LEN: usize, const MAX_LEN: usize>
         if !self.0.contains_key(key) {
             return Ok(None);
         }
-        let len = self.len();
-        if self.is_empty() || len <= MIN_LEN {
-            return Err(Error::Undersize {
-                len,
-                min_len: MIN_LEN,
-            });
-        }
+        self.check_undersize()?;
         Ok(self.0.remove(key))
     }
 
@@ -1540,11 +1564,82 @@ impl<K: Ord + Hash, V, const MIN_LEN: usize, const MAX_LEN: usize>
     }
 }
 
+#[cfg(feature = "indexmap")]
+impl<T: Eq + Hash, const MIN_LEN: usize, const MAX_LEN: usize>
+    Confined<indexmap::IndexSet<T>, MIN_LEN, MAX_LEN>
+{
+    /// Removes a value from the set, returning whether the value was at the
+    /// set previously.
+    ///
+    /// # Errors
+    ///
+    /// Errors if the minimum confinement is not met after the removal.
+    pub fn remove(&mut self, elem: &T) -> Result<bool, Error> {
+        if !self.0.contains(elem) {
+            return Ok(false);
+        }
+        self.check_undersize()?;
+        Ok(self.0.shift_remove(elem))
+    }
+
+    /// Removes and returns the value in the set, if any, that is equal to the
+    /// given one.
+    ///
+    /// # Errors
+    ///
+    /// Errors if the minimum confinement is not met after the removal.
+    pub fn take(&mut self, elem: &T) -> Result<Option<T>, Error> {
+        if !self.0.contains(elem) {
+            return Ok(None);
+        }
+        self.check_undersize()?;
+        Ok(self.0.shift_take(elem))
+    }
+}
+
+#[cfg(feature = "indexmap")]
+impl<K: Eq + Hash, V, const MIN_LEN: usize, const MAX_LEN: usize>
+    Confined<indexmap::IndexMap<K, V>, MIN_LEN, MAX_LEN>
+{
+    /// Removes a key from the map, returning the value at the key if the key
+    /// was previously in the map.
+    ///
+    /// # Errors
+    ///
+    /// Errors if the minimum confinement is not met after the removal.
+    pub fn remove(&mut self, key: &K) -> Result<Option<V>, Error> {
+        if !self.0.contains_key(key) {
+            return Ok(None);
+        }
+        self.check_undersize()?;
+        Ok(self.0.shift_remove(key))
+    }
+
+    /// Creates a consuming iterator visiting all the keys in arbitrary order.
+    /// The map cannot be used after calling this. The iterator element type is
+    /// `K`.
+    pub fn into_keys(self) -> indexmap::map::IntoKeys<K, V> {
+        self.0.into_keys()
+    }
+
+    /// Creates a consuming iterator visiting all the values in arbitrary order.
+    /// The map cannot be used after calling this. The iterator element type is
+    /// `V`.
+    pub fn into_values(self) -> indexmap::map::IntoValues<K, V> {
+        self.0.into_values()
+    }
+}
+
 // io::Writer
 #[cfg(feature = "std")]
 impl<const MAX_LEN: usize> io::Write for Confined<Vec<u8>, ZERO, MAX_LEN> {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        if buf.len() + self.len() >= MAX_LEN {
+        if buf.is_empty() {
+            return Ok(0);
+        }
+        let len = self.len();
+        let buf_len = buf.len();
+        if buf_len > MAX_LEN || len >= MAX_LEN || len.saturating_add(buf_len) > MAX_LEN {
             return Err(io::Error::from(io::ErrorKind::OutOfMemory));
         }
         self.0.extend(buf);
@@ -1716,6 +1811,67 @@ pub type ConfinedOrdMap<K, V, const MIN: usize = 0, const MAX: usize = U64> =
     Confined<BTreeMap<K, V>, MIN, MAX>;
 /// [`BTreeMap`] which contains at least a single item.
 pub type NonEmptyOrdMap<K, V, const MAX: usize = U64> = Confined<BTreeMap<K, V>, ONE, MAX>;
+
+/// [`indexmap::IndexSet`] with maximum 255 items of type `T`.
+#[cfg(feature = "indexmap")]
+pub type TinyIndexSet<T> = Confined<indexmap::IndexSet<T>, ZERO, U8>;
+/// [`indexmap::IndexSet`] with maximum 2^16-1 items of type `T`.
+#[cfg(feature = "indexmap")]
+pub type SmallIndexSet<T> = Confined<indexmap::IndexSet<T>, ZERO, U16>;
+/// [`indexmap::IndexSet`] with maximum 2^24-1 items of type `T`.
+#[cfg(feature = "indexmap")]
+pub type MediumIndexSet<T> = Confined<indexmap::IndexSet<T>, ZERO, U24>;
+/// [`indexmap::IndexSet`] with maximum 2^32-1 items of type `T`.
+#[cfg(feature = "indexmap")]
+pub type LargeIndexSet<T> = Confined<indexmap::IndexSet<T>, ZERO, U32>;
+#[cfg(feature = "indexmap")]
+/// Confined [`indexmap::IndexSet`].
+pub type ConfinedIndexSet<T, const MIN: usize = 0, const MAX: usize = U64> =
+    Confined<indexmap::IndexSet<T>, MIN, MAX>;
+/// [`indexmap::IndexSet`] which contains at least a single item.
+#[cfg(feature = "indexmap")]
+pub type NonEmptyIndexSet<T, const MAX: usize = U64> = Confined<indexmap::IndexSet<T>, ONE, MAX>;
+
+/// [`indexmap::IndexMap`] with maximum 255 items.
+#[cfg(feature = "indexmap")]
+pub type TinyIndexMap<K, V> = Confined<indexmap::IndexMap<K, V>, ZERO, U8>;
+/// [`indexmap::IndexMap`] with maximum 2^16-1 items.
+#[cfg(feature = "indexmap")]
+pub type SmallIndexMap<K, V> = Confined<indexmap::IndexMap<K, V>, ZERO, U16>;
+/// [`indexmap::IndexMap`] with maximum 2^24-1 items.
+#[cfg(feature = "indexmap")]
+pub type MediumIndexMap<K, V> = Confined<indexmap::IndexMap<K, V>, ZERO, U24>;
+/// [`indexmap::IndexMap`] with maximum 2^32-1 items.
+#[cfg(feature = "indexmap")]
+pub type LargeIndexMap<K, V> = Confined<indexmap::IndexMap<K, V>, ZERO, U32>;
+#[cfg(feature = "indexmap")]
+/// Confined [`indexmap::IndexMap`].
+pub type ConfinedIndexMap<K, V, const MIN: usize = 0, const MAX: usize = U64> =
+    Confined<indexmap::IndexMap<K, V>, MIN, MAX>;
+/// [`indexmap::IndexMap`] which contains at least a single item.
+#[cfg(feature = "indexmap")]
+pub type NonEmptyIndexMap<K, V, const MAX: usize = U64> =
+    Confined<indexmap::IndexMap<K, V>, ONE, MAX>;
+
+/// [`smallvec::SmallVec`] with maximum 255 items.
+#[cfg(feature = "smallvec")]
+pub type TinySmallVec<A> = Confined<smallvec::SmallVec<A>, ZERO, U8>;
+/// [`smallvec::SmallVec`] with maximum 2^16-1 items.
+#[cfg(feature = "smallvec")]
+pub type SmallSmallVec<A> = Confined<smallvec::SmallVec<A>, ZERO, U16>;
+/// [`smallvec::SmallVec`] with maximum 2^24-1 items.
+#[cfg(feature = "smallvec")]
+pub type MediumSmallVec<A> = Confined<smallvec::SmallVec<A>, ZERO, U24>;
+/// [`smallvec::SmallVec`] with maximum 2^32-1 items.
+#[cfg(feature = "smallvec")]
+pub type LargeSmallVec<A> = Confined<smallvec::SmallVec<A>, ZERO, U32>;
+#[cfg(feature = "smallvec")]
+/// Confined [`smallvec::SmallVec`].
+pub type ConfinedSmallVec<A, const MIN: usize = 0, const MAX: usize = U64> =
+    Confined<smallvec::SmallVec<A>, MIN, MAX>;
+/// [`smallvec::SmallVec`] which contains at least a single item.
+#[cfg(feature = "smallvec")]
+pub type NonEmptySmallVec<A, const MAX: usize = U64> = Confined<smallvec::SmallVec<A>, ONE, MAX>;
 
 /// Helper macro to construct confined string
 #[macro_export]
@@ -2099,6 +2255,132 @@ macro_rules! medium_bmap {
     }
 }
 
+/// Helper macro to construct confined [`indexmap::IndexMap`] of a
+/// [`TinyIndexMap`] type
+#[macro_export]
+#[cfg(feature = "indexmap")]
+macro_rules! tiny_imap {
+    () => {
+        $crate::confinement::TinyIndexMap::new()
+    };
+    { $($key:expr => $value:expr),+ $(,)? } => {
+        $crate::confinement::TinyIndexMap::try_from(::core::iter::FromIterator::from_iter([$(($key, $value)),+]))
+            .expect("inline tiny_imap literal contains invalid number of items")
+    }
+}
+
+/// Helper macro to construct confined [`indexmap::IndexMap`] of a
+/// [`SmallIndexMap`] type
+#[macro_export]
+#[cfg(feature = "indexmap")]
+macro_rules! small_imap {
+    () => {
+        $crate::confinement::SmallIndexMap::new()
+    };
+    { $($key:expr => $value:expr),+ $(,)? } => {
+        $crate::confinement::SmallIndexMap::try_from(::core::iter::FromIterator::from_iter([$(($key, $value)),+]))
+            .expect("inline small_imap literal contains invalid number of items")
+    }
+}
+
+/// Helper macro to construct confined [`indexmap::IndexMap`] of a
+/// [`MediumIndexMap`] type
+#[macro_export]
+#[cfg(feature = "indexmap")]
+macro_rules! medium_imap {
+    () => {
+        $crate::confinement::MediumIndexMap::new()
+    };
+    { $($key:expr => $value:expr),+ $(,)? } => {
+        $crate::confinement::MediumIndexMap::try_from(::core::iter::FromIterator::from_iter([$(($key, $value)),+]))
+            .expect("inline medium_imap literal contains invalid number of items")
+    }
+}
+
+/// Helper macro to construct confined [`indexmap::IndexSet`] of a
+/// [`TinyIndexSet`] type
+#[macro_export]
+#[cfg(feature = "indexmap")]
+macro_rules! tiny_iset {
+    () => {
+        $crate::confinement::TinyIndexSet::new()
+    };
+    ($($x:expr),+ $(,)?) => (
+        $crate::confinement::TinyIndexSet::try_from(::core::iter::FromIterator::from_iter([$($x,)+]))
+            .expect("inline tiny_iset literal contains invalid number of items")
+    )
+}
+
+/// Helper macro to construct confined [`indexmap::IndexSet`] of a
+/// [`SmallIndexSet`] type
+#[macro_export]
+#[cfg(feature = "indexmap")]
+macro_rules! small_iset {
+    () => {
+        $crate::confinement::SmallIndexSet::new()
+    };
+    ($($x:expr),+ $(,)?) => (
+        $crate::confinement::SmallIndexSet::try_from(::core::iter::FromIterator::from_iter([$($x,)+]))
+            .expect("inline small_iset literal contains invalid number of items")
+    )
+}
+
+/// Helper macro to construct confined [`indexmap::IndexSet`] of a
+/// [`MediumIndexSet`] type
+#[macro_export]
+#[cfg(feature = "indexmap")]
+macro_rules! medium_iset {
+    () => {
+        $crate::confinement::MediumIndexSet::new()
+    };
+    ($($x:expr),+ $(,)?) => (
+        $crate::confinement::MediumIndexSet::try_from(::core::iter::FromIterator::from_iter([$($x,)+]))
+            .expect("inline medium_iset literal contains invalid number of items")
+    )
+}
+
+/// Helper macro to construct confined [`smallvec::SmallVec`] of a
+/// [`TinySmallVec`] type
+#[macro_export]
+#[cfg(feature = "smallvec")]
+macro_rules! tiny_svec {
+    () => {
+        $crate::confinement::TinySmallVec::new()
+    };
+    ($($x:expr),+ $(,)?) => (
+        $crate::confinement::TinySmallVec::try_from(::core::iter::FromIterator::from_iter([$($x,)+]))
+            .expect("inline tiny_svec literal contains invalid number of items")
+    )
+}
+
+/// Helper macro to construct confined [`smallvec::SmallVec`] of a
+/// [`SmallSmallVec`] type
+#[macro_export]
+#[cfg(feature = "smallvec")]
+macro_rules! small_svec {
+    () => {
+        $crate::confinement::SmallSmallVec::new()
+    };
+    ($($x:expr),+ $(,)?) => (
+        $crate::confinement::SmallSmallVec::try_from(::core::iter::FromIterator::from_iter([$($x,)+]))
+            .expect("inline small_svec literal contains invalid number of items")
+    )
+}
+
+/// Helper macro to construct confined [`smallvec::SmallVec`] of a
+/// [`MediumSmallVec`] type
+#[macro_export]
+#[cfg(feature = "smallvec")]
+macro_rules! medium_svec {
+    () => {
+        $crate::confinement::MediumSmallVec::new()
+    };
+    ($($x:expr),+ $(,)?) => (
+        $crate::confinement::MediumSmallVec::try_from(::core::iter::FromIterator::from_iter([$($x,)+]))
+            .expect("inline medium_svec literal contains invalid number of items")
+    )
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
@@ -2118,47 +2400,199 @@ mod test {
         let mut deque = TinyDeque::new();
         let mut set = TinyHashSet::new();
         let mut bset = TinyOrdSet::new();
+        #[cfg(feature = "smallvec")]
+        let mut svec = TinySmallVec::<[u8; 8]>::new();
         let mut map = TinyHashMap::new();
         let mut bmap = TinyOrdMap::new();
+        #[cfg(feature = "indexmap")]
+        let mut imap = TinyIndexMap::new();
+        #[cfg(feature = "indexmap")]
+        let mut iset = TinyIndexSet::new();
         assert!(vec.is_empty());
         assert!(deque.is_empty());
         assert!(set.is_empty());
         assert!(bset.is_empty());
         assert!(map.is_empty());
         assert!(bmap.is_empty());
+        #[cfg(feature = "indexmap")]
+        assert!(imap.is_empty());
+        #[cfg(feature = "indexmap")]
+        assert!(iset.is_empty());
         for index in 1..=255 {
             vec.push(5u8).unwrap();
             deque.push(5u8).unwrap();
             set.push(index).unwrap();
             bset.push(5u8).unwrap();
+            #[cfg(feature = "smallvec")]
+            svec.push(5u8).unwrap();
             map.insert(5u8, 'a').unwrap();
             bmap.insert(index, 'a').unwrap();
+            #[cfg(feature = "indexmap")]
+            imap.insert(index, 'a').unwrap();
+            #[cfg(feature = "indexmap")]
+            iset.push(index).unwrap();
         }
         assert_eq!(vec.len_u8(), u8::MAX);
         assert_eq!(deque.len_u8(), u8::MAX);
         assert_eq!(set.len_u8(), u8::MAX);
         assert_eq!(bset.len_u8(), 1);
+        #[cfg(feature = "smallvec")]
+        assert_eq!(svec.len_u8(), 255);
         assert_eq!(map.len_u8(), 1);
         assert_eq!(bmap.len_u8(), u8::MAX);
+        #[cfg(feature = "indexmap")]
+        assert_eq!(imap.len_u8(), u8::MAX);
+        #[cfg(feature = "indexmap")]
+        assert_eq!(iset.len_u8(), u8::MAX);
 
         vec.clear();
         assert!(vec.is_empty());
     }
 
     #[test]
-    #[should_panic(expected = "Oversize")]
     fn cant_go_above_max() {
         let mut s = TinyString::new();
-        for _ in 1..=256 {
+        for _ in 1..=255 {
             s.push('a').unwrap();
         }
+        assert!(matches!(
+            s.push('a'),
+            Err(Error::Oversize {
+                len: 255,
+                max_len: 255
+            })
+        ));
+
+        let mut v = TinyVec::<u8>::new();
+        for _ in 1..=255 {
+            v.push(1).unwrap();
+        }
+        assert!(matches!(
+            v.push(1),
+            Err(Error::Oversize {
+                len: 255,
+                max_len: 255
+            })
+        ));
+
+        let mut set = TinyOrdSet::<u8>::new();
+        for i in 1..=255 {
+            set.push(i).unwrap();
+        }
+        assert!(matches!(
+            set.push(255),
+            Err(Error::Oversize {
+                len: 255,
+                max_len: 255
+            })
+        ));
+        assert!(matches!(
+            set.push(0),
+            Err(Error::Oversize {
+                len: 255,
+                max_len: 255
+            })
+        ));
+
+        let mut map = TinyOrdMap::<u8, u8>::new();
+        for i in 1..=255 {
+            map.insert(i, i).unwrap();
+        }
+        // Replacing an existing key should succeed
+        assert_eq!(map.insert(255, 0), Ok(Some(255)));
+        assert!(matches!(
+            map.insert(0, 0),
+            Err(Error::Oversize {
+                len: 255,
+                max_len: 255
+            })
+        ));
     }
 
     #[test]
-    #[should_panic(expected = "Undersize")]
+    fn boundary() {
+        let mut s = TinyString::new();
+        s.push('a').unwrap();
+        assert!(matches!(
+            s.remove(1),
+            Err(Error::OutOfBoundary { index: 1, len: 1 })
+        ));
+
+        let mut v = TinyVec::<u8>::new();
+        v.push(1).unwrap();
+        assert!(matches!(
+            v.remove(1),
+            Err(Error::OutOfBoundary { index: 1, len: 1 })
+        ));
+
+        let mut d = TinyDeque::<u8>::new();
+        d.push_back(1).unwrap();
+        assert!(matches!(
+            d.remove(1),
+            Err(Error::OutOfBoundary { index: 1, len: 1 })
+        ));
+    }
+
+    #[test]
     fn cant_go_below_min() {
+        let mut s = TinyString::new();
+        assert!(matches!(
+            s.remove(0),
+            Err(Error::OutOfBoundary { index: 0, len: 0 })
+        ));
+
+        let mut s = TinyVec::<u8>::new();
+        assert!(matches!(
+            s.remove(0),
+            Err(Error::OutOfBoundary { index: 0, len: 0 })
+        ));
+
+        let mut s = TinyOrdSet::<u8>::new();
+        assert!(matches!(s.remove(&0), Ok(false)));
+
+        let mut s = TinyOrdMap::<u8, u8>::new();
+        assert!(matches!(s.remove(&0), Ok(None)));
+
         let mut s = NonEmptyString::<U8>::with('a');
-        s.remove(0).unwrap();
+        assert!(matches!(
+            s.remove(0),
+            Err(Error::Undersize { len: 1, min_len: 1 })
+        ));
+        assert!(matches!(
+            s.remove(1),
+            Err(Error::OutOfBoundary { index: 1, len: 1 })
+        ));
+
+        let mut v = NonEmptyVec::<u8>::with(1);
+        assert!(matches!(
+            v.remove(0),
+            Err(Error::Undersize { len: 1, min_len: 1 })
+        ));
+        assert!(matches!(
+            v.remove(1),
+            Err(Error::OutOfBoundary { index: 1, len: 1 })
+        ));
+
+        let mut set = NonEmptyOrdSet::<u8>::with(1);
+        assert!(matches!(
+            set.remove(&1),
+            Err(Error::Undersize { len: 1, min_len: 1 })
+        ));
+
+        let mut map = NonEmptyOrdMap::<u8, u8>::with_key_value(1, 1);
+        assert!(matches!(
+            map.remove(&1),
+            Err(Error::Undersize { len: 1, min_len: 1 })
+        ));
+
+        #[cfg(feature = "smallvec")]
+        {
+            let mut v = NonEmptySmallVec::<[u8; 1]>::with(1);
+            assert!(matches!(
+                v.remove(0),
+                Err(Error::Undersize { len: 1, min_len: 1 })
+            ));
+        }
     }
 
     #[test]
@@ -2184,6 +2618,12 @@ mod test {
         tiny_vec!() as TinyVec<&str>;
         tiny_vec!("a", "b", "c");
         small_vec!("a", "b", "c");
+        #[cfg(feature = "smallvec")]
+        {
+            tiny_svec!() as TinySmallVec<[&str; 3]>;
+            tiny_svec!("a", "b", "c") as TinySmallVec<[&str; 3]>;
+            small_svec!("a", "b", "c") as SmallSmallVec<[&str; 3]>;
+        }
 
         tiny_set!() as TinyHashSet<&str>;
         tiny_set!("a", "b", "c");
@@ -2198,6 +2638,17 @@ mod test {
         small_bset!("a", "b", "c");
         small_map!("a" => 1, "b" => 2, "c" => 3);
         small_bmap!("a" => 1, "b" => 2, "c" => 3);
+
+        #[cfg(feature = "indexmap")]
+        {
+            tiny_imap!() as TinyIndexMap<&str, u8>;
+            tiny_imap!("a" => 1, "b" => 2, "c" => 3);
+            small_imap!("a" => 1, "b" => 2, "c" => 3);
+
+            tiny_iset!() as TinyIndexSet<&str>;
+            tiny_iset!("a", "b", "c");
+            small_iset!("a", "b", "c");
+        }
     }
 
     #[test]
@@ -2217,5 +2668,58 @@ mod test {
         assert_eq!(coll.get(&1), Some(&"four"));
         *coll.get_mut(&1).unwrap() = "five";
         assert_eq!(coll.get(&1), Some(&"five"));
+    }
+
+    #[test]
+    #[cfg(feature = "indexmap")]
+    fn iter_mut_indexmap() {
+        let mut coll = tiny_imap!(1 => "one");
+        for (_index, item) in &mut coll {
+            *item = "two";
+        }
+        assert_eq!(coll.get(&1), Some(&"two"));
+        for (_index, item) in coll.keyed_values_mut() {
+            *item = "three";
+        }
+        assert_eq!(coll.get(&1), Some(&"three"));
+        for item in coll.values_mut() {
+            *item = "four";
+        }
+        assert_eq!(coll.get(&1), Some(&"four"));
+        *coll.get_mut(&1).unwrap() = "five";
+        assert_eq!(coll.get(&1), Some(&"five"));
+    }
+
+    #[test]
+    fn first_last_non_empty_vec() {
+        let coll = NonEmptyVec::<u8, U8>::try_from(vec![1, 2, 3]).unwrap();
+        assert_eq!(*coll.first(), 1);
+        assert_eq!(*coll.last(), 3);
+    }
+
+    #[test]
+    fn first_last_non_empty_deque() {
+        let coll = NonEmptyDeque::<u8, U8>::try_from_iter([1, 2, 3]).unwrap();
+        assert_eq!(*coll.first(), 1);
+        assert_eq!(*coll.last(), 3);
+    }
+
+    #[test]
+    fn test_index() {
+        let mut v = TinyVec::<u8>::new();
+        v.push(1u8).unwrap();
+        v.push(2u8).unwrap();
+        assert_eq!(v[0], 1);
+        assert_eq!(v[1], 2);
+        v[0] = 3;
+        assert_eq!(v[0], 3);
+        assert_eq!(&v[0..1], &[3]);
+
+        let mut m = TinyOrdMap::<u8, u8>::new();
+        m.insert(1u8, 10u8).unwrap();
+        m.insert(2u8, 20u8).unwrap();
+        assert_eq!(m[&1], 10);
+        assert_eq!(m[&2], 20);
+        // m[&1] = 11; // BTreeMap doesn't support IndexMut
     }
 }

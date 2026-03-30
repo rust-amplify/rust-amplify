@@ -641,8 +641,8 @@ pub(crate) mod serde_helpers {
 
     use core::fmt;
     use serde::{Deserialize, Deserializer, Serializer, Serialize};
-    use serde_crate::de::{SeqAccess, Visitor};
-    use serde_crate::ser::SerializeTuple;
+    use serde::de::{SeqAccess, Visitor};
+    use serde::ser::SerializeTuple;
 
     use crate::Array;
     use crate::hex::{FromHex, ToHex};
