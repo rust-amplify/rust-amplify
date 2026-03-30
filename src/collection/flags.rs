@@ -343,13 +343,13 @@ impl FlagVec {
 
     /// Creates an iterator for the current feature flags which have "set" state
     #[inline]
-    pub fn iter(&self) -> AllSet {
+    pub fn iter(&self) -> AllSet<'_> {
         AllSet::new(self)
     }
 
     /// Creates iterator over known set of the features
     #[inline]
-    pub fn known_iter(&self, mut known: FlagVec) -> FilteredIter {
+    pub fn known_iter(&self, mut known: FlagVec) -> FilteredIter<'_> {
         known.enlarge(self.capacity());
         FilteredIter::new(self, known)
     }
@@ -357,7 +357,7 @@ impl FlagVec {
     /// Creates iterator over unknown set of the features, i.e. features that
     /// **do not** match flags set in `known` parameter
     #[inline]
-    pub fn unknown_iter(&self, mut known: FlagVec) -> FilteredIter {
+    pub fn unknown_iter(&self, mut known: FlagVec) -> FilteredIter<'_> {
         known.enlarge(self.capacity());
         for byte in 0..self.0.len() {
             known.0[byte] = !known.0[byte];
