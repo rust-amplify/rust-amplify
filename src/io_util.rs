@@ -238,7 +238,7 @@ impl<Io: io::Read, const LIM: usize> io::Read for ConfinedIo<Io, LIM> {
             self.pos += len;
             self.io.read(buf)
         } else if self.pos >= LIM {
-            return Err(io::ErrorKind::UnexpectedEof.into());
+            Err(io::ErrorKind::UnexpectedEof.into())
         } else {
             let pos = self.pos;
             self.pos = LIM;
@@ -252,7 +252,7 @@ impl<Io: io::Read, const LIM: usize> io::Read for ConfinedIo<Io, LIM> {
             self.pos += len;
             self.io.read_exact(buf)
         } else if self.pos >= LIM {
-            return Err(io::ErrorKind::UnexpectedEof.into());
+            Err(io::ErrorKind::UnexpectedEof.into())
         } else {
             let pos = self.pos;
             self.pos = LIM;
