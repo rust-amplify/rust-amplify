@@ -7,6 +7,7 @@ Change Log
 - New `SmallVec` support in confined collections via `smallvec` feature
 - New `IndexSet` and `IndexMap` support in confined collections via `indexmap` feature
 - New `CursorDeque` implementation in `io` module, extending over smart pointers wrapping `VecDeque`
+- New non-failing `first` and `last` methods in confined non-empty collections
 - Updated CI: added support for ubuntu-24.04.arm, macos-15-intel and windows-11-arm runners
 - General chore and clippy lint fixes
 

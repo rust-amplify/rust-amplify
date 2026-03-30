@@ -35,7 +35,7 @@ rand = { version = "0.9.1", optional = true }
 # See https://github.com/rust-lang/api-guidelines/issues/180 for the explanation and references.
 serde = { version = "1.0", features = ["derive"], optional = true }
 stringly_conversions = { version = "0.1.1", optional = true, features = ["alloc"] }
-indexmap = { version = "2", optional = true }
+indexmap = { version = "2.11", optional = true }
 smallvec = { version = "1.13", optional = true }
 
 [dev-dependencies]
