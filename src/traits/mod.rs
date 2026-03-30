@@ -16,6 +16,7 @@
 #[macro_use]
 mod wrapper;
 mod as_any;
+#[cfg(feature = "alloc")]
 mod deques;
 mod dumb;
 mod join_split;
@@ -23,6 +24,7 @@ mod join_split;
 mod raw_str;
 
 pub use as_any::AsAny;
+#[cfg(feature = "alloc")]
 pub use deques::{AsDequeMut, AsDequeRef};
 pub use join_split::JoinSplit;
 pub use wrapper::{Wrapper, WrapperMut};

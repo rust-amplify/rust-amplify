@@ -15,7 +15,7 @@
 
 use core::cmp;
 use core::fmt::{self, Debug, Formatter};
-use std::collections::VecDeque;
+use alloc::collections::VecDeque;
 use std::io::{self, BufRead, Read, Seek, SeekFrom, Write};
 
 use crate::traits::{AsDequeMut, AsDequeRef};

@@ -13,11 +13,15 @@
 // along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
-use std::borrow::Cow;
+use alloc::borrow::Cow;
+use alloc::collections::VecDeque;
+use alloc::rc::Rc;
+use alloc::sync::Arc;
+use alloc::boxed::Box;
+#[cfg(feature = "std")]
+use std::sync::{MutexGuard, RwLockReadGuard, RwLockWriteGuard};
+#[cfg(feature = "std")]
 use std::cell::{Ref, RefMut};
-use std::collections::VecDeque;
-use std::rc::Rc;
-use std::sync::{Arc, MutexGuard, RwLockReadGuard, RwLockWriteGuard};
 
 /// A trait for types that can provide a reference to a [`VecDeque`].
 pub trait AsDequeRef<T> {
@@ -118,48 +122,56 @@ impl<T: Clone> AsDequeMut<T> for Cow<'_, VecDeque<T>> {
     }
 }
 
+#[cfg(feature = "std")]
 impl<T> AsDequeRef<T> for Ref<'_, VecDeque<T>> {
     fn as_deque_ref(&self) -> &VecDeque<T> {
         self
     }
 }
 
+#[cfg(feature = "std")]
 impl<T> AsDequeRef<T> for RefMut<'_, VecDeque<T>> {
     fn as_deque_ref(&self) -> &VecDeque<T> {
         self
     }
 }
 
+#[cfg(feature = "std")]
 impl<T> AsDequeMut<T> for RefMut<'_, VecDeque<T>> {
     fn as_deque_mut(&mut self) -> &mut VecDeque<T> {
         self
     }
 }
 
+#[cfg(feature = "std")]
 impl<T> AsDequeRef<T> for MutexGuard<'_, VecDeque<T>> {
     fn as_deque_ref(&self) -> &VecDeque<T> {
         self
     }
 }
 
+#[cfg(feature = "std")]
 impl<T> AsDequeMut<T> for MutexGuard<'_, VecDeque<T>> {
     fn as_deque_mut(&mut self) -> &mut VecDeque<T> {
         self
     }
 }
 
+#[cfg(feature = "std")]
 impl<T> AsDequeRef<T> for RwLockReadGuard<'_, VecDeque<T>> {
     fn as_deque_ref(&self) -> &VecDeque<T> {
         self
     }
 }
 
+#[cfg(feature = "std")]
 impl<T> AsDequeRef<T> for RwLockWriteGuard<'_, VecDeque<T>> {
     fn as_deque_ref(&self) -> &VecDeque<T> {
         self
     }
 }
 
+#[cfg(feature = "std")]
 impl<T> AsDequeMut<T> for RwLockWriteGuard<'_, VecDeque<T>> {
     fn as_deque_mut(&mut self) -> &mut VecDeque<T> {
         self
