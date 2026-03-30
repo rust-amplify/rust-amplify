@@ -400,7 +400,7 @@ impl<T: Eq + Hash> Collection for indexmap::IndexSet<T> {
     }
 
     fn clear(&mut self) {
-        indexmap::IndexSetclear(self)
+        indexmap::IndexSet::clear(self)
     }
 }
 
@@ -481,7 +481,7 @@ impl<K: Eq + Hash, V> KeyedCollection for indexmap::IndexMap<K, V> {
 /// Errors when confinement constraints were not met.
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 pub enum Error {
-    /// Operation results in collection reduced below the required minimum
+    /// Operation results in a collection reduced below the required minimum
     /// number of elements.
     Undersize {
         /** Current collection length */
@@ -491,8 +491,8 @@ pub enum Error {
         min_len: usize,
     },
 
-    /// Operation results in collection growth above the required maximum number
-    /// of elements.
+    /// Operation results in a collection growth above the required maximum
+    /// number of elements.
     Oversize {
         /** Current collection length */
         len: usize,
@@ -911,6 +911,17 @@ impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C, MIN_
         Ok(())
     }
 
+    fn check_undersize(&self) -> Result<(), Error> {
+        let len = self.len();
+        if len <= MIN_LEN {
+            return Err(Error::Undersize {
+                len: len.saturating_sub(1),
+                min_len: MIN_LEN,
+            });
+        }
+        Ok(())
+    }
+
     /// Constructs confinement over collection which was already size-checked.
     ///
     /// # Panics
@@ -1152,45 +1163,6 @@ where
     }
 }
 
-#[cfg(feature = "indexmap")]
-impl<T: Eq + Hash, const MIN_LEN: usize, const MAX_LEN: usize>
-    Confined<indexmap::IndexSet<T>, MIN_LEN, MAX_LEN>
-{
-    /// Removes a value from the set, returning whether the value was at the
-    /// set previously.
-    ///
-    /// # Errors
-    ///
-    /// Errors if the minimum confinement is not met after the removal.
-    pub fn remove(&mut self, elem: &T) -> Result<bool, Error> {
-        let len = self.0.len();
-        if len == MIN_LEN || len - 1 < MIN_LEN {
-            return Err(Error::Undersize {
-                len: len - 1,
-                min_len: MIN_LEN,
-            });
-        }
-        Ok(self.0.shift_remove(elem))
-    }
-
-    /// Removes and returns the value in the set, if any, that is equal to the
-    /// given one.
-    ///
-    /// # Errors
-    ///
-    /// Errors if the minimum confinement is not met after the removal.
-    pub fn take(&mut self, elem: &T) -> Result<Option<T>, Error> {
-        let len = self.0.len();
-        if len == MIN_LEN || len - 1 < MIN_LEN {
-            return Err(Error::Undersize {
-                len: len - 1,
-                min_len: MIN_LEN,
-            });
-        }
-        Ok(self.0.shift_take(elem))
-    }
-}
-
 impl<C: KeyedCollection, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C, MIN_LEN, MAX_LEN> {
     /// Gets mutable reference to an element of the collection.
     pub fn get_mut(&mut self, key: &C::Key) -> Option<&mut C::Value> {
@@ -1239,9 +1211,10 @@ impl<C: KeyedCollection, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C,
         f: impl FnMut(&C::Key, &mut C::Value) -> bool,
     ) -> Result<(), Error> {
         self.0.retain(f);
-        if self.0.len() < MIN_LEN {
+        let len = self.len();
+        if len < MIN_LEN {
             return Err(Error::Undersize {
-                len: self.0.len(),
+                len,
                 min_len: MIN_LEN,
             });
         }
@@ -1307,13 +1280,8 @@ impl<const MIN_LEN: usize, const MAX_LEN: usize> Confined<String, MIN_LEN, MAX_L
     /// doesn't shorten more than the confinement requirement. Errors
     /// otherwise.
     pub fn remove(&mut self, index: usize) -> Result<char, Error> {
+        self.check_undersize()?;
         let len = self.len();
-        if self.is_empty() || len <= MIN_LEN {
-            return Err(Error::Undersize {
-                len,
-                min_len: MIN_LEN,
-            });
-        }
         if index >= len {
             return Err(Error::OutOfBoundary { index, len });
         }
@@ -1334,13 +1302,8 @@ impl<const MIN_LEN: usize, const MAX_LEN: usize> Confined<AsciiString, MIN_LEN, 
     /// doesn't shorten more than the confinement requirement. Errors
     /// otherwise.
     pub fn remove(&mut self, index: usize) -> Result<AsciiChar, Error> {
+        self.check_undersize()?;
         let len = self.len();
-        if self.is_empty() || len <= MIN_LEN {
-            return Err(Error::Undersize {
-                len,
-                min_len: MIN_LEN,
-            });
-        }
         if index >= len {
             return Err(Error::OutOfBoundary { index, len });
         }
@@ -1419,13 +1382,8 @@ impl<T, const MIN_LEN: usize, const MAX_LEN: usize> Confined<Vec<T>, MIN_LEN, MA
     /// length will be less than the confinement requirement. Returns the
     /// removed element otherwise.
     pub fn remove(&mut self, index: usize) -> Result<T, Error> {
+        self.check_undersize()?;
         let len = self.len();
-        if self.is_empty() || len <= MIN_LEN {
-            return Err(Error::Undersize {
-                len,
-                min_len: MIN_LEN,
-            });
-        }
         if index >= len {
             return Err(Error::OutOfBoundary { index, len });
         }
@@ -1493,13 +1451,8 @@ impl<T, const MIN_LEN: usize, const MAX_LEN: usize> Confined<VecDeque<T>, MIN_LE
     /// length will be less than the confinement requirement. Returns the
     /// removed element otherwise.
     pub fn remove(&mut self, index: usize) -> Result<T, Error> {
+        self.check_undersize()?;
         let len = self.len();
-        if self.is_empty() || len <= MIN_LEN {
-            return Err(Error::Undersize {
-                len,
-                min_len: MIN_LEN,
-            });
-        }
         if index >= len {
             return Err(Error::OutOfBoundary { index, len });
         }
@@ -1549,13 +1502,7 @@ impl<T: Hash + Eq, const MIN_LEN: usize, const MAX_LEN: usize>
         if !self.0.contains(elem) {
             return Ok(false);
         }
-        let len = self.len();
-        if self.is_empty() || len <= MIN_LEN {
-            return Err(Error::Undersize {
-                len,
-                min_len: MIN_LEN,
-            });
-        }
+        self.check_undersize()?;
         Ok(self.0.remove(elem))
     }
 
@@ -1567,13 +1514,7 @@ impl<T: Hash + Eq, const MIN_LEN: usize, const MAX_LEN: usize>
         if !self.0.contains(elem) {
             return Ok(None);
         }
-        let len = self.len();
-        if self.is_empty() || len <= MIN_LEN {
-            return Err(Error::Undersize {
-                len,
-                min_len: MIN_LEN,
-            });
-        }
+        self.check_undersize()?;
         Ok(self.0.take(elem))
     }
 }
@@ -1587,13 +1528,7 @@ impl<T: Ord, const MIN_LEN: usize, const MAX_LEN: usize> Confined<BTreeSet<T>, M
         if !self.0.contains(elem) {
             return Ok(false);
         }
-        let len = self.len();
-        if self.is_empty() || len <= MIN_LEN {
-            return Err(Error::Undersize {
-                len,
-                min_len: MIN_LEN,
-            });
-        }
+        self.check_undersize()?;
         Ok(self.0.remove(elem))
     }
 
@@ -1605,13 +1540,7 @@ impl<T: Ord, const MIN_LEN: usize, const MAX_LEN: usize> Confined<BTreeSet<T>, M
         if !self.0.contains(elem) {
             return Ok(None);
         }
-        let len = self.len();
-        if self.is_empty() || len - 1 <= MIN_LEN {
-            return Err(Error::Undersize {
-                len,
-                min_len: MIN_LEN,
-            });
-        }
+        self.check_undersize()?;
         Ok(self.0.take(elem))
     }
 }
@@ -1628,13 +1557,7 @@ impl<K: Hash + Eq, V, const MIN_LEN: usize, const MAX_LEN: usize>
         if !self.0.contains_key(key) {
             return Ok(None);
         }
-        let len = self.len();
-        if self.is_empty() || len <= MIN_LEN {
-            return Err(Error::Undersize {
-                len,
-                min_len: MIN_LEN,
-            });
-        }
+        self.check_undersize()?;
         Ok(self.0.remove(key))
     }
 
@@ -1664,13 +1587,7 @@ impl<K: Ord + Hash, V, const MIN_LEN: usize, const MAX_LEN: usize>
         if !self.0.contains_key(key) {
             return Ok(None);
         }
-        let len = self.len();
-        if self.is_empty() || len <= MIN_LEN {
-            return Err(Error::Undersize {
-                len,
-                min_len: MIN_LEN,
-            });
-        }
+        self.check_undersize()?;
         Ok(self.0.remove(key))
     }
 
@@ -1690,6 +1607,39 @@ impl<K: Ord + Hash, V, const MIN_LEN: usize, const MAX_LEN: usize>
 }
 
 #[cfg(feature = "indexmap")]
+impl<T: Eq + Hash, const MIN_LEN: usize, const MAX_LEN: usize>
+    Confined<indexmap::IndexSet<T>, MIN_LEN, MAX_LEN>
+{
+    /// Removes a value from the set, returning whether the value was at the
+    /// set previously.
+    ///
+    /// # Errors
+    ///
+    /// Errors if the minimum confinement is not met after the removal.
+    pub fn remove(&mut self, elem: &T) -> Result<bool, Error> {
+        if !self.0.contains(elem) {
+            return Ok(false);
+        }
+        self.check_undersize()?;
+        Ok(self.0.shift_remove(elem))
+    }
+
+    /// Removes and returns the value in the set, if any, that is equal to the
+    /// given one.
+    ///
+    /// # Errors
+    ///
+    /// Errors if the minimum confinement is not met after the removal.
+    pub fn take(&mut self, elem: &T) -> Result<Option<T>, Error> {
+        if !self.0.contains(elem) {
+            return Ok(None);
+        }
+        self.check_undersize()?;
+        Ok(self.0.shift_take(elem))
+    }
+}
+
+#[cfg(feature = "indexmap")]
 impl<K: Eq + Hash, V, const MIN_LEN: usize, const MAX_LEN: usize>
     Confined<indexmap::IndexMap<K, V>, MIN_LEN, MAX_LEN>
 {
@@ -1700,13 +1650,10 @@ impl<K: Eq + Hash, V, const MIN_LEN: usize, const MAX_LEN: usize>
     ///
     /// Errors if the minimum confinement is not met after the removal.
     pub fn remove(&mut self, key: &K) -> Result<Option<V>, Error> {
-        let len = self.0.len();
-        if len == MIN_LEN || len - 1 < MIN_LEN {
-            return Err(Error::Undersize {
-                len: len - 1,
-                min_len: MIN_LEN,
-            });
+        if !self.0.contains_key(key) {
+            return Ok(None);
         }
+        self.check_undersize()?;
         Ok(self.0.shift_remove(key))
     }
 
@@ -2481,10 +2428,48 @@ mod test {
     }
 
     #[test]
-    #[should_panic(expected = "Undersize")]
     fn cant_go_below_min() {
+        let mut s = TinyString::new();
+        assert!(matches!(
+            s.remove(0),
+            Err(Error::Undersize { len: 0, min_len: 0 })
+        ));
+
+        let mut s = TinyVec::<u8>::new();
+        assert!(matches!(
+            s.remove(0),
+            Err(Error::Undersize { len: 0, min_len: 0 })
+        ));
+
+        let mut s = TinyOrdSet::<u8>::new();
+        assert!(matches!(s.remove(&0), Ok(false)));
+
+        let mut s = TinyOrdMap::<u8, u8>::new();
+        assert!(matches!(s.remove(&0), Ok(None)));
+
         let mut s = NonEmptyString::<U8>::with('a');
-        s.remove(0).unwrap();
+        assert!(matches!(
+            s.remove(0),
+            Err(Error::Undersize { len: 0, min_len: 1 })
+        ));
+
+        let mut v = NonEmptyVec::<u8>::with(1);
+        assert!(matches!(
+            v.remove(0),
+            Err(Error::Undersize { len: 0, min_len: 1 })
+        ));
+
+        let mut set = NonEmptyOrdSet::<u8>::with(1);
+        assert!(matches!(
+            set.remove(&1),
+            Err(Error::Undersize { len: 0, min_len: 1 })
+        ));
+
+        let mut map = NonEmptyOrdMap::<u8, u8>::with_key_value(1, 1);
+        assert!(matches!(
+            map.remove(&1),
+            Err(Error::Undersize { len: 0, min_len: 1 })
+        ));
     }
 
     #[test]

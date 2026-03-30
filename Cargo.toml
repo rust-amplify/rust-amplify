@@ -60,6 +60,7 @@ all = [
     "rand",
     "apfloat",
     "apfloat_std",
+    "indexmap",
 ]
 default = ["std", "derive", "hex"]
 std = ["amplify_num/std", "alloc"]
