@@ -933,6 +933,14 @@ impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C, MIN_
         Ok(())
     }
 
+    fn check_boundary(&self, index: usize) -> Result<(), Error> {
+        let len = self.len();
+        if index >= len {
+            return Err(Error::OutOfBoundary { index, len });
+        }
+        Ok(())
+    }
+
     /// Constructs confinement over collection which was already size-checked.
     ///
     /// # Panics
@@ -1277,10 +1285,7 @@ impl<const MIN_LEN: usize, const MAX_LEN: usize> Confined<String, MIN_LEN, MAX_L
     /// otherwise.
     pub fn remove(&mut self, index: usize) -> Result<char, Error> {
         self.check_undersize()?;
-        let len = self.len();
-        if index >= len {
-            return Err(Error::OutOfBoundary { index, len });
-        }
+        self.check_boundary(index)?;
         Ok(self.0.remove(index))
     }
 }
@@ -1299,10 +1304,7 @@ impl<const MIN_LEN: usize, const MAX_LEN: usize> Confined<AsciiString, MIN_LEN, 
     /// otherwise.
     pub fn remove(&mut self, index: usize) -> Result<AsciiChar, Error> {
         self.check_undersize()?;
-        let len = self.len();
-        if index >= len {
-            return Err(Error::OutOfBoundary { index, len });
-        }
+        self.check_boundary(index)?;
         Ok(self.0.remove(index))
     }
 }
@@ -1379,10 +1381,7 @@ impl<T, const MIN_LEN: usize, const MAX_LEN: usize> Confined<Vec<T>, MIN_LEN, MA
     /// removed element otherwise.
     pub fn remove(&mut self, index: usize) -> Result<T, Error> {
         self.check_undersize()?;
-        let len = self.len();
-        if index >= len {
-            return Err(Error::OutOfBoundary { index, len });
-        }
+        self.check_boundary(index)?;
         Ok(self.0.remove(index))
     }
 
@@ -1436,10 +1435,7 @@ impl<T, const MIN_LEN: usize, const MAX_LEN: usize> Confined<VecDeque<T>, MIN_LE
     /// removed element otherwise.
     pub fn remove(&mut self, index: usize) -> Result<T, Error> {
         self.check_undersize()?;
-        let len = self.len();
-        if index >= len {
-            return Err(Error::OutOfBoundary { index, len });
-        }
+        self.check_boundary(index)?;
         Ok(self.0.remove(index).expect("element within the length"))
     }
 
@@ -2466,6 +2462,30 @@ mod test {
                 len: 256,
                 max_len: 255
             })
+        ));
+    }
+
+    #[test]
+    fn boundary() {
+        let mut s = TinyString::new();
+        s.push('a').unwrap();
+        assert!(matches!(
+            s.remove(1),
+            Err(Error::OutOfBoundary { index: 1, len: 1 })
+        ));
+
+        let mut v = TinyVec::<u8>::new();
+        v.push(1).unwrap();
+        assert!(matches!(
+            v.remove(1),
+            Err(Error::OutOfBoundary { index: 1, len: 1 })
+        ));
+
+        let mut d = TinyDeque::<u8>::new();
+        d.push_back(1).unwrap();
+        assert!(matches!(
+            d.remove(1),
+            Err(Error::OutOfBoundary { index: 1, len: 1 })
         ));
     }
 
