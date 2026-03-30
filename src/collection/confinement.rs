@@ -922,6 +922,17 @@ impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C, MIN_
         Ok(())
     }
 
+    fn check_oversize(&self) -> Result<(), Error> {
+        let len = self.len();
+        if len >= MAX_LEN {
+            return Err(Error::Oversize {
+                len: len.saturating_add(1),
+                max_len: MAX_LEN,
+            });
+        }
+        Ok(())
+    }
+
     /// Constructs confinement over collection which was already size-checked.
     ///
     /// # Panics
@@ -1009,13 +1020,7 @@ impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C, MIN_
     /// Attempts to add a single element to the confined collection. Fails if
     /// the number of elements in the collection already maximal.
     pub fn push(&mut self, elem: C::Item) -> Result<(), Error> {
-        let len = self.len();
-        if len == MAX_LEN || len + 1 > MAX_LEN {
-            return Err(Error::Oversize {
-                len: len + 1,
-                max_len: MAX_LEN,
-            });
-        }
+        self.check_oversize()?;
         self.0.push(elem);
         Ok(())
     }
@@ -1173,26 +1178,17 @@ impl<C: KeyedCollection, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C,
     /// Fails if the collection already contains maximum number of elements
     /// allowed by the confinement.
     pub fn insert(&mut self, key: C::Key, value: C::Value) -> Result<Option<C::Value>, Error> {
-        let len = self.len();
-        if len == MAX_LEN || len + 1 > MAX_LEN {
-            return Err(Error::Oversize {
-                len: len + 1,
-                max_len: MAX_LEN,
-            });
-        }
+        self.check_oversize()?;
         Ok(self.0.insert(key, value))
     }
 
+    // TODO: This is strange; it doesn't need to check the bound and error!
     /// Gets the given key's corresponding entry in the map for in-place
     /// manipulation. Errors if the collection entry is vacant and the
     /// collection has already reached maximal size of its confinement.
     pub fn entry(&mut self, key: C::Key) -> Result<C::Entry<'_>, Error> {
-        let len = self.len();
-        if len == MAX_LEN && !self.0.contains_key(&key) {
-            return Err(Error::Oversize {
-                len: len + 1,
-                max_len: MAX_LEN,
-            });
+        if !self.0.contains_key(&key) {
+            self.check_oversize()?;
         }
         Ok(self.0.entry(key))
     }
@@ -1416,13 +1412,7 @@ impl<T, const MIN_LEN: usize, const MAX_LEN: usize> Confined<VecDeque<T>, MIN_LE
     /// Prepends an element to the deque. Errors if the new collection length
     /// will not fit the confinement requirements.
     pub fn push_front(&mut self, elem: T) -> Result<(), Error> {
-        let len = self.len();
-        if len == MAX_LEN || len + 1 > MAX_LEN {
-            return Err(Error::Oversize {
-                len: len + 1,
-                max_len: MAX_LEN,
-            });
-        }
+        self.check_oversize()?;
         self.0.push_front(elem);
         Ok(())
     }
@@ -1435,13 +1425,7 @@ impl<T, const MIN_LEN: usize, const MAX_LEN: usize> Confined<VecDeque<T>, MIN_LE
     /// Appends an element to the deque. Errors if the new collection length
     /// will not fit the confinement requirements.
     pub fn push_back(&mut self, elem: T) -> Result<(), Error> {
-        let len = self.len();
-        if len == MAX_LEN || len + 1 > MAX_LEN {
-            return Err(Error::Oversize {
-                len: len + 1,
-                max_len: MAX_LEN,
-            });
-        }
+        self.check_oversize()?;
         self.0.push_back(elem);
         Ok(())
     }
@@ -1676,7 +1660,9 @@ impl<K: Eq + Hash, V, const MIN_LEN: usize, const MAX_LEN: usize>
 #[cfg(feature = "std")]
 impl<const MAX_LEN: usize> io::Write for Confined<Vec<u8>, ZERO, MAX_LEN> {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        if buf.len() + self.len() >= MAX_LEN {
+        let len = self.len();
+        let buf_len = buf.len();
+        if buf_len > MAX_LEN || len.saturating_add(buf_len) > MAX_LEN {
             return Err(io::Error::from(io::ErrorKind::OutOfMemory));
         }
         self.0.extend(buf);
@@ -2419,12 +2405,68 @@ mod test {
     }
 
     #[test]
-    #[should_panic(expected = "Oversize")]
     fn cant_go_above_max() {
         let mut s = TinyString::new();
-        for _ in 1..=256 {
+        for _ in 1..=255 {
             s.push('a').unwrap();
         }
+        assert!(matches!(
+            s.push('a'),
+            Err(Error::Oversize {
+                len: 256,
+                max_len: 255
+            })
+        ));
+
+        let mut v = TinyVec::<u8>::new();
+        for _ in 1..=255 {
+            v.push(1).unwrap();
+        }
+        assert!(matches!(
+            v.push(1),
+            Err(Error::Oversize {
+                len: 256,
+                max_len: 255
+            })
+        ));
+
+        let mut set = TinyOrdSet::<u8>::new();
+        for i in 1..=255 {
+            set.push(i).unwrap();
+        }
+        assert!(matches!(
+            set.push(255),
+            Err(Error::Oversize {
+                len: 256,
+                max_len: 255
+            })
+        ));
+        assert!(matches!(
+            set.push(0),
+            Err(Error::Oversize {
+                len: 256,
+                max_len: 255
+            })
+        ));
+
+        let mut map = TinyOrdMap::<u8, u8>::new();
+        for i in 1..=255 {
+            map.insert(i, i).unwrap();
+        }
+        assert!(matches!(
+            map.insert(255, 0),
+            Err(Error::Oversize {
+                len: 256,
+                max_len: 255
+            })
+        ));
+        assert!(matches!(
+            map.insert(0, 0),
+            Err(Error::Oversize {
+                len: 256,
+                max_len: 255
+            })
+        ));
     }
 
     #[test]
