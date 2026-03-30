@@ -19,9 +19,7 @@ use core::borrow::{Borrow, BorrowMut};
 use core::fmt::{self, Display, Formatter, LowerHex, UpperHex};
 use core::str::FromStr;
 use core::hash::Hash;
-use core::ops::{
-    Deref, Index, IndexMut, Range, RangeFrom, RangeFull, RangeInclusive, RangeTo, RangeToInclusive,
-};
+use core::ops::{Deref, Index, IndexMut};
 use alloc::vec::Vec;
 use alloc::string::String;
 use alloc::borrow::ToOwned;
@@ -42,7 +40,7 @@ use ascii::{AsAsciiStrError, AsciiChar, AsciiString};
 
 use crate::num::u24;
 
-/// Trait implemented by a collection types which need to support collection
+/// Trait implemented by collection types which need to support collection
 /// confinement.
 pub trait Collection: FromIterator<Self::Item> + Extend<Self::Item> {
     /// Item type contained within the collection.
@@ -717,156 +715,26 @@ where
     }
 }
 
-impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Index<usize>
+impl<C: Collection, I, const MIN_LEN: usize, const MAX_LEN: usize> Index<I>
     for Confined<C, MIN_LEN, MAX_LEN>
 where
-    C: Index<usize, Output = C::Item>,
+    C: Index<I>,
 {
-    type Output = C::Item;
+    type Output = C::Output;
 
-    fn index(&self, index: usize) -> &Self::Output {
+    #[inline]
+    fn index(&self, index: I) -> &Self::Output {
         self.0.index(index)
     }
 }
 
-impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> IndexMut<usize>
+impl<C: Collection, I, const MIN_LEN: usize, const MAX_LEN: usize> IndexMut<I>
     for Confined<C, MIN_LEN, MAX_LEN>
 where
-    C: IndexMut<usize, Output = C::Item>,
+    C: IndexMut<I>,
 {
-    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
-        self.0.index_mut(index)
-    }
-}
-
-impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Index<Range<usize>>
-    for Confined<C, MIN_LEN, MAX_LEN>
-where
-    C: Index<Range<usize>, Output = [C::Item]>,
-{
-    type Output = [C::Item];
-
-    fn index(&self, index: Range<usize>) -> &Self::Output {
-        self.0.index(index)
-    }
-}
-
-impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> IndexMut<Range<usize>>
-    for Confined<C, MIN_LEN, MAX_LEN>
-where
-    C: IndexMut<Range<usize>, Output = [C::Item]>,
-{
-    fn index_mut(&mut self, index: Range<usize>) -> &mut Self::Output {
-        self.0.index_mut(index)
-    }
-}
-
-impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Index<RangeTo<usize>>
-    for Confined<C, MIN_LEN, MAX_LEN>
-where
-    C: Index<RangeTo<usize>, Output = [C::Item]>,
-{
-    type Output = [C::Item];
-
-    fn index(&self, index: RangeTo<usize>) -> &Self::Output {
-        self.0.index(index)
-    }
-}
-
-impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> IndexMut<RangeTo<usize>>
-    for Confined<C, MIN_LEN, MAX_LEN>
-where
-    C: IndexMut<RangeTo<usize>, Output = [C::Item]>,
-{
-    fn index_mut(&mut self, index: RangeTo<usize>) -> &mut Self::Output {
-        self.0.index_mut(index)
-    }
-}
-
-impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Index<RangeFrom<usize>>
-    for Confined<C, MIN_LEN, MAX_LEN>
-where
-    C: Index<RangeFrom<usize>, Output = [C::Item]>,
-{
-    type Output = [C::Item];
-
-    fn index(&self, index: RangeFrom<usize>) -> &Self::Output {
-        self.0.index(index)
-    }
-}
-
-impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> IndexMut<RangeFrom<usize>>
-    for Confined<C, MIN_LEN, MAX_LEN>
-where
-    C: IndexMut<RangeFrom<usize>, Output = [C::Item]>,
-{
-    fn index_mut(&mut self, index: RangeFrom<usize>) -> &mut Self::Output {
-        self.0.index_mut(index)
-    }
-}
-
-impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Index<RangeInclusive<usize>>
-    for Confined<C, MIN_LEN, MAX_LEN>
-where
-    C: Index<RangeInclusive<usize>, Output = [C::Item]>,
-{
-    type Output = [C::Item];
-
-    fn index(&self, index: RangeInclusive<usize>) -> &Self::Output {
-        self.0.index(index)
-    }
-}
-
-impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> IndexMut<RangeInclusive<usize>>
-    for Confined<C, MIN_LEN, MAX_LEN>
-where
-    C: IndexMut<RangeInclusive<usize>, Output = [C::Item]>,
-{
-    fn index_mut(&mut self, index: RangeInclusive<usize>) -> &mut Self::Output {
-        self.0.index_mut(index)
-    }
-}
-
-impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Index<RangeToInclusive<usize>>
-    for Confined<C, MIN_LEN, MAX_LEN>
-where
-    C: Index<RangeToInclusive<usize>, Output = [C::Item]>,
-{
-    type Output = [C::Item];
-
-    fn index(&self, index: RangeToInclusive<usize>) -> &Self::Output {
-        self.0.index(index)
-    }
-}
-
-impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> IndexMut<RangeToInclusive<usize>>
-    for Confined<C, MIN_LEN, MAX_LEN>
-where
-    C: IndexMut<RangeToInclusive<usize>, Output = [C::Item]>,
-{
-    fn index_mut(&mut self, index: RangeToInclusive<usize>) -> &mut Self::Output {
-        self.0.index_mut(index)
-    }
-}
-
-impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Index<RangeFull>
-    for Confined<C, MIN_LEN, MAX_LEN>
-where
-    C: Index<RangeFull, Output = [C::Item]>,
-{
-    type Output = [C::Item];
-
-    fn index(&self, index: RangeFull) -> &Self::Output {
-        self.0.index(index)
-    }
-}
-
-impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> IndexMut<RangeFull>
-    for Confined<C, MIN_LEN, MAX_LEN>
-where
-    C: IndexMut<RangeFull, Output = [C::Item]>,
-{
-    fn index_mut(&mut self, index: RangeFull) -> &mut Self::Output {
+    #[inline]
+    fn index_mut(&mut self, index: I) -> &mut Self::Output {
         self.0.index_mut(index)
     }
 }
@@ -2638,5 +2506,24 @@ mod test {
         let coll = NonEmptyDeque::<u8, U8>::try_from_iter([1, 2, 3]).unwrap();
         assert_eq!(*coll.first(), 1);
         assert_eq!(*coll.last(), 3);
+    }
+
+    #[test]
+    fn test_index() {
+        let mut v = TinyVec::<u8>::new();
+        v.push(1u8).unwrap();
+        v.push(2u8).unwrap();
+        assert_eq!(v[0], 1);
+        assert_eq!(v[1], 2);
+        v[0] = 3;
+        assert_eq!(v[0], 3);
+        assert_eq!(&v[0..1], &[3]);
+
+        let mut m = TinyOrdMap::<u8, u8>::new();
+        m.insert(1u8, 10u8).unwrap();
+        m.insert(2u8, 20u8).unwrap();
+        assert_eq!(m[&1], 10);
+        assert_eq!(m[&2], 20);
+        // m[&1] = 11; // BTreeMap doesn't support IndexMut
     }
 }
