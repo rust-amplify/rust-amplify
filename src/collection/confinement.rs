@@ -1165,8 +1165,8 @@ impl<const MIN_LEN: usize, const MAX_LEN: usize> Confined<String, MIN_LEN, MAX_L
     /// doesn't shorten more than the confinement requirement. Errors
     /// otherwise.
     pub fn remove(&mut self, index: usize) -> Result<char, Error> {
-        self.check_undersize()?;
         self.check_boundary(index)?;
+        self.check_undersize()?;
         Ok(self.0.remove(index))
     }
 }
@@ -1184,8 +1184,8 @@ impl<const MIN_LEN: usize, const MAX_LEN: usize> Confined<AsciiString, MIN_LEN, 
     /// doesn't shorten more than the confinement requirement. Errors
     /// otherwise.
     pub fn remove(&mut self, index: usize) -> Result<AsciiChar, Error> {
-        self.check_undersize()?;
         self.check_boundary(index)?;
+        self.check_undersize()?;
         Ok(self.0.remove(index))
     }
 }
@@ -1261,8 +1261,8 @@ impl<T, const MIN_LEN: usize, const MAX_LEN: usize> Confined<Vec<T>, MIN_LEN, MA
     /// length will be less than the confinement requirement. Returns the
     /// removed element otherwise.
     pub fn remove(&mut self, index: usize) -> Result<T, Error> {
-        self.check_undersize()?;
         self.check_boundary(index)?;
+        self.check_undersize()?;
         Ok(self.0.remove(index))
     }
 
@@ -1343,8 +1343,8 @@ impl<A: smallvec::Array, const MIN_LEN: usize, const MAX_LEN: usize>
     /// length will be less than the confinement requirement. Returns the
     /// removed element otherwise.
     pub fn remove(&mut self, index: usize) -> Result<A::Item, Error> {
-        self.check_undersize()?;
         self.check_boundary(index)?;
+        self.check_undersize()?;
         Ok(self.0.remove(index))
     }
 
@@ -1397,8 +1397,8 @@ impl<T, const MIN_LEN: usize, const MAX_LEN: usize> Confined<VecDeque<T>, MIN_LE
     /// length will be less than the confinement requirement. Returns the
     /// removed element otherwise.
     pub fn remove(&mut self, index: usize) -> Result<T, Error> {
-        self.check_undersize()?;
         self.check_boundary(index)?;
+        self.check_undersize()?;
         Ok(self.0.remove(index).expect("element within the length"))
     }
 
@@ -2249,7 +2249,7 @@ macro_rules! tiny_imap {
         $crate::confinement::TinyIndexMap::new()
     };
     { $($key:expr => $value:expr),+ $(,)? } => {
-        $crate::confinement::TinyIndexMap::try_from($crate::confinement::indexmap::IndexMap::from_iter([$(($key, $value)),+]))
+        $crate::confinement::TinyIndexMap::try_from(::core::iter::FromIterator::from_iter([$(($key, $value)),+]))
             .expect("inline tiny_imap literal contains invalid number of items")
     }
 }
@@ -2263,7 +2263,7 @@ macro_rules! small_imap {
         $crate::confinement::SmallIndexMap::new()
     };
     { $($key:expr => $value:expr),+ $(,)? } => {
-        $crate::confinement::SmallIndexMap::try_from($crate::confinement::indexmap::IndexMap::from_iter([$(($key, $value)),+]))
+        $crate::confinement::SmallIndexMap::try_from(::core::iter::FromIterator::from_iter([$(($key, $value)),+]))
             .expect("inline small_imap literal contains invalid number of items")
     }
 }
@@ -2277,7 +2277,7 @@ macro_rules! medium_imap {
         $crate::confinement::MediumIndexMap::new()
     };
     { $($key:expr => $value:expr),+ $(,)? } => {
-        $crate::confinement::MediumIndexMap::try_from($crate::confinement::indexmap::IndexMap::from_iter([$(($key, $value)),+]))
+        $crate::confinement::MediumIndexMap::try_from(::core::iter::FromIterator::from_iter([$(($key, $value)),+]))
             .expect("inline medium_imap literal contains invalid number of items")
     }
 }
@@ -2291,7 +2291,7 @@ macro_rules! tiny_iset {
         $crate::confinement::TinyIndexSet::new()
     };
     ($($x:expr),+ $(,)?) => (
-        $crate::confinement::TinyIndexSet::try_from($crate::confinement::indexmap::IndexSet::from_iter([$($x,)+]))
+        $crate::confinement::TinyIndexSet::try_from(::core::iter::FromIterator::from_iter([$($x,)+]))
             .expect("inline tiny_iset literal contains invalid number of items")
     )
 }
@@ -2305,7 +2305,7 @@ macro_rules! small_iset {
         $crate::confinement::SmallIndexSet::new()
     };
     ($($x:expr),+ $(,)?) => (
-        $crate::confinement::SmallIndexSet::try_from($crate::confinement::indexmap::IndexSet::from_iter([$($x,)+]))
+        $crate::confinement::SmallIndexSet::try_from(::core::iter::FromIterator::from_iter([$($x,)+]))
             .expect("inline small_iset literal contains invalid number of items")
     )
 }
@@ -2319,7 +2319,7 @@ macro_rules! medium_iset {
         $crate::confinement::MediumIndexSet::new()
     };
     ($($x:expr),+ $(,)?) => (
-        $crate::confinement::MediumIndexSet::try_from($crate::confinement::indexmap::IndexSet::from_iter([$($x,)+]))
+        $crate::confinement::MediumIndexSet::try_from(::core::iter::FromIterator::from_iter([$($x,)+]))
             .expect("inline medium_iset literal contains invalid number of items")
     )
 }
@@ -2333,7 +2333,7 @@ macro_rules! tiny_svec {
         $crate::confinement::TinySmallVec::new()
     };
     ($($x:expr),+ $(,)?) => (
-        $crate::confinement::TinySmallVec::try_from($crate::confinement::smallvec::SmallVec::from_iter([$($x,)+]))
+        $crate::confinement::TinySmallVec::try_from(::core::iter::FromIterator::from_iter([$($x,)+]))
             .expect("inline tiny_svec literal contains invalid number of items")
     )
 }
@@ -2347,7 +2347,7 @@ macro_rules! small_svec {
         $crate::confinement::SmallSmallVec::new()
     };
     ($($x:expr),+ $(,)?) => (
-        $crate::confinement::SmallSmallVec::try_from($crate::confinement::smallvec::SmallVec::from_iter([$($x,)+]))
+        $crate::confinement::SmallSmallVec::try_from(::core::iter::FromIterator::from_iter([$($x,)+]))
             .expect("inline small_svec literal contains invalid number of items")
     )
 }
@@ -2361,7 +2361,7 @@ macro_rules! medium_svec {
         $crate::confinement::MediumSmallVec::new()
     };
     ($($x:expr),+ $(,)?) => (
-        $crate::confinement::MediumSmallVec::try_from($crate::confinement::smallvec::SmallVec::from_iter([$($x,)+]))
+        $crate::confinement::MediumSmallVec::try_from(::core::iter::FromIterator::from_iter([$($x,)+]))
             .expect("inline medium_svec literal contains invalid number of items")
     )
 }
