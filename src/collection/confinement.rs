@@ -1518,14 +1518,14 @@ impl<T, const MIN_LEN: usize, const MAX_LEN: usize> Confined<Vec<T>, MIN_LEN, MA
     /// Returns an iterator over the vector values.
     ///
     /// The iterator yields all items from start to end.
-    pub fn iter(&self) -> slice::Iter<T> {
+    pub fn iter(&self) -> slice::Iter<'_, T> {
         self.0.iter()
     }
 
     /// Returns an iterator that allows modifying each value.
     ///
     /// The iterator yields all items from start to end.
-    pub fn iter_mut(&mut self) -> slice::IterMut<T> {
+    pub fn iter_mut(&mut self) -> slice::IterMut<'_, T> {
         self.0.iter_mut()
     }
 }
@@ -1567,14 +1567,14 @@ impl<T, const MIN_LEN: usize, const MAX_LEN: usize> Confined<VecDeque<T>, MIN_LE
     /// Returns an iterator over the vecdeque values.
     ///
     /// The iterator yields all items from start to end.
-    pub fn iter(&self) -> vec_deque::Iter<T> {
+    pub fn iter(&self) -> vec_deque::Iter<'_, T> {
         self.0.iter()
     }
 
     /// Returns an iterator that allows modifying each value.
     ///
     /// The iterator yields all items from start to end.
-    pub fn iter_mut(&mut self) -> vec_deque::IterMut<T> {
+    pub fn iter_mut(&mut self) -> vec_deque::IterMut<'_, T> {
         self.0.iter_mut()
     }
 
@@ -1708,7 +1708,7 @@ impl<T: Hash + Eq, const MIN_LEN: usize, const MAX_LEN: usize>
     /// Returns an iterator over the set values.
     ///
     /// The iterator yields all items from start to end.
-    pub fn iter(&self) -> hash_set::Iter<T> {
+    pub fn iter(&self) -> hash_set::Iter<'_, T> {
         self.0.iter()
     }
 
@@ -1774,7 +1774,7 @@ impl<T: Ord, const MIN_LEN: usize, const MAX_LEN: usize> Confined<BTreeSet<T>, M
     /// Returns an iterator overset values.
     ///
     /// The iterator yields all items from start to end.
-    pub fn iter(&self) -> btree_set::Iter<T> {
+    pub fn iter(&self) -> btree_set::Iter<'_, T> {
         self.0.iter()
     }
 
@@ -1848,19 +1848,19 @@ impl<K: Hash + Eq, V, const MIN_LEN: usize, const MAX_LEN: usize>
     }
 
     /// Returns an iterator that allows modifying each value for each key.
-    pub fn values_mut(&mut self) -> hash_map::ValuesMut<K, V> {
+    pub fn values_mut(&mut self) -> hash_map::ValuesMut<'_, K, V> {
         self.0.values_mut()
     }
 
     /// Returns an iterator over map keys and values.
     ///
     /// The iterator yields all items from start to end.
-    pub fn iter(&self) -> hash_map::Iter<K, V> {
+    pub fn iter(&self) -> hash_map::Iter<'_, K, V> {
         self.0.iter()
     }
 
     /// Returns an iterator that allows modifying each value for each key.
-    pub fn iter_mut(&mut self) -> hash_map::IterMut<K, V> {
+    pub fn iter_mut(&mut self) -> hash_map::IterMut<'_, K, V> {
         self.0.iter_mut()
     }
 
@@ -1948,19 +1948,19 @@ impl<K: Ord + Hash, V, const MIN_LEN: usize, const MAX_LEN: usize>
     }
 
     /// Returns an iterator that allows modifying each value for each key.
-    pub fn values_mut(&mut self) -> btree_map::ValuesMut<K, V> {
+    pub fn values_mut(&mut self) -> btree_map::ValuesMut<'_, K, V> {
         self.0.values_mut()
     }
 
     /// Returns an iterator over the map keys and values.
     ///
     /// The iterator yields all items from start to end.
-    pub fn iter(&self) -> btree_map::Iter<K, V> {
+    pub fn iter(&self) -> btree_map::Iter<'_, K, V> {
         self.0.iter()
     }
 
     /// Returns an iterator that allows modifying each value for each key.
-    pub fn iter_mut(&mut self) -> btree_map::IterMut<K, V> {
+    pub fn iter_mut(&mut self) -> btree_map::IterMut<'_, K, V> {
         self.0.iter_mut()
     }
 
