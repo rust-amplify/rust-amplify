@@ -31,9 +31,11 @@ use core::slice::SliceIndex;
 use core::ops::RangeBounds;
 #[cfg(feature = "std")]
 use std::{
-    io,
     collections::{hash_map, HashMap, HashSet},
+    io,
 };
+#[cfg(feature = "indexmap")]
+pub use indexmap_crate as indexmap;
 use amplify_num::hex;
 use amplify_num::hex::{FromHex, ToHex};
 use ascii::{AsAsciiStrError, AsciiChar, AsciiString};
@@ -378,6 +380,78 @@ impl<K: Ord + Hash, V> KeyedCollection for BTreeMap<K, V> {
 
     fn retain(&mut self, f: impl FnMut(&K, &mut V) -> bool) {
         BTreeMap::retain(self, f)
+    }
+}
+
+#[cfg(feature = "indexmap")]
+impl<K: Eq + Hash, V> Collection for indexmap::IndexMap<K, V> {
+    type Item = (K, V);
+
+    fn with_capacity(capacity: usize) -> Self {
+        Self::with_capacity(capacity)
+    }
+
+    fn len(&self) -> usize {
+        self.len()
+    }
+
+    fn push(&mut self, elem: Self::Item) {
+        indexmap::IndexMap::insert(self, elem.0, elem.1);
+    }
+
+    fn clear(&mut self) {
+        self.clear()
+    }
+}
+
+#[cfg(feature = "indexmap")]
+impl<K: Eq + Hash, V> KeyedCollection for indexmap::IndexMap<K, V> {
+    type Key = K;
+    type Value = V;
+    type Entry<'a>
+        = indexmap::map::Entry<'a, K, V>
+    where
+        K: 'a,
+        V: 'a;
+
+    fn contains_key(&self, key: &Self::Key) -> bool {
+        indexmap::IndexMap::contains_key(self, key)
+    }
+
+    fn get(&self, key: &Self::Key) -> Option<&Self::Value> {
+        indexmap::IndexMap::get(self, key)
+    }
+
+    fn get_mut(&mut self, key: &Self::Key) -> Option<&mut Self::Value> {
+        indexmap::IndexMap::get_mut(self, key)
+    }
+
+    fn iter(&self) -> impl Iterator<Item = (&Self::Key, &Self::Value)> {
+        indexmap::IndexMap::iter(self)
+    }
+
+    fn iter_mut(&mut self) -> impl Iterator<Item = (&Self::Key, &mut Self::Value)> {
+        indexmap::IndexMap::iter_mut(self)
+    }
+
+    fn values_mut(&mut self) -> impl Iterator<Item = &mut Self::Value> {
+        indexmap::IndexMap::values_mut(self)
+    }
+
+    fn insert(&mut self, key: Self::Key, value: Self::Value) -> Option<Self::Value> {
+        indexmap::IndexMap::insert(self, key, value)
+    }
+
+    fn remove(&mut self, key: &Self::Key) -> Option<Self::Value> {
+        indexmap::IndexMap::shift_remove(self, key)
+    }
+
+    fn entry(&mut self, key: Self::Key) -> Self::Entry<'_> {
+        indexmap::IndexMap::entry(self, key)
+    }
+
+    fn retain(&mut self, f: impl FnMut(&K, &mut V) -> bool) {
+        indexmap::IndexMap::retain(self, f)
     }
 }
 
@@ -1555,6 +1629,42 @@ impl<K: Ord + Hash, V, const MIN_LEN: usize, const MAX_LEN: usize>
     }
 }
 
+#[cfg(feature = "indexmap")]
+impl<K: Eq + Hash, V, const MIN_LEN: usize, const MAX_LEN: usize>
+    Confined<indexmap::IndexMap<K, V>, MIN_LEN, MAX_LEN>
+{
+    /// Removes a key from the map, returning the value at the key if the key
+    /// was previously in the map.
+    ///
+    /// # Errors
+    ///
+    /// Errors if the minimum confinement is not met after the removal.
+    pub fn remove(&mut self, key: &K) -> Result<Option<V>, Error> {
+        let len = self.0.len();
+        if len == MIN_LEN || len - 1 < MIN_LEN {
+            return Err(Error::Undersize {
+                len: len - 1,
+                min_len: MIN_LEN,
+            });
+        }
+        Ok(self.0.shift_remove(key))
+    }
+
+    /// Creates a consuming iterator visiting all the keys in arbitrary order.
+    /// The map cannot be used after calling this. The iterator element type is
+    /// `K`.
+    pub fn into_keys(self) -> indexmap::map::IntoKeys<K, V> {
+        self.0.into_keys()
+    }
+
+    /// Creates a consuming iterator visiting all the values in arbitrary order.
+    /// The map cannot be used after calling this. The iterator element type is
+    /// `V`.
+    pub fn into_values(self) -> indexmap::map::IntoValues<K, V> {
+        self.0.into_values()
+    }
+}
+
 // io::Writer
 #[cfg(feature = "std")]
 impl<const MAX_LEN: usize> io::Write for Confined<Vec<u8>, ZERO, MAX_LEN> {
@@ -1731,6 +1841,27 @@ pub type ConfinedOrdMap<K, V, const MIN: usize = 0, const MAX: usize = U64> =
     Confined<BTreeMap<K, V>, MIN, MAX>;
 /// [`BTreeMap`] which contains at least a single item.
 pub type NonEmptyOrdMap<K, V, const MAX: usize = U64> = Confined<BTreeMap<K, V>, ONE, MAX>;
+
+/// [`indexmap::IndexMap`] with maximum 255 items.
+#[cfg(feature = "indexmap")]
+pub type TinyIndexMap<K, V> = Confined<indexmap::IndexMap<K, V>, ZERO, U8>;
+/// [`indexmap::IndexMap`] with maximum 2^16-1 items.
+#[cfg(feature = "indexmap")]
+pub type SmallIndexMap<K, V> = Confined<indexmap::IndexMap<K, V>, ZERO, U16>;
+/// [`indexmap::IndexMap`] with maximum 2^24-1 items.
+#[cfg(feature = "indexmap")]
+pub type MediumIndexMap<K, V> = Confined<indexmap::IndexMap<K, V>, ZERO, U24>;
+/// [`indexmap::IndexMap`] with maximum 2^32-1 items.
+#[cfg(feature = "indexmap")]
+pub type LargeIndexMap<K, V> = Confined<indexmap::IndexMap<K, V>, ZERO, U32>;
+#[cfg(feature = "indexmap")]
+/// Confined [`indexmap::IndexMap`].
+pub type ConfinedIndexMap<K, V, const MIN: usize = 0, const MAX: usize = U64> =
+    Confined<indexmap::IndexMap<K, V>, MIN, MAX>;
+/// [`indexmap::IndexMap`] which contains at least a single item.
+#[cfg(feature = "indexmap")]
+pub type NonEmptyIndexMap<K, V, const MAX: usize = U64> =
+    Confined<indexmap::IndexMap<K, V>, ONE, MAX>;
 
 /// Helper macro to construct confined string
 #[macro_export]
@@ -2114,6 +2245,48 @@ macro_rules! medium_bmap {
     }
 }
 
+/// Helper macro to construct confined [`indexmap::IndexMap`] of a
+/// [`TinyIndexMap`] type
+#[macro_export]
+#[cfg(feature = "indexmap")]
+macro_rules! tiny_imap {
+    () => {
+        $crate::confinement::TinyIndexMap::new()
+    };
+    { $($key:expr => $value:expr),+ $(,)? } => {
+        $crate::confinement::TinyIndexMap::try_from($crate::confinement::indexmap::IndexMap::from_iter([$(($key, $value)),+]))
+            .expect("inline tiny_imap literal contains invalid number of items")
+    }
+}
+
+/// Helper macro to construct confined [`indexmap::IndexMap`] of a
+/// [`SmallIndexMap`] type
+#[macro_export]
+#[cfg(feature = "indexmap")]
+macro_rules! small_imap {
+    () => {
+        $crate::confinement::SmallIndexMap::new()
+    };
+    { $($key:expr => $value:expr),+ $(,)? } => {
+        $crate::confinement::SmallIndexMap::try_from($crate::confinement::indexmap::IndexMap::from_iter([$(($key, $value)),+]))
+            .expect("inline small_imap literal contains invalid number of items")
+    }
+}
+
+/// Helper macro to construct confined [`indexmap::IndexMap`] of a
+/// [`MediumIndexMap`] type
+#[macro_export]
+#[cfg(feature = "indexmap")]
+macro_rules! medium_imap {
+    () => {
+        $crate::confinement::MediumIndexMap::new()
+    };
+    { $($key:expr => $value:expr),+ $(,)? } => {
+        $crate::confinement::MediumIndexMap::try_from($crate::confinement::indexmap::IndexMap::from_iter([$(($key, $value)),+]))
+            .expect("inline medium_imap literal contains invalid number of items")
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
@@ -2218,6 +2391,26 @@ mod test {
     #[test]
     fn iter_mut_btree() {
         let mut coll = tiny_bmap!(1 => "one");
+        for (_index, item) in &mut coll {
+            *item = "two";
+        }
+        assert_eq!(coll.get(&1), Some(&"two"));
+        for (_index, item) in coll.keyed_values_mut() {
+            *item = "three";
+        }
+        assert_eq!(coll.get(&1), Some(&"three"));
+        for item in coll.values_mut() {
+            *item = "four";
+        }
+        assert_eq!(coll.get(&1), Some(&"four"));
+        *coll.get_mut(&1).unwrap() = "five";
+        assert_eq!(coll.get(&1), Some(&"five"));
+    }
+
+    #[test]
+    #[cfg(feature = "indexmap")]
+    fn iter_mut_indexmap() {
+        let mut coll = tiny_imap!(1 => "one");
         for (_index, item) in &mut coll {
             *item = "two";
         }

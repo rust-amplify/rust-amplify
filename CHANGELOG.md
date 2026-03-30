@@ -7,6 +7,7 @@ Change Log
 - New `CursorDeque` implementation in `io` module, extending over smart pointers wrapping `VecDeque`
 - Updated CI: added support for ubuntu-24.04.arm runners
 - General chore and clippy lint fixes
+- confinement: add `IndexMap` support via `indexmap` feature
 
 4.9.0
 -----
