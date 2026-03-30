@@ -34,6 +34,8 @@ use std::{
 };
 #[cfg(feature = "indexmap")]
 pub use indexmap_crate as indexmap;
+#[cfg(feature = "smallvec")]
+pub use smallvec_crate as smallvec;
 use amplify_num::hex;
 use amplify_num::hex::{FromHex, ToHex};
 use ascii::{AsAsciiStrError, AsciiChar, AsciiString};
@@ -471,6 +473,27 @@ impl<K: Eq + Hash, V> KeyedCollection for indexmap::IndexMap<K, V> {
 
     fn retain(&mut self, f: impl FnMut(&K, &mut V) -> bool) {
         indexmap::IndexMap::retain(self, f)
+    }
+}
+
+#[cfg(feature = "smallvec")]
+impl<A: smallvec::Array> Collection for smallvec::SmallVec<A> {
+    type Item = A::Item;
+
+    fn with_capacity(capacity: usize) -> Self {
+        smallvec::SmallVec::with_capacity(capacity)
+    }
+
+    fn len(&self) -> usize {
+        smallvec::SmallVec::len(self)
+    }
+
+    fn push(&mut self, elem: Self::Item) {
+        smallvec::SmallVec::push(self, elem);
+    }
+
+    fn clear(&mut self) {
+        smallvec::SmallVec::clear(self)
     }
 }
 
@@ -1261,6 +1284,88 @@ impl<T, const MIN_LEN: usize, const MAX_LEN: usize> Confined<Vec<T>, MIN_LEN, MA
     }
 }
 
+#[cfg(feature = "smallvec")]
+impl<A: smallvec::Array, const MIN_LEN: usize, const MAX_LEN: usize>
+    Confined<smallvec::SmallVec<A>, MIN_LEN, MAX_LEN>
+{
+    /// Constructs confinement out of slice of items. Does allocation.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the size of the slice doesn't match the confinement type
+    /// bounds.
+    #[inline]
+    pub fn from_slice_checked(slice: &[A::Item]) -> Self
+    where
+        A::Item: Clone,
+    {
+        assert!(slice.len() >= MIN_LEN && slice.len() <= MAX_LEN);
+        Self(smallvec::SmallVec::from_iter(slice.iter().cloned()))
+    }
+
+    /// Constructs confinement out of slice of items. Does allocation.
+    #[inline]
+    pub fn try_from_slice(slice: &[A::Item]) -> Result<Self, Error>
+    where
+        A::Item: Clone,
+    {
+        Self::try_from(smallvec::SmallVec::from_iter(slice.iter().cloned()))
+    }
+
+    /// Returns slice representation of the vector.
+    #[inline]
+    pub fn as_slice(&self) -> &[A::Item] {
+        &self.0
+    }
+
+    /// Converts into the inner unconfined vector.
+    #[inline]
+    pub fn into_smallvec(self) -> smallvec::SmallVec<A> {
+        self.0
+    }
+
+    /// Gets the mutable element of a vector
+    #[inline]
+    pub fn get_mut<I>(&mut self, index: I) -> Option<&mut I::Output>
+    where
+        I: SliceIndex<[A::Item]>,
+    {
+        self.0.get_mut(index)
+    }
+}
+
+#[cfg(feature = "smallvec")]
+impl<A: smallvec::Array, const MAX_LEN: usize> Confined<smallvec::SmallVec<A>, ZERO, MAX_LEN> {
+    /// Removes the last element from a vector and returns it, or [`None`] if it
+    /// is empty.
+    #[inline]
+    pub fn pop(&mut self) -> Option<A::Item> {
+        self.0.pop()
+    }
+}
+
+#[cfg(feature = "smallvec")]
+impl<A: smallvec::Array, const MIN_LEN: usize, const MAX_LEN: usize>
+    Confined<smallvec::SmallVec<A>, MIN_LEN, MAX_LEN>
+{
+    /// Removes an element from the vector at a given index. Errors if the index
+    /// exceeds the number of elements in the vector, of if the new vector
+    /// length will be less than the confinement requirement. Returns the
+    /// removed element otherwise.
+    pub fn remove(&mut self, index: usize) -> Result<A::Item, Error> {
+        self.check_undersize()?;
+        self.check_boundary(index)?;
+        Ok(self.0.remove(index))
+    }
+
+    /// Returns an iterator over the slice.
+    ///
+    /// The iterator yields all items from start to end.
+    pub fn iter(&self) -> core::slice::Iter<'_, A::Item> {
+        self.0.iter()
+    }
+}
+
 impl<T, const MIN_LEN: usize, const MAX_LEN: usize> Confined<VecDeque<T>, MIN_LEN, MAX_LEN> {
     /// Removes the first element and returns it, or `None` if the deque is
     /// empty.
@@ -1743,6 +1848,26 @@ pub type ConfinedIndexMap<K, V, const MIN: usize = 0, const MAX: usize = U64> =
 pub type NonEmptyIndexMap<K, V, const MAX: usize = U64> =
     Confined<indexmap::IndexMap<K, V>, ONE, MAX>;
 
+/// [`smallvec::SmallVec`] with maximum 255 items.
+#[cfg(feature = "smallvec")]
+pub type TinySmallVec<A> = Confined<smallvec::SmallVec<A>, ZERO, U8>;
+/// [`smallvec::SmallVec`] with maximum 2^16-1 items.
+#[cfg(feature = "smallvec")]
+pub type SmallSmallVec<A> = Confined<smallvec::SmallVec<A>, ZERO, U16>;
+/// [`smallvec::SmallVec`] with maximum 2^24-1 items.
+#[cfg(feature = "smallvec")]
+pub type MediumSmallVec<A> = Confined<smallvec::SmallVec<A>, ZERO, U24>;
+/// [`smallvec::SmallVec`] with maximum 2^32-1 items.
+#[cfg(feature = "smallvec")]
+pub type LargeSmallVec<A> = Confined<smallvec::SmallVec<A>, ZERO, U32>;
+#[cfg(feature = "smallvec")]
+/// Confined [`smallvec::SmallVec`].
+pub type ConfinedSmallVec<A, const MIN: usize = 0, const MAX: usize = U64> =
+    Confined<smallvec::SmallVec<A>, MIN, MAX>;
+/// [`smallvec::SmallVec`] which contains at least a single item.
+#[cfg(feature = "smallvec")]
+pub type NonEmptySmallVec<A, const MAX: usize = U64> = Confined<smallvec::SmallVec<A>, ONE, MAX>;
+
 /// Helper macro to construct confined string
 #[macro_export]
 #[deprecated(since = "4.7.0", note = "use size-specific macros")]
@@ -2209,6 +2334,48 @@ macro_rules! medium_iset {
     )
 }
 
+/// Helper macro to construct confined [`smallvec::SmallVec`] of a
+/// [`TinySmallVec`] type
+#[macro_export]
+#[cfg(feature = "smallvec")]
+macro_rules! tiny_svec {
+    () => {
+        $crate::confinement::TinySmallVec::new()
+    };
+    ($($x:expr),+ $(,)?) => (
+        $crate::confinement::TinySmallVec::try_from($crate::confinement::smallvec::SmallVec::from_iter([$($x,)+]))
+            .expect("inline tiny_svec literal contains invalid number of items")
+    )
+}
+
+/// Helper macro to construct confined [`smallvec::SmallVec`] of a
+/// [`SmallSmallVec`] type
+#[macro_export]
+#[cfg(feature = "smallvec")]
+macro_rules! small_svec {
+    () => {
+        $crate::confinement::SmallSmallVec::new()
+    };
+    ($($x:expr),+ $(,)?) => (
+        $crate::confinement::SmallSmallVec::try_from($crate::confinement::smallvec::SmallVec::from_iter([$($x,)+]))
+            .expect("inline small_svec literal contains invalid number of items")
+    )
+}
+
+/// Helper macro to construct confined [`smallvec::SmallVec`] of a
+/// [`MediumSmallVec`] type
+#[macro_export]
+#[cfg(feature = "smallvec")]
+macro_rules! medium_svec {
+    () => {
+        $crate::confinement::MediumSmallVec::new()
+    };
+    ($($x:expr),+ $(,)?) => (
+        $crate::confinement::MediumSmallVec::try_from($crate::confinement::smallvec::SmallVec::from_iter([$($x,)+]))
+            .expect("inline medium_svec literal contains invalid number of items")
+    )
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
@@ -2228,6 +2395,8 @@ mod test {
         let mut deque = TinyDeque::new();
         let mut set = TinyHashSet::new();
         let mut bset = TinyOrdSet::new();
+        #[cfg(feature = "smallvec")]
+        let mut svec = TinySmallVec::<[u8; 8]>::new();
         let mut map = TinyHashMap::new();
         let mut bmap = TinyOrdMap::new();
         #[cfg(feature = "indexmap")]
@@ -2249,6 +2418,8 @@ mod test {
             deque.push(5u8).unwrap();
             set.push(index).unwrap();
             bset.push(5u8).unwrap();
+            #[cfg(feature = "smallvec")]
+            svec.push(5u8).unwrap();
             map.insert(5u8, 'a').unwrap();
             bmap.insert(index, 'a').unwrap();
             #[cfg(feature = "indexmap")]
@@ -2260,6 +2431,8 @@ mod test {
         assert_eq!(deque.len_u8(), u8::MAX);
         assert_eq!(set.len_u8(), u8::MAX);
         assert_eq!(bset.len_u8(), 1);
+        #[cfg(feature = "smallvec")]
+        assert_eq!(svec.len_u8(), 255);
         assert_eq!(map.len_u8(), 1);
         assert_eq!(bmap.len_u8(), u8::MAX);
         #[cfg(feature = "indexmap")]
@@ -2403,6 +2576,15 @@ mod test {
             map.remove(&1),
             Err(Error::Undersize { len: 1, min_len: 1 })
         ));
+
+        #[cfg(feature = "smallvec")]
+        {
+            let mut v = NonEmptySmallVec::<[u8; 1]>::with(1);
+            assert!(matches!(
+                v.remove(0),
+                Err(Error::Undersize { len: 1, min_len: 1 })
+            ));
+        }
     }
 
     #[test]
@@ -2428,6 +2610,12 @@ mod test {
         tiny_vec!() as TinyVec<&str>;
         tiny_vec!("a", "b", "c");
         small_vec!("a", "b", "c");
+        #[cfg(feature = "smallvec")]
+        {
+            tiny_svec!() as TinySmallVec<[&str; 3]>;
+            tiny_svec!("a", "b", "c") as TinySmallVec<[&str; 3]>;
+            small_svec!("a", "b", "c") as SmallSmallVec<[&str; 3]>;
+        }
 
         tiny_set!() as TinyHashSet<&str>;
         tiny_set!("a", "b", "c");

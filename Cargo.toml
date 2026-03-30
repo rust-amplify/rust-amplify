@@ -36,6 +36,7 @@ rand = { version = "0.9.1", optional = true }
 serde_crate = { package = "serde", version = "1.0", features = ["derive"], optional = true }
 stringly_conversions = { version = "0.1.1", optional = true, features = ["alloc"] }
 indexmap-crate = { package = "indexmap", version = "2", optional = true }
+smallvec-crate = { package = "smallvec", version = "1.13", optional = true }
 
 [dev-dependencies]
 serde_json = "1.0"
@@ -61,6 +62,7 @@ all = [
     "apfloat",
     "apfloat_std",
     "indexmap",
+    "smallvec",
 ]
 default = ["std", "derive", "hex"]
 std = ["amplify_num/std", "alloc"]
@@ -73,6 +75,7 @@ apfloat = ["amplify_apfloat"]
 proc_attr = ["amplify_syn"]
 derive = ["amplify_derive"]
 indexmap = ["indexmap-crate"]
+smallvec = ["smallvec-crate"]
 serde = [
     "serde_crate",
     "std",
@@ -82,4 +85,5 @@ serde = [
     "stringly_conversions/alloc",
     "stringly_conversions/serde_str_helpers",
     "indexmap-crate?/serde",
+    "smallvec-crate?/serde",
 ]
