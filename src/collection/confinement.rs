@@ -1021,11 +1021,8 @@ where
     }
 }
 
-impl<C: Collection, const MIN_LEN: usize> Confined<C, MIN_LEN, U8>
-where
-    C: Default,
-{
-    /// Returns number of elements in the confined collection as `u8`. The
+impl<C: Collection, const MIN_LEN: usize> Confined<C, MIN_LEN, U8> {
+    /// Returns the number of elements in the confined collection as `u8`. The
     /// confinement guarantees that the collection length can't exceed
     /// `u8::MAX`.
     pub fn len_u8(&self) -> u8 {
@@ -1033,11 +1030,8 @@ where
     }
 }
 
-impl<C: Collection, const MIN_LEN: usize> Confined<C, MIN_LEN, U16>
-where
-    C: Default,
-{
-    /// Returns number of elements in the confined collection as `u16`. The
+impl<C: Collection, const MIN_LEN: usize> Confined<C, MIN_LEN, U16> {
+    /// Returns the number of elements in the confined collection as `u16`. The
     /// confinement guarantees that the collection length can't exceed
     /// `u16::MAX`.
     pub fn len_u16(&self) -> u16 {
@@ -1045,11 +1039,8 @@ where
     }
 }
 
-impl<C: Collection, const MIN_LEN: usize> Confined<C, MIN_LEN, U24>
-where
-    C: Default,
-{
-    /// Returns number of elements in the confined collection as `u24`. The
+impl<C: Collection, const MIN_LEN: usize> Confined<C, MIN_LEN, U24> {
+    /// Returns the number of elements in the confined collection as `u24`. The
     /// confinement guarantees that the collection length can't exceed
     /// `u24::MAX`.
     pub fn len_u24(&self) -> u24 {
@@ -1057,11 +1048,8 @@ where
     }
 }
 
-impl<C: Collection, const MIN_LEN: usize> Confined<C, MIN_LEN, U32>
-where
-    C: Default,
-{
-    /// Returns number of elements in the confined collection as `u32`. The
+impl<C: Collection, const MIN_LEN: usize> Confined<C, MIN_LEN, U32> {
+    /// Returns the number of elements in the confined collection as `u32`. The
     /// confinement guarantees that the collection length can't exceed
     /// `u32::MAX`.
     pub fn len_u32(&self) -> u32 {
@@ -1076,7 +1064,7 @@ impl<C: KeyedCollection, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C,
     }
 
     /// Inserts a new value into the confined collection under a given key.
-    /// Fails if the collection already contains maximum number of elements
+    /// Fails if the collection already contains the maximum number of elements
     /// allowed by the confinement.
     pub fn insert(&mut self, key: C::Key, value: C::Value) -> Result<Option<C::Value>, Error> {
         self.check_oversize()?;
