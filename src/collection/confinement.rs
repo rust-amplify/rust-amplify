@@ -1168,6 +1168,12 @@ impl<const MIN_LEN: usize, const MAX_LEN: usize> Confined<String, MIN_LEN, MAX_L
     /// otherwise.
     pub fn remove(&mut self, index: usize) -> Result<char, Error> {
         self.check_boundary(index)?;
+        if !self.0.is_char_boundary(index) {
+            return Err(Error::OutOfBoundary {
+                index,
+                len: self.len(),
+            });
+        }
         self.check_undersize()?;
         Ok(self.0.remove(index))
     }
