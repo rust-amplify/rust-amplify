@@ -1067,7 +1067,9 @@ impl<C: KeyedCollection, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C,
     /// Fails if the collection already contains the maximum number of elements
     /// allowed by the confinement.
     pub fn insert(&mut self, key: C::Key, value: C::Value) -> Result<Option<C::Value>, Error> {
-        self.check_oversize()?;
+        if !self.0.contains_key(&key) {
+            self.check_oversize()?;
+        }
         Ok(self.0.insert(key, value))
     }
 
