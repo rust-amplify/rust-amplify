@@ -1519,6 +1519,48 @@ impl<K: Hash + Eq, V, const MIN_LEN: usize, const MAX_LEN: usize>
         Ok(self.0.remove(key))
     }
 
+    /// Removes a key from the map, returning the stored key and value if the
+    /// key was previously in the map.
+    ///
+    /// # Errors
+    ///
+    /// Errors if the minimum confinement is not met after the removal.
+    pub fn remove_entry(&mut self, key: &K) -> Result<Option<(K, V)>, Error> {
+        if !self.0.contains_key(key) {
+            return Ok(None);
+        }
+        self.check_undersize()?;
+        Ok(self.0.remove_entry(key))
+    }
+
+    /// Reserves capacity for `additional` more elements to be inserted
+    /// in the `HashMap`. The collection may reserve more space to speculatively
+    /// avoid frequent reallocations. After calling `reserve`, capacity will be
+    /// greater than or equal to `min(self.len() + additional, MAX_LEN)`. Does
+    /// nothing if capacity is already sufficient.
+    pub fn reserve(&mut self, additional: usize) {
+        let new_len = self.len() + additional;
+        let reserve = ::core::cmp::min(new_len, MAX_LEN);
+        self.0.reserve(reserve)
+    }
+
+    /// Shrinks the capacity of the map as much as possible. It will drop
+    /// down as much as possible while maintaining the internal rules
+    /// and possibly leaving some space in accordance with the resize policy.
+    pub fn shrink_to_fit(&mut self) {
+        self.0.shrink_to_fit();
+    }
+
+    /// Shrinks the capacity of the map with a lower bound.
+    ///
+    /// The capacity will remain at least as large as both the length
+    /// and the supplied value.
+    ///
+    /// If the current capacity is less than the lower bound, this is a no-op.
+    pub fn shrink_to(&mut self, min_capacity: usize) {
+        self.0.shrink_to(min_capacity);
+    }
+
     /// Creates a consuming iterator visiting all the keys in arbitrary order.
     /// The map cannot be used after calling this.
     /// The iterator element type is `K`.
@@ -1531,6 +1573,15 @@ impl<K: Hash + Eq, V, const MIN_LEN: usize, const MAX_LEN: usize>
     /// The iterator element type is `V`.
     pub fn into_values(self) -> hash_map::IntoValues<K, V> {
         self.0.into_values()
+    }
+}
+
+#[cfg(feature = "std")]
+impl<K: Hash + Eq, V, const MAX_LEN: usize> Confined<HashMap<K, V>, ZERO, MAX_LEN> {
+    /// Clears the map, returning all key-value pairs as an iterator. Keeps the
+    /// allocated memory for reuse.
+    pub fn drain(&mut self) -> hash_map::Drain<'_, K, V> {
+        self.0.drain()
     }
 }
 
@@ -2917,5 +2968,54 @@ mod test {
             Confined::<BTreeMap<u8, u8>, 0, 5>::try_from_iter([(1, 10), (2, 20), (3, 30)]).unwrap();
         m.retain(|k, _v| *k < 2);
         assert_eq!(m.len(), 1);
+    }
+
+    #[test]
+    #[cfg(feature = "std")]
+    fn hash_remove_entry() {
+        let mut m = Confined::<HashMap<u8, u8>, 1, 3>::try_from_iter([(1, 10), (2, 20)]).unwrap();
+        assert_eq!(m.remove_entry(&2).unwrap(), Some((2, 20)));
+        assert_eq!(m.len(), 1);
+        assert!(m.remove_entry(&1).is_err()); // Underflow 1 -> 0
+        assert_eq!(m.remove_entry(&3).unwrap(), None);
+    }
+
+    #[test]
+    #[cfg(feature = "std")]
+    fn hash_drain() {
+        let mut m = Confined::<HashMap<u8, u8>, 0, 3>::try_from_iter([(1, 10), (2, 20)]).unwrap();
+        let drained: Vec<_> = m.drain().collect();
+        assert_eq!(drained.len(), 2);
+        assert_eq!(m.len(), 0);
+    }
+
+    #[test]
+    #[cfg(feature = "std")]
+    fn hash_reserve() {
+        let mut m = Confined::<HashMap<u8, u8>, 0, 3>::try_from_iter([(1, 10)]).unwrap();
+        m.reserve(2);
+        assert!(m.capacity() >= 2);
+        m.reserve(3);
+        let capacity = m.capacity();
+        m.reserve(4);
+        assert_eq!(m.capacity(), capacity);
+    }
+
+    #[test]
+    #[cfg(feature = "std")]
+    fn hash_shrink_to_fit() {
+        let mut m = Confined::<HashMap<u8, u8>, 0, 10>::try_from_iter([(1, 10)]).unwrap();
+        m.reserve(5);
+        m.shrink_to_fit();
+        assert!(m.capacity() >= 1);
+    }
+
+    #[test]
+    #[cfg(feature = "std")]
+    fn hash_shrink_to() {
+        let mut m = Confined::<HashMap<u8, u8>, 0, 10>::try_from_iter([(1, 10)]).unwrap();
+        m.reserve(5);
+        m.shrink_to(2);
+        assert!(m.capacity() >= 2);
     }
 }
