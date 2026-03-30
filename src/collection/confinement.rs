@@ -915,7 +915,7 @@ impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C, MIN_
         let len = self.len();
         if len <= MIN_LEN {
             return Err(Error::Undersize {
-                len: len.saturating_sub(1),
+                len,
                 min_len: MIN_LEN,
             });
         }
@@ -926,7 +926,7 @@ impl<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C, MIN_
         let len = self.len();
         if len >= MAX_LEN {
             return Err(Error::Oversize {
-                len: len.saturating_add(1),
+                len,
                 max_len: MAX_LEN,
             });
         }
@@ -1656,9 +1656,12 @@ impl<K: Eq + Hash, V, const MIN_LEN: usize, const MAX_LEN: usize>
 #[cfg(feature = "std")]
 impl<const MAX_LEN: usize> io::Write for Confined<Vec<u8>, ZERO, MAX_LEN> {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+        if buf.is_empty() {
+            return Ok(0);
+        }
         let len = self.len();
         let buf_len = buf.len();
-        if buf_len > MAX_LEN || len.saturating_add(buf_len) > MAX_LEN {
+        if buf_len > MAX_LEN || len >= MAX_LEN || len.saturating_add(buf_len) > MAX_LEN {
             return Err(io::Error::from(io::ErrorKind::OutOfMemory));
         }
         self.0.extend(buf);
@@ -2409,7 +2412,7 @@ mod test {
         assert!(matches!(
             s.push('a'),
             Err(Error::Oversize {
-                len: 256,
+                len: 255,
                 max_len: 255
             })
         ));
@@ -2421,7 +2424,7 @@ mod test {
         assert!(matches!(
             v.push(1),
             Err(Error::Oversize {
-                len: 256,
+                len: 255,
                 max_len: 255
             })
         ));
@@ -2433,14 +2436,14 @@ mod test {
         assert!(matches!(
             set.push(255),
             Err(Error::Oversize {
-                len: 256,
+                len: 255,
                 max_len: 255
             })
         ));
         assert!(matches!(
             set.push(0),
             Err(Error::Oversize {
-                len: 256,
+                len: 255,
                 max_len: 255
             })
         ));
@@ -2452,14 +2455,14 @@ mod test {
         assert!(matches!(
             map.insert(255, 0),
             Err(Error::Oversize {
-                len: 256,
+                len: 255,
                 max_len: 255
             })
         ));
         assert!(matches!(
             map.insert(0, 0),
             Err(Error::Oversize {
-                len: 256,
+                len: 255,
                 max_len: 255
             })
         ));
@@ -2512,25 +2515,25 @@ mod test {
         let mut s = NonEmptyString::<U8>::with('a');
         assert!(matches!(
             s.remove(0),
-            Err(Error::Undersize { len: 0, min_len: 1 })
+            Err(Error::Undersize { len: 1, min_len: 1 })
         ));
 
         let mut v = NonEmptyVec::<u8>::with(1);
         assert!(matches!(
             v.remove(0),
-            Err(Error::Undersize { len: 0, min_len: 1 })
+            Err(Error::Undersize { len: 1, min_len: 1 })
         ));
 
         let mut set = NonEmptyOrdSet::<u8>::with(1);
         assert!(matches!(
             set.remove(&1),
-            Err(Error::Undersize { len: 0, min_len: 1 })
+            Err(Error::Undersize { len: 1, min_len: 1 })
         ));
 
         let mut map = NonEmptyOrdMap::<u8, u8>::with_key_value(1, 1);
         assert!(matches!(
             map.remove(&1),
-            Err(Error::Undersize { len: 0, min_len: 1 })
+            Err(Error::Undersize { len: 1, min_len: 1 })
         ));
     }
 
