@@ -2528,13 +2528,13 @@ mod test {
         let mut s = TinyString::new();
         assert!(matches!(
             s.remove(0),
-            Err(Error::Undersize { len: 0, min_len: 0 })
+            Err(Error::OutOfBoundary { index: 0, len: 0 })
         ));
 
         let mut s = TinyVec::<u8>::new();
         assert!(matches!(
             s.remove(0),
-            Err(Error::Undersize { len: 0, min_len: 0 })
+            Err(Error::OutOfBoundary { index: 0, len: 0 })
         ));
 
         let mut s = TinyOrdSet::<u8>::new();
@@ -2548,11 +2548,19 @@ mod test {
             s.remove(0),
             Err(Error::Undersize { len: 1, min_len: 1 })
         ));
+        assert!(matches!(
+            s.remove(1),
+            Err(Error::OutOfBoundary { index: 1, len: 1 })
+        ));
 
         let mut v = NonEmptyVec::<u8>::with(1);
         assert!(matches!(
             v.remove(0),
             Err(Error::Undersize { len: 1, min_len: 1 })
+        ));
+        assert!(matches!(
+            v.remove(1),
+            Err(Error::OutOfBoundary { index: 1, len: 1 })
         ));
 
         let mut set = NonEmptyOrdSet::<u8>::with(1);
