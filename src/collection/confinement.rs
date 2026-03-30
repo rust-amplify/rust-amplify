@@ -33,9 +33,9 @@ use std::{
     io,
 };
 #[cfg(feature = "indexmap")]
-pub use indexmap_crate as indexmap;
+pub use indexmap;
 #[cfg(feature = "smallvec")]
-pub use smallvec_crate as smallvec;
+pub use smallvec;
 use amplify_num::hex;
 use amplify_num::hex::{FromHex, ToHex};
 use ascii::{AsAsciiStrError, AsciiChar, AsciiString};
@@ -614,7 +614,7 @@ pub const U64: usize = u64::MAX as usize;
 #[cfg_attr(
     feature = "serde",
     derive(Serialize, Deserialize),
-    serde(crate = "serde_crate")
+    serde(crate = "serde")
 )]
 pub struct Confined<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize>(C);
 
