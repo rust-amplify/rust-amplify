@@ -122,19 +122,19 @@ impl Collection for String {
     type Item = char;
 
     fn with_capacity(capacity: usize) -> Self {
-        Self::with_capacity(capacity)
+        String::with_capacity(capacity)
     }
 
     fn len(&self) -> usize {
-        self.len()
+        String::len(self)
     }
 
     fn push(&mut self, elem: Self::Item) {
-        self.push(elem)
+        String::push(self, elem)
     }
 
     fn clear(&mut self) {
-        self.clear()
+        String::clear(self)
     }
 }
 
@@ -142,19 +142,19 @@ impl Collection for AsciiString {
     type Item = AsciiChar;
 
     fn with_capacity(capacity: usize) -> Self {
-        Self::with_capacity(capacity)
+        AsciiString::with_capacity(capacity)
     }
 
     fn len(&self) -> usize {
-        self.len()
+        AsciiString::len(self)
     }
 
     fn push(&mut self, elem: Self::Item) {
-        self.push(elem)
+        AsciiString::push(self, elem)
     }
 
     fn clear(&mut self) {
-        self.clear()
+        AsciiString::clear(self)
     }
 }
 
@@ -162,19 +162,19 @@ impl<T> Collection for Vec<T> {
     type Item = T;
 
     fn with_capacity(capacity: usize) -> Self {
-        Self::with_capacity(capacity)
+        Vec::with_capacity(capacity)
     }
 
     fn len(&self) -> usize {
-        self.len()
+        Vec::len(self)
     }
 
     fn push(&mut self, elem: Self::Item) {
-        self.push(elem)
+        Vec::push(self, elem)
     }
 
     fn clear(&mut self) {
-        self.clear()
+        Vec::clear(self)
     }
 }
 
@@ -182,19 +182,19 @@ impl<T> Collection for VecDeque<T> {
     type Item = T;
 
     fn with_capacity(capacity: usize) -> Self {
-        Self::with_capacity(capacity)
+        VecDeque::with_capacity(capacity)
     }
 
     fn len(&self) -> usize {
-        self.len()
+        VecDeque::len(self)
     }
 
     fn push(&mut self, elem: Self::Item) {
-        self.push_back(elem)
+        VecDeque::push_back(self, elem)
     }
 
     fn clear(&mut self) {
-        self.clear()
+        VecDeque::clear(self)
     }
 }
 
@@ -203,19 +203,19 @@ impl<T: Eq + Hash> Collection for HashSet<T> {
     type Item = T;
 
     fn with_capacity(capacity: usize) -> Self {
-        Self::with_capacity(capacity)
+        HashSet::with_capacity(capacity)
     }
 
     fn len(&self) -> usize {
-        self.len()
+        HashSet::len(self)
     }
 
     fn push(&mut self, elem: Self::Item) {
-        self.insert(elem);
+        HashSet::insert(self, elem);
     }
 
     fn clear(&mut self) {
-        self.clear()
+        HashSet::clear(self)
     }
 }
 
@@ -228,15 +228,15 @@ impl<T: Ord> Collection for BTreeSet<T> {
     }
 
     fn len(&self) -> usize {
-        self.len()
+        BTreeSet::len(self)
     }
 
     fn push(&mut self, elem: Self::Item) {
-        self.insert(elem);
+        BTreeSet::insert(self, elem);
     }
 
     fn clear(&mut self) {
-        self.clear()
+        BTreeSet::clear(self)
     }
 }
 
@@ -245,11 +245,11 @@ impl<K: Eq + Hash, V> Collection for HashMap<K, V> {
     type Item = (K, V);
 
     fn with_capacity(capacity: usize) -> Self {
-        Self::with_capacity(capacity)
+        HashMap::with_capacity(capacity)
     }
 
     fn len(&self) -> usize {
-        self.len()
+        HashMap::len(self)
     }
 
     fn push(&mut self, elem: Self::Item) {
@@ -257,7 +257,7 @@ impl<K: Eq + Hash, V> Collection for HashMap<K, V> {
     }
 
     fn clear(&mut self) {
-        self.clear()
+        HashMap::clear(self)
     }
 }
 
@@ -321,7 +321,7 @@ impl<K: Ord + Hash, V> Collection for BTreeMap<K, V> {
     }
 
     fn len(&self) -> usize {
-        self.len()
+        BTreeMap::len(self)
     }
 
     fn push(&mut self, elem: Self::Item) {
@@ -329,7 +329,7 @@ impl<K: Ord + Hash, V> Collection for BTreeMap<K, V> {
     }
 
     fn clear(&mut self) {
-        self.clear()
+        BTreeMap::clear(self)
     }
 }
 
@@ -388,11 +388,11 @@ impl<T: Eq + Hash> Collection for indexmap::IndexSet<T> {
     type Item = T;
 
     fn with_capacity(capacity: usize) -> Self {
-        Self::with_capacity(capacity)
+        indexmap::IndexSet::with_capacity(capacity)
     }
 
     fn len(&self) -> usize {
-        self.len()
+        indexmap::IndexSet::len(self)
     }
 
     fn push(&mut self, elem: Self::Item) {
@@ -400,7 +400,7 @@ impl<T: Eq + Hash> Collection for indexmap::IndexSet<T> {
     }
 
     fn clear(&mut self) {
-        self.clear()
+        indexmap::IndexSetclear(self)
     }
 }
 
@@ -409,11 +409,11 @@ impl<K: Eq + Hash, V> Collection for indexmap::IndexMap<K, V> {
     type Item = (K, V);
 
     fn with_capacity(capacity: usize) -> Self {
-        Self::with_capacity(capacity)
+        indexmap::IndexMap::with_capacity(capacity)
     }
 
     fn len(&self) -> usize {
-        self.len()
+        indexmap::IndexMap::len(self)
     }
 
     fn push(&mut self, elem: Self::Item) {
@@ -421,7 +421,7 @@ impl<K: Eq + Hash, V> Collection for indexmap::IndexMap<K, V> {
     }
 
     fn clear(&mut self) {
-        self.clear()
+        indexmap::IndexMap::clear(self)
     }
 }
 
