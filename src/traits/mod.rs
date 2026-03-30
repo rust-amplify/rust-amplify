@@ -16,12 +16,16 @@
 #[macro_use]
 mod wrapper;
 mod as_any;
+#[cfg(feature = "alloc")]
+mod deques;
 mod dumb;
 mod join_split;
 #[cfg(all(feature = "c_raw", not(target_arch = "wasm32")))]
 mod raw_str;
 
 pub use as_any::AsAny;
+#[cfg(feature = "alloc")]
+pub use deques::{AsDequeMut, AsDequeRef};
 pub use join_split::JoinSplit;
 pub use wrapper::{Wrapper, WrapperMut};
 pub use dumb::Dumb;
