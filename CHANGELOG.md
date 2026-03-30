@@ -1,6 +1,13 @@
 Change Log
 ==========
 
+4.10.0
+------
+
+- New `CursorDeque` implementation in `io` module, extending over smart pointers wrapping `VecDeque`
+- Updated CI: added support for ubuntu-24.04.arm runners
+- General chore and clippy lint fixes
+
 4.9.0
 -----
 
