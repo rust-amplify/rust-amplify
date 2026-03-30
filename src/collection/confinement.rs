@@ -1064,8 +1064,8 @@ impl<C: KeyedCollection, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C,
     }
 
     /// Inserts a new value into the confined collection under a given key.
-    /// Fails if the collection already contains the maximum number of elements
-    /// allowed by the confinement.
+    /// Fails when inserting a new key would exceed MAX_LEN.
+    /// Replacing an existing key's value always succeeds.
     pub fn insert(&mut self, key: C::Key, value: C::Value) -> Result<Option<C::Value>, Error> {
         if !self.0.contains_key(&key) {
             self.check_oversize()?;
@@ -2491,13 +2491,8 @@ mod test {
         for i in 1..=255 {
             map.insert(i, i).unwrap();
         }
-        assert!(matches!(
-            map.insert(255, 0),
-            Err(Error::Oversize {
-                len: 255,
-                max_len: 255
-            })
-        ));
+        // Replacing an existing key should succeed
+        assert_eq!(map.insert(255, 0), Ok(Some(255)));
         assert!(matches!(
             map.insert(0, 0),
             Err(Error::Oversize {
