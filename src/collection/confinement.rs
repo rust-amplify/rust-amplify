@@ -1549,6 +1549,116 @@ impl<K: Ord + Hash, V, const MIN_LEN: usize, const MAX_LEN: usize>
         Ok(self.0.remove(key))
     }
 
+    /// Removes and returns the first element from the map.
+    ///
+    /// # Errors
+    ///
+    /// Errors if the minimum confinement is not met after the removal.
+    pub fn pop_first(&mut self) -> Result<Option<(K, V)>, Error> {
+        if self.is_empty() {
+            return Ok(None);
+        }
+        self.check_undersize()?;
+        Ok(self.0.pop_first())
+    }
+
+    /// Removes and returns the last element from the map.
+    ///
+    /// # Errors
+    ///
+    /// Errors if the minimum confinement is not met after the removal.
+    pub fn pop_last(&mut self) -> Result<Option<(K, V)>, Error> {
+        if self.is_empty() {
+            return Ok(None);
+        }
+        self.check_undersize()?;
+        Ok(self.0.pop_last())
+    }
+
+    /// Removes a key from the map, returning the stored key and value if the
+    /// key was previously in the map.
+    ///
+    /// # Errors
+    ///
+    /// Errors if the minimum confinement is not met after the removal.
+    pub fn remove_entry(&mut self, key: &K) -> Result<Option<(K, V)>, Error> {
+        if !self.0.contains_key(key) {
+            return Ok(None);
+        }
+        self.check_undersize()?;
+        Ok(self.0.remove_entry(key))
+    }
+
+    /// Moves all elements from `other` into `self`, leaving `other` empty.
+    ///
+    /// # Errors
+    ///
+    /// Errors if the maximum confinement is exceeded after the operation.
+    pub fn append<const MIN_LEN2: usize, const MAX_LEN2: usize>(
+        &mut self,
+        other: &mut Confined<BTreeMap<K, V>, MIN_LEN2, MAX_LEN2>,
+    ) -> Result<(), Error> {
+        let new_len = self.len() + other.len();
+        if new_len > MAX_LEN {
+            return Err(Error::Oversize {
+                len: new_len,
+                max_len: MAX_LEN,
+            });
+        }
+        self.0.append(&mut other.0);
+        Ok(())
+    }
+
+    /// Splits the collection into two at the given key. Returns everything
+    /// after the given key, including the key.
+    ///
+    /// # Errors
+    ///
+    /// Errors if the minimum confinement is not met for either of the
+    /// collections.
+    pub fn split_off<const MIN_LEN2: usize, const MAX_LEN2: usize>(
+        &mut self,
+        key: &K,
+    ) -> Result<Confined<BTreeMap<K, V>, MIN_LEN2, MAX_LEN2>, Error> {
+        let mut other = self.0.split_off(key);
+        let len1 = self.0.len();
+        let len2 = other.len();
+
+        if len1 < MIN_LEN {
+            self.0.append(&mut other);
+            return Err(Error::Undersize {
+                len: len1,
+                min_len: MIN_LEN,
+            });
+        }
+
+        if len2 < MIN_LEN2 {
+            self.0.append(&mut other);
+            return Err(Error::Undersize {
+                len: len2,
+                min_len: MIN_LEN2,
+            });
+        }
+
+        if len2 > MAX_LEN2 {
+            self.0.append(&mut other);
+            return Err(Error::Oversize {
+                len: len2,
+                max_len: MAX_LEN2,
+            });
+        }
+
+        Ok(Confined(other))
+    }
+
+    /// Gets a mutable iterator over the specified range.
+    pub fn range_mut<R>(&mut self, range: R) -> btree_map::RangeMut<'_, K, V>
+    where
+        R: RangeBounds<K>,
+    {
+        self.0.range_mut(range)
+    }
+
     /// Creates a consuming iterator visiting all the keys in arbitrary order.
     /// The map cannot be used after calling this.
     /// The iterator element type is `K`.
@@ -2721,5 +2831,91 @@ mod test {
         assert_eq!(m[&1], 10);
         assert_eq!(m[&2], 20);
         // m[&1] = 11; // BTreeMap doesn't support IndexMut
+    }
+
+    #[test]
+    fn btree_pop_first() {
+        let mut m = Confined::<BTreeMap<u8, u8>, 1, 3>::try_from_iter([(1, 10), (2, 20)]).unwrap();
+        assert_eq!(m.pop_first().unwrap(), Some((1, 10)));
+        assert_eq!(m.len(), 1);
+        assert!(m.pop_first().is_err()); // Underflow 1 -> 0
+    }
+
+    #[test]
+    fn btree_pop_last() {
+        let mut m = Confined::<BTreeMap<u8, u8>, 1, 3>::try_from_iter([(1, 10), (2, 20)]).unwrap();
+        assert_eq!(m.pop_last().unwrap(), Some((2, 20)));
+        assert_eq!(m.len(), 1);
+        assert!(m.pop_last().is_err()); // Underflow 1 -> 0
+    }
+
+    #[test]
+    fn btree_remove_entry() {
+        let mut m = Confined::<BTreeMap<u8, u8>, 1, 3>::try_from_iter([(1, 10), (2, 20)]).unwrap();
+        assert_eq!(m.remove_entry(&2).unwrap(), Some((2, 20)));
+        assert_eq!(m.len(), 1);
+        assert!(m.remove_entry(&1).is_err()); // Underflow 1 -> 0
+        assert_eq!(m.remove_entry(&3).unwrap(), None);
+    }
+
+    #[test]
+    fn btree_append() {
+        let mut m1 = Confined::<BTreeMap<u8, u8>, 0, 3>::try_from_iter([(1, 10)]).unwrap();
+        let mut m2 = Confined::<BTreeMap<u8, u8>, 0, 3>::try_from_iter([(2, 20), (3, 30)]).unwrap();
+        m1.append(&mut m2).unwrap();
+        assert_eq!(m1.len(), 3);
+        assert_eq!(m2.len(), 0);
+
+        let mut m3 = Confined::<BTreeMap<u8, u8>, 0, 3>::try_from_iter([(4, 40)]).unwrap();
+        assert!(m1.append(&mut m3).is_err()); // Overflow 3 + 1 -> 4
+    }
+
+    #[test]
+    fn btree_range_mut() {
+        let mut m =
+            Confined::<BTreeMap<u8, u8>, 0, 3>::try_from_iter([(1, 10), (2, 20), (3, 30)]).unwrap();
+        for (_, v) in m.range_mut(2..) {
+            *v += 1;
+        }
+        assert_eq!(m[&2], 21);
+        assert_eq!(m[&3], 31);
+    }
+
+    #[test]
+    fn btree_split_off() {
+        let mut m =
+            Confined::<BTreeMap<u8, u8>, 1, 5>::try_from_iter([(1, 10), (2, 20), (3, 30), (4, 40)])
+                .unwrap();
+        let m2: Confined<BTreeMap<u8, u8>, 1, 5> = m.split_off(&3).unwrap();
+        assert_eq!(m.len(), 2);
+        assert_eq!(m2.len(), 2);
+        assert!(m.contains_key(&1));
+        assert!(m.contains_key(&2));
+        assert!(m2.contains_key(&3));
+        assert!(m2.contains_key(&4));
+
+        let mut m =
+            Confined::<BTreeMap<u8, u8>, 1, 5>::try_from_iter([(1, 10), (2, 20), (3, 30), (4, 40)])
+                .unwrap();
+        assert!(m.split_off::<1, 5>(&1).is_err()); // Underflow m: 4 -> 0 (min 1 is NOT OK)
+        assert!(m.split_off::<1, 5>(&5).is_err()); // Underflow m2: 4 -> 0 (min
+                                                   // 1 is NOT OK)
+    }
+
+    #[test]
+    fn btree_try_retain() {
+        let mut m =
+            Confined::<BTreeMap<u8, u8>, 1, 5>::try_from_iter([(1, 10), (2, 20), (3, 30)]).unwrap();
+        m.try_retain(|k, _v| *k < 3).unwrap();
+        assert_eq!(m.len(), 2);
+        assert!(m.try_retain(|k, _v| *k < 1).is_err()); // Underflow 2 -> 0
+    }
+
+    #[test]
+    fn btree_retain() {
+        let mut m =
+            Confined::<BTreeMap<u8, u8>, 0, 5>::try_from_iter([(1, 10), (2, 20), (3, 30)]).unwrap();
+        m.retain(|k, _v| *k < 2);
+        assert_eq!(m.len(), 1);
     }
 }
