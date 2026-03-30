@@ -994,6 +994,21 @@ where
     }
 }
 
+impl<C, const MAX_LEN: usize> Confined<C, ONE, MAX_LEN>
+where
+    C: Collection + Index<usize, Output = C::Item>,
+{
+    /// Returns the first element.
+    pub fn first(&self) -> &C::Item {
+        self.0.index(0)
+    }
+
+    /// Returns the last element.
+    pub fn last(&self) -> &C::Item {
+        self.0.index(self.len() - 1)
+    }
+}
+
 impl<C: Collection, const MIN_LEN: usize> Confined<C, MIN_LEN, U8>
 where
     C: Default,
@@ -2217,5 +2232,19 @@ mod test {
         assert_eq!(coll.get(&1), Some(&"four"));
         *coll.get_mut(&1).unwrap() = "five";
         assert_eq!(coll.get(&1), Some(&"five"));
+    }
+
+    #[test]
+    fn first_last_non_empty_vec() {
+        let coll = NonEmptyVec::<u8, U8>::try_from(vec![1, 2, 3]).unwrap();
+        assert_eq!(*coll.first(), 1);
+        assert_eq!(*coll.last(), 3);
+    }
+
+    #[test]
+    fn first_last_non_empty_deque() {
+        let coll = NonEmptyDeque::<u8, U8>::try_from_iter([1, 2, 3]).unwrap();
+        assert_eq!(*coll.first(), 1);
+        assert_eq!(*coll.last(), 3);
     }
 }
