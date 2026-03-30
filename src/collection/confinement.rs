@@ -1066,7 +1066,8 @@ impl<C: KeyedCollection, const MIN_LEN: usize, const MAX_LEN: usize> Confined<C,
     /// Inserts a new value into the confined collection under a given key.
     ///
     /// If the key is already present, the value is overwritten and the previous
-    /// value is returned. This succeeds even when the collection is at capacity.
+    /// value is returned. This succeeds even when the collection is at
+    /// capacity.
     ///
     /// # Errors
     ///
