@@ -15,6 +15,85 @@ Change Log
   `Confinement::with_mut`)
 - add `retain` and `try_retain` to a keyed collection based confinements
 - deprecate `ByteArray` methods having `_unsafe` suffix
+- add `MultiError` type for collecting multiple errors
+
+4.8.0
+-----
+
+- fix `alloc`/`std` macro ambiguity
+
+4.7.1
+-----
+
+- confinement: add `VecDeque` `truncate` and `drain` methods
+
+4.7.0
+-----
+
+- maintenance release
+
+4.6.2
+-----
+
+- MSRV bump to 1.75.0 due to use of `impl` in trait method returns
+- confinement: rename `_unchecked` names with `_checked` suffix
+- confinement: deprecate general macros
+- confinement: add blob construction macros
+- confinement: add `confined_s` macro
+- confinement: add `Confined*` type aliases
+- confinement: rename `_unsafe` to `_unchecked`
+- confinement: add `values_mut` method to `KeyedCollections`
+- confinement: support `entry` method for map confinements
+- confinement: deprecate `*inner` methods and replace with better names
+- confinement: remove `Wrapper` implementation
+
+4.6.1
+-----
+
+- fix no-std build
+- fix rust v1.80 compatibility
+
+4.6.0
+-----
+
+- MSRV bump to 1.69.0
+- traits: export raw traits
+- remove `serde` JSON, YAML, TOML as MSRV breakers
+
+4.5.1
+-----
+
+- confinement: add `Vec::get_mut` proxy
+
+4.5.0
+-----
+
+- chore: update dependencies
+
+4.4.0
+-----
+
+- macro: provide no-std versions
+- macro: add collection constructions macro with automatic `to_owned`
+- confinement: implement hex traits for `Vec<u8>`-based confinements
+
+4.3.0
+-----
+
+- chore: bump MSRV and `amplify-derive` version
+- confinement: add `Confined<Vec<T>>` convenience APIs (`from_slice_unsafe`, `try_from_slice`,
+  `as_slice`, `into_vec`)
+- confinement: add `Confined::from_iter_unsafe` constructor
+
+4.2.0
+-----
+
+- array: add new `ByteArray` trait, deprecate `RawArray`
+- array: add `ByteArray` methods to `Array` type
+- array: add dedicated `FromSliceError` type
+- array: deprecate `Array::from_slice`, add `Array::copy_from_slice`
+- array: fix `Display` implementation
+- confinement: add `Collection::from_collection_unsafe`
 
 4.1.1
 -----
