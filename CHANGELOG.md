@@ -1,6 +1,28 @@
 Change Log
 ==========
 
+5.0.0
+-----
+
+- Major refactoring of the `confinement` module: introduced `SetCollection` and `PlainCollection`
+  traits
+- Added `replace` and `extend` methods to all confined collections
+- Added `first_entry` and `last_entry` methods to confined `BTreeMap`
+- Consistent access to `iter` and `iter_mut` methods across all confined collections
+- Renamed methods with `_unchecked` suffix to use `_checked` (e.g., `push_checked`)
+- Added `single` constructor and made `with` available to all collections
+- Deprecated legacy macros and some methods in `confinement` module for backward compatibility
+- Fixed `alloc`/`std` macro ambiguity
+- Bumped MSRV to 1.75.0
+- General chore and clippy lint fixes
+
+4.10.0
+------
+
+- New `CursorDeque` implementation in `io` module, extending over smart pointers wrapping `VecDeque`
+- Updated CI: added support for ubuntu-24.04.arm runners
+- General chore and clippy lint fixes
+
 4.9.0
 -----
 
